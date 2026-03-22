@@ -1,13 +1,14 @@
+import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 
 import { fetchHealth, getApiBaseUrl, type HealthResponse } from './api';
 
-function App() {
+function App(): JSX.Element {
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  async function loadHealth() {
+  async function loadHealth(): Promise<void> {
     setIsLoading(true);
     setError(null);
 

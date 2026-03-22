@@ -1,5 +1,5 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
-import { Pool, type QueryResultRow } from 'pg';
+import { Pool, type QueryResult, type QueryResultRow } from 'pg';
 
 type DatabaseHealth =
   | {
@@ -57,15 +57,15 @@ export class DatabaseService implements OnModuleDestroy {
   async query<T extends QueryResultRow = QueryResultRow>(
     sql: string,
     parameters: readonly unknown[] = [],
-  ) {
+  ): Promise<QueryResult<T>> {
     if (!this.pool) {
       throw new Error('DATABASE_URL is not configured');
     }
 
-    return this.pool.query<T>(sql, [...parameters]);
+    return await this.pool.query<T>(sql, [...parameters]);
   }
 
-  async onModuleDestroy() {
+  async onModuleDestroy(): Promise<void> {
     await this.pool?.end();
   }
 }

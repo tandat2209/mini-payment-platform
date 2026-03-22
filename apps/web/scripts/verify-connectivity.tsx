@@ -3,11 +3,11 @@ import { createRoot } from 'react-dom/client';
 
 import App from '../src/App';
 
-async function waitForStatus(container: HTMLDivElement) {
+async function waitForStatus(container: HTMLDivElement): Promise<string> {
   const timeoutAt = Date.now() + 10_000;
 
   while (Date.now() < timeoutAt) {
-    const text = container.textContent ?? '';
+    const text = container.textContent;
 
     if (text.includes('Connection status') && text.includes('ok')) {
       return text;
@@ -21,7 +21,7 @@ async function waitForStatus(container: HTMLDivElement) {
   );
 }
 
-async function main() {
+async function main(): Promise<void> {
   process.env.VITE_API_BASE_URL = process.env.VITE_API_BASE_URL ?? 'http://localhost:3001';
 
   const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>', {
@@ -37,9 +37,12 @@ async function main() {
     configurable: true,
     value: dom.window.navigator,
   });
-  globalThis.requestAnimationFrame = (callback: FrameRequestCallback) =>
-    setTimeout(() => callback(Date.now()), 16) as unknown as number;
-  globalThis.cancelAnimationFrame = (handle: number) => clearTimeout(handle);
+  globalThis.requestAnimationFrame = (callback: FrameRequestCallback) => {
+    return setTimeout(() => callback(Date.now()), 16) as unknown as number;
+  };
+  globalThis.cancelAnimationFrame = (handle: number) => {
+    clearTimeout(handle);
+  };
 
   const container = document.getElementById('root');
 
