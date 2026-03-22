@@ -2,9 +2,12 @@
   "name": "@payment-platform-mini/db",
   "private": true,
   "scripts": {
+    "migrate": "node scripts/apply-sql-file.mjs migrations/0001_financial_foundation.sql",
+    "seed": "node scripts/apply-sql-file.mjs seeds/001_financial_scenarios.sql",
+    "setup": "pnpm run migrate && pnpm run seed",
     "build": "node -e \"const fs=require('node:fs'); fs.mkdirSync('dist',{recursive:true}); fs.writeFileSync('dist/.build-stamp','financial-schema-foundation\\n'); console.log('Prepared db build artifacts')\"",
     "lint": "eslint \"scripts/**/*.mjs\"",
-    "typecheck": "node --check scripts/verify-schema.mjs",
+    "typecheck": "node --check scripts/verify-schema.mjs && node --check scripts/apply-sql-file.mjs",
     "test": "node scripts/verify-schema.mjs",
     "verify": "node scripts/verify-schema.mjs"
   },
@@ -12,5 +15,8 @@
     "@electric-sql/pglite": "^0.4.1",
     "@types/node": "^25.5.0",
     "tsx": "^4.21.0"
+  },
+  "dependencies": {
+    "pg": "^8.20.0"
   }
 }

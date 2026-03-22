@@ -10,6 +10,8 @@ Reference: [Designing a Payment System](https://newsletter.pragmaticengineer.com
 
 ```bash
 pnpm install
+pnpm db:up
+pnpm db:setup
 pnpm dev
 ```
 
@@ -27,11 +29,30 @@ cp apps/web/.env.example apps/web/.env
 cp apps/simulator/.env.example apps/simulator/.env
 ```
 
-To enable API database connectivity, set `DATABASE_URL` in `apps/api/.env` and run a local Postgres instance, for example:
+The default API database URL already matches the local Docker Compose database:
 
 ```bash
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/payment_platform_mini
 ```
+
+Local Postgres commands:
+
+```bash
+pnpm db:up
+pnpm db:migrate
+pnpm db:seed
+pnpm db:setup
+pnpm db:logs
+pnpm db:down
+```
+
+If you need a clean local database volume, run:
+
+```bash
+docker compose down -v
+```
+
+`pnpm db:setup` applies the current SQL migration and then loads the deterministic seed scenario into the local Postgres database.
 
 Default local ports:
 

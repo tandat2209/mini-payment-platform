@@ -8,8 +8,24 @@ This package contains the financial schema foundation for the payment platform m
   Initial PostgreSQL schema for wallets, balances, user transactions, payouts, recipients, webhooks, idempotency, and ledger posting.
 - `seeds/001_financial_scenarios.sql`
   Deterministic seed scenarios covering wallet lifecycle, inbound funding recognition, and payout attempts.
-- `scripts/verify-schema.ts`
+- `scripts/apply-sql-file.mjs`
+  Runtime SQL executor for applying migrations and seeds to a real PostgreSQL database via `DATABASE_URL`.
+- `scripts/verify-schema.mjs`
   In-memory verification script that applies the migration and seed data, then checks the schema invariants and representative queries.
+
+## Local Commands
+
+Run against the local Docker Postgres instance or any database pointed to by `DATABASE_URL`:
+
+- `pnpm migrate`
+- `pnpm seed`
+- `pnpm setup`
+
+Default connection string:
+
+```bash
+postgresql://postgres:postgres@localhost:5432/payment_platform_mini
+```
 
 ## Core Invariants
 
