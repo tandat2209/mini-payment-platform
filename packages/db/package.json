@@ -1,0 +1,15 @@
+{
+  "name": "@payment-platform-mini/db",
+  "private": true,
+  "scripts": {
+    "build": "node -e \"const fs=require('node:fs'); fs.mkdirSync('dist',{recursive:true}); fs.writeFileSync('dist/.build-stamp','financial-schema-foundation\\n'); console.log('Prepared db build artifacts')\"",
+    "lint": "node --check scripts/verify-schema.mjs",
+    "test": "node scripts/verify-schema.mjs",
+    "verify": "node scripts/verify-schema.mjs"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.4.1",
+    "@types/node": "^25.5.0",
+    "tsx": "^4.21.0"
+  }
+}

@@ -1,0 +1,33 @@
+# Database Package
+
+This package contains the financial schema foundation for the payment platform mini project.
+
+## Contents
+
+- `migrations/0001_financial_foundation.sql`
+  Initial PostgreSQL schema for wallets, balances, user transactions, payouts, recipients, webhooks, idempotency, and ledger posting.
+- `seeds/001_financial_scenarios.sql`
+  Deterministic seed scenarios covering wallet lifecycle, inbound funding recognition, and payout attempts.
+- `scripts/verify-schema.ts`
+  In-memory verification script that applies the migration and seed data, then checks the schema invariants and representative queries.
+
+## Core Invariants
+
+- At most one active wallet may exist per user.
+- Each wallet may have at most one balance row per currency.
+- Monetary values are stored in integer minor units with explicit currency.
+- Payouts store gross, fee, and net amounts, with `gross = fee + net`.
+- Webhook events are unique per `(provider, external_event_id)`.
+- Idempotency keys are unique per `(scope, key)`.
+- Ledger entries are append-only records linked to ledger transactions and accounts.
+
+## Reconciliation Intent
+
+Provider reconciliation is expected to use:
+
+- `payout_attempts` for provider execution history
+- `webhook_events` for inbound provider evidence
+- `ledger_transactions` and `ledger_entries` for internal financial truth
+
+`user_transactions` is the customer-facing history and statement source, not the primary reconciliation anchor.
+

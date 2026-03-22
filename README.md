@@ -13,6 +13,12 @@ pnpm install
 pnpm dev
 ```
 
+Financial schema verification:
+
+```bash
+pnpm --filter @payment-platform-mini/db verify
+```
+
 Optional local environment files:
 
 ```bash
@@ -39,13 +45,14 @@ This system allows:
 
 ## Current Milestone
 
-The current first milestone is only about setting up the projects:
+The current implementation foundation now includes:
 
 - `apps/api` with a single health endpoint
 - `apps/web` that can connect to the API
 - `apps/simulator` as the future fake PSP/bank simulator scaffold
+- `packages/db` with the initial financial schema migration, deterministic seed scenarios, and executable schema verification
 
-Business logic for wallets, ledger posting, payouts, and database design will be added in later changes.
+Wallet services, payout orchestration, ledger posting logic, and reconciliation workers will be added in later changes.
 
 ## Core Concepts
 

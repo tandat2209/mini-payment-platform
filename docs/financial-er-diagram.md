@@ -35,6 +35,8 @@ erDiagram
     IDEMPOTENCY_KEYS ||--o{ PAYOUTS : protects
     IDEMPOTENCY_KEYS ||--o{ PAYOUT_ATTEMPTS : reuses
 
+    WALLETS ||--o{ LEDGER_ACCOUNTS : owns_wallet_account
+    RECIPIENTS ||--o{ LEDGER_ACCOUNTS : owns_payable_account
     LEDGER_ACCOUNTS ||--o{ LEDGER_ENTRIES : posts_to
     LEDGER_TRANSACTIONS ||--o{ LEDGER_ENTRIES : contains
 
@@ -164,6 +166,8 @@ erDiagram
         uuid id PK
         string code
         string account_type
+        string owner_type
+        uuid owner_id
         string currency
         string status
     }
@@ -197,6 +201,8 @@ erDiagram
 - `payouts` represents the business payout object.
 - `payout_attempts` stores PSP execution and retry history.
 - `webhook_events` stores raw provider callbacks for deduplication, replay, and auditability.
+- `ledger_accounts` currently uses a generic ownership model with `owner_type` and `owner_id`.
+- In practice, wallet liability accounts point at wallets, recipient payable accounts point at recipients, and platform accounts have no domain owner row.
 - `wallet_balances` is a balance read model and must stay consistent with ledger posting.
 
 ## Status
