@@ -6,6 +6,27 @@ This project focuses on correctness and system design, inspired by real-world pa
 
 Reference: [Designing a Payment System](https://newsletter.pragmaticengineer.com/p/designing-a-payment-system)
 
+## Development Setup
+
+```bash
+pnpm install
+pnpm dev
+```
+
+Optional local environment files:
+
+```bash
+cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env
+cp apps/simulator/.env.example apps/simulator/.env
+```
+
+Default local ports:
+
+- API: `http://localhost:3001`
+- Web: `http://localhost:5173`
+- Simulator: `http://localhost:3002`
+
 ## Overview
 
 This system allows:
