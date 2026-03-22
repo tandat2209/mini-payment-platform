@@ -1,8 +1,5 @@
 :root {
-  font-family:
-    "IBM Plex Sans",
-    "Segoe UI",
-    sans-serif;
+  font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif;
   color: #e8eef7;
   background:
     radial-gradient(circle at top, rgba(72, 110, 255, 0.2), transparent 40%),
@@ -114,4 +111,3 @@ h1 {
     padding: 24px;
   }
 }
-

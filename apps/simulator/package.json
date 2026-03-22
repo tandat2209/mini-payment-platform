@@ -5,7 +5,8 @@
     "dev": "nodemon --watch src --ext ts --exec \"ts-node -r tsconfig-paths/register src/main.ts\"",
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/main.js",
-    "lint": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint \"src/**/*.ts\"",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "node -e \"console.log('No tests configured for simulator yet')\""
   },
   "dependencies": {

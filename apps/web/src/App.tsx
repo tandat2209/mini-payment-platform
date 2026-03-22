@@ -45,7 +45,7 @@ function App() {
           <div>
             <dt>Connection status</dt>
             <dd data-testid="connection-status">
-              {isLoading ? 'Loading...' : health?.status ?? 'Unavailable'}
+              {isLoading ? 'Loading...' : (health?.status ?? 'Unavailable')}
             </dd>
           </div>
           <div>
@@ -69,4 +69,3 @@ function App() {
 }
 
 export default App;
-

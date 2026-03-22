@@ -3,7 +3,8 @@
   "private": true,
   "scripts": {
     "build": "node -e \"const fs=require('node:fs'); fs.mkdirSync('dist',{recursive:true}); fs.writeFileSync('dist/.build-stamp','financial-schema-foundation\\n'); console.log('Prepared db build artifacts')\"",
-    "lint": "node --check scripts/verify-schema.mjs",
+    "lint": "eslint \"scripts/**/*.mjs\"",
+    "typecheck": "node --check scripts/verify-schema.mjs",
     "test": "node scripts/verify-schema.mjs",
     "verify": "node scripts/verify-schema.mjs"
   },

@@ -7,6 +7,7 @@ This change intentionally avoids business logic, database design, ledger modelin
 ## Goals / Non-Goals
 
 **Goals:**
+
 - Create a runnable monorepo with `apps/api`, `apps/web`, and `apps/simulator`.
 - Standardize local development, build, lint, and test workflows from the workspace root.
 - Add a NestJS API scaffold with a single health endpoint.
@@ -14,6 +15,7 @@ This change intentionally avoids business logic, database design, ledger modelin
 - Add a simulator app scaffold so the intended repository shape exists from the start.
 
 **Non-Goals:**
+
 - Implement wallet, ledger, payout, or any other payment business logic.
 - Add database schema, migrations, seeds, or shared payment-domain packages.
 - Design external settlement behavior, webhook flows, or accounting models.
@@ -26,6 +28,7 @@ This change intentionally avoids business logic, database design, ledger modelin
 The workspace will use `pnpm` for dependency management and local package linking, with Turborepo for task orchestration across apps. This gives us a lightweight, practical setup for a TypeScript monorepo without introducing unnecessary framework overhead.
 
 Alternative considered:
+
 - `npm` workspaces: simpler, but weaker ergonomics for a multi-app workspace.
 - `Nx`: powerful, but more structure than this first milestone needs.
 
@@ -34,6 +37,7 @@ Alternative considered:
 The API and simulator will both use NestJS so the backend apps share the same module, configuration, and bootstrapping patterns. That keeps the repo consistent without introducing business behavior yet.
 
 Alternative considered:
+
 - Use a lighter framework for the simulator: smaller in isolation, but introduces a second backend structure too early.
 
 ### Use a Vite-based React + TypeScript app for the web frontend
@@ -41,6 +45,7 @@ Alternative considered:
 The web app will use React + TypeScript with Vite so the frontend can be scaffolded quickly and focus on one job in this milestone: calling and rendering the API health response.
 
 Alternative considered:
+
 - Next.js: stronger for larger frontend architecture, but unnecessary for this initial connectivity milestone.
 
 ### Keep the initial API surface to a single health endpoint
@@ -48,6 +53,7 @@ Alternative considered:
 The API will expose only one health endpoint in this change. This keeps the first milestone measurable and avoids inventing placeholder business modules that would likely be rewritten in later changes.
 
 Alternative considered:
+
 - Scaffold future wallet, ledger, and payout modules now: broader shape up front, but too much implied design for a setup-only change.
 
 ## Risks / Trade-offs

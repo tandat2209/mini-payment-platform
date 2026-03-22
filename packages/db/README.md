@@ -30,4 +30,3 @@ Provider reconciliation is expected to use:
 - `ledger_transactions` and `ledger_entries` for internal financial truth
 
 `user_transactions` is the customer-facing history and statement source, not the primary reconciliation anchor.
-

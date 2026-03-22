@@ -14,6 +14,7 @@ The project now has a runnable technical foundation, but the financial system ca
 ## Capabilities
 
 ### New Capabilities
+
 - `wallets`: Define wallet lifecycle, funding details, and multi-currency balance requirements for users.
 - `user-transactions-and-statements`: Define the user-facing transaction model that supports app history and statements.
 - `payouts-and-recipients`: Define payout, recipient, and payout-attempt requirements for external money movement.
@@ -21,6 +22,7 @@ The project now has a runnable technical foundation, but the financial system ca
 - `provider-integration-and-reconciliation`: Define webhook ingestion, idempotency, and reconciliation requirements for PSP integrations.
 
 ### Modified Capabilities
+
 - None.
 
 ## Impact

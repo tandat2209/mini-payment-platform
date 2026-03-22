@@ -13,12 +13,14 @@ The payment platform needs a clean monorepo foundation before we implement walle
 ## Capabilities
 
 ### New Capabilities
+
 - `workspace-foundation`: Establish workspace tooling, repository layout, and shared local development commands for the three apps.
 - `api-service-bootstrap`: Provide a NestJS API scaffold with a single health endpoint for local connectivity checks.
 - `web-app-bootstrap`: Provide a React + TypeScript frontend scaffold that can call and display the API health response.
 - `simulator-app-bootstrap`: Provide a separate simulator app scaffold in the monorepo without adding payout logic yet.
 
 ### Modified Capabilities
+
 - None.
 
 ## Impact

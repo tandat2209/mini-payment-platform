@@ -3,6 +3,7 @@
 This document captures the current v1 database design direction for the payment platform domain.
 
 It is intended as a working reference for:
+
 - wallet and balance modeling
 - user-facing transaction history and statements
 - payout and recipient relationships

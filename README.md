@@ -27,6 +27,12 @@ cp apps/web/.env.example apps/web/.env
 cp apps/simulator/.env.example apps/simulator/.env
 ```
 
+To enable API database connectivity, set `DATABASE_URL` in `apps/api/.env` and run a local Postgres instance, for example:
+
+```bash
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/payment_platform_mini
+```
+
 Default local ports:
 
 - API: `http://localhost:3001`
@@ -150,6 +156,7 @@ payment-platform-mini/
 ```
 
 Current database design reference:
+
 - [Financial ER Diagram](/Users/datnguyen/Projects/mini-payment-platform/docs/financial-er-diagram.md)
 
 ## System Flow

@@ -16,7 +16,9 @@ async function waitForStatus(container: HTMLDivElement) {
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
 
-  throw new Error(`Timed out waiting for the web app to render API health.\n\n${container.textContent}`);
+  throw new Error(
+    `Timed out waiting for the web app to render API health.\n\n${container.textContent}`,
+  );
 }
 
 async function main() {

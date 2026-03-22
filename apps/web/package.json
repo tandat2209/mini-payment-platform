@@ -6,7 +6,8 @@
     "dev": "vite",
     "build": "vite build",
     "start": "vite preview",
-    "lint": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint \"src/**/*.{ts,tsx}\" \"scripts/**/*.{ts,tsx}\" vite.config.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "node -e \"console.log('No tests configured for web yet')\"",
     "verify:connectivity": "tsx scripts/verify-connectivity.tsx"
   },
