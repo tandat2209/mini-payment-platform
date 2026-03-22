@@ -2,6 +2,7 @@ import { type INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from './app.module';
+import { loadLocalEnv } from './shared/config/load-local-env';
 import { ApiErrorFilter } from './shared/http/api-error.filter';
 
 export function configureApp(app: INestApplication): INestApplication {
@@ -18,6 +19,7 @@ export function configureApp(app: INestApplication): INestApplication {
 }
 
 export async function createApp(): Promise<INestApplication> {
+  loadLocalEnv();
   const app = await NestFactory.create(AppModule);
 
   return configureApp(app);

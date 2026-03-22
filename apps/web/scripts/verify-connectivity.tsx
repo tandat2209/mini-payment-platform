@@ -9,7 +9,11 @@ async function waitForStatus(container: HTMLDivElement): Promise<string> {
   while (Date.now() < timeoutAt) {
     const text = container.textContent;
 
-    if (text.includes('Connection status') && text.includes('ok')) {
+    if (
+      text.includes('Aster Pay') &&
+      text.includes('Total balance') &&
+      text.includes('Recent transactions')
+    ) {
       return text;
     }
 
@@ -23,6 +27,8 @@ async function waitForStatus(container: HTMLDivElement): Promise<string> {
 
 async function main(): Promise<void> {
   process.env.VITE_API_BASE_URL = process.env.VITE_API_BASE_URL ?? 'http://localhost:3001';
+  process.env.VITE_CUSTOMER_EXTERNAL_REF =
+    process.env.VITE_CUSTOMER_EXTERNAL_REF ?? 'user_demo_alice';
 
   const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>', {
     url: 'http://localhost:5173',
