@@ -1,0 +1,204 @@
+# Financial ER Diagram
+
+This document captures the current v1 database design direction for the payment platform domain.
+
+It is intended as a working reference for:
+- wallet and balance modeling
+- user-facing transaction history and statements
+- payout and recipient relationships
+- provider webhook and idempotency handling
+- double-entry ledger design
+
+## ER Diagram
+
+```mermaid
+erDiagram
+    USERS ||--o{ WALLETS : owns
+    WALLETS ||--o{ WALLET_BALANCES : has
+    WALLETS ||--o{ WALLET_FUNDING_DETAILS : supports
+    USERS ||--o{ USER_TRANSACTIONS : sees
+    WALLETS ||--o{ USER_TRANSACTIONS : records
+
+    USERS ||--o{ RECIPIENTS : manages
+    RECIPIENTS ||--o{ RECIPIENT_RAILS : has
+
+    USERS ||--o{ PAYOUTS : initiates
+    WALLETS ||--o{ PAYOUTS : funds
+    RECIPIENTS ||--o{ PAYOUTS : targets
+    RECIPIENT_RAILS ||--o{ PAYOUTS : uses
+    PAYOUTS ||--o{ PAYOUT_ATTEMPTS : retries
+
+    WEBHOOK_EVENTS ||--o{ PAYOUTS : updates
+    WEBHOOK_EVENTS ||--o{ USER_TRANSACTIONS : explains
+    WEBHOOK_EVENTS ||--o{ LEDGER_TRANSACTIONS : triggers
+
+    IDEMPOTENCY_KEYS ||--o{ PAYOUTS : protects
+    IDEMPOTENCY_KEYS ||--o{ PAYOUT_ATTEMPTS : reuses
+
+    LEDGER_ACCOUNTS ||--o{ LEDGER_ENTRIES : posts_to
+    LEDGER_TRANSACTIONS ||--o{ LEDGER_ENTRIES : contains
+
+    USER_TRANSACTIONS ||--o| PAYOUTS : represents
+    USER_TRANSACTIONS ||--o| LEDGER_TRANSACTIONS : references
+
+    USERS {
+        uuid id PK
+        string external_ref
+        datetime created_at
+    }
+
+    WALLETS {
+        uuid id PK
+        uuid user_id FK
+        string status
+        datetime opened_at
+        datetime closed_at
+    }
+
+    WALLET_BALANCES {
+        uuid id PK
+        uuid wallet_id FK
+        string currency
+        bigint available_amount_minor
+        bigint pending_amount_minor
+        datetime updated_at
+    }
+
+    WALLET_FUNDING_DETAILS {
+        uuid id PK
+        uuid wallet_id FK
+        string rail
+        string currency
+        jsonb details
+        boolean is_active
+    }
+
+    USER_TRANSACTIONS {
+        uuid id PK
+        uuid user_id FK
+        uuid wallet_id FK
+        uuid payout_id FK
+        uuid ledger_transaction_id FK
+        uuid webhook_event_id FK
+        string type
+        string direction
+        string status
+        string currency
+        bigint gross_amount_minor
+        bigint fee_amount_minor
+        bigint net_amount_minor
+        string description
+        string reference
+        datetime occurred_at
+        datetime posted_at
+    }
+
+    RECIPIENTS {
+        uuid id PK
+        uuid user_id FK
+        string name
+        string status
+        datetime created_at
+    }
+
+    RECIPIENT_RAILS {
+        uuid id PK
+        uuid recipient_id FK
+        string rail
+        string currency
+        jsonb details
+        boolean is_default
+        boolean is_active
+    }
+
+    PAYOUTS {
+        uuid id PK
+        uuid user_id FK
+        uuid wallet_id FK
+        uuid recipient_id FK
+        uuid recipient_rail_id FK
+        uuid idempotency_key_id FK
+        string status
+        string currency
+        bigint gross_amount_minor
+        bigint fee_amount_minor
+        bigint net_amount_minor
+        string reference
+        datetime created_at
+    }
+
+    PAYOUT_ATTEMPTS {
+        uuid id PK
+        uuid payout_id FK
+        uuid idempotency_key_id FK
+        string provider
+        string external_request_id
+        string external_payout_id
+        string status
+        jsonb request_payload
+        jsonb response_payload
+        datetime submitted_at
+        datetime resolved_at
+    }
+
+    WEBHOOK_EVENTS {
+        uuid id PK
+        string provider
+        string external_event_id
+        string event_type
+        string processing_status
+        jsonb payload
+        datetime received_at
+        datetime processed_at
+    }
+
+    IDEMPOTENCY_KEYS {
+        uuid id PK
+        string scope
+        string key
+        string status
+        datetime created_at
+    }
+
+    LEDGER_ACCOUNTS {
+        uuid id PK
+        string code
+        string account_type
+        string currency
+        string status
+    }
+
+    LEDGER_TRANSACTIONS {
+        uuid id PK
+        string transaction_type
+        string status
+        string currency
+        string reference
+        uuid webhook_event_id FK
+        datetime created_at
+        datetime posted_at
+    }
+
+    LEDGER_ENTRIES {
+        uuid id PK
+        uuid ledger_transaction_id FK
+        uuid ledger_account_id FK
+        string direction
+        string currency
+        bigint amount_minor
+        datetime created_at
+    }
+```
+
+## Notes
+
+- `user_transactions` is the source for user-facing history and statements.
+- `ledger_transactions` and `ledger_entries` are the internal financial source of truth.
+- `payouts` represents the business payout object.
+- `payout_attempts` stores PSP execution and retry history.
+- `webhook_events` stores raw provider callbacks for deduplication, replay, and auditability.
+- `wallet_balances` is a balance read model and must stay consistent with ledger posting.
+
+## Status
+
+This is a working design reference and may evolve as the `design-financial-database-foundation` change is implemented.

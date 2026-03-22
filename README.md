@@ -142,6 +142,9 @@ payment-platform-mini/
   docs/
 ```
 
+Current database design reference:
+- [Financial ER Diagram](/Users/datnguyen/Projects/mini-payment-platform/docs/financial-er-diagram.md)
+
 ## System Flow
 
 ```text
