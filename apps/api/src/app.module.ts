@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { CustomerAccessModule } from './access/customer/customer-access.module';
 import { DatabaseModule } from './database/database.module';
+import { FundingModule } from './funding/funding.module';
 import { FundingWebhooksModule } from './funding-webhooks/funding-webhooks.module';
 import { HealthModule } from './health/health.module';
 import { RecipientsModule } from './recipients/recipients.module';
@@ -12,6 +13,7 @@ import { WalletsModule } from './wallets/wallets.module';
   imports: [
     DatabaseModule,
     CustomerAccessModule,
+    FundingModule,
     FundingWebhooksModule,
     WalletsModule,
     TransactionsModule,

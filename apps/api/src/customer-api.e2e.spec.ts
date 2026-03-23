@@ -306,6 +306,10 @@ class ApiFakeDatabaseService {
 
     throw new Error(`Unhandled SQL in API fake database: ${sql}`);
   }
+
+  async transaction<T>(callback: (database: this) => Promise<T>) {
+    return await callback(this);
+  }
 }
 
 async function createTestApp() {
@@ -324,9 +328,7 @@ async function createTestApp() {
 }
 
 async function fetchJson(app: INestApplication, path: string, customerExternalRef: string) {
-  await app.listen(0);
-  const server = app.getHttpServer() as { address: () => { port: number } };
-  const { port } = server.address();
+  const port = await ensureListening(app);
   const response = await fetch(`http://127.0.0.1:${port}${path}`, {
     headers: {
       'x-customer-external-ref': customerExternalRef,
@@ -339,22 +341,19 @@ async function fetchJson(app: INestApplication, path: string, customerExternalRe
   };
 }
 
-async function postJson(app: INestApplication, path: string, body: Record<string, unknown>) {
-  await app.listen(0);
-  const server = app.getHttpServer() as { address: () => { port: number } };
-  const { port } = server.address();
-  const response = await fetch(`http://127.0.0.1:${port}${path}`, {
-    body: JSON.stringify(body),
-    headers: {
-      'content-type': 'application/json',
-    },
-    method: 'POST',
-  });
-
-  return {
-    body: (await response.json()) as Record<string, unknown>,
-    status: response.status,
+async function ensureListening(app: INestApplication): Promise<number> {
+  const server = app.getHttpServer() as {
+    address: () => { port: number } | null;
   };
+  const address = server.address();
+
+  if (address?.port) {
+    return address.port;
+  }
+
+  await app.listen(0);
+
+  return (server.address() as { port: number }).port;
 }
 
 test('balance API remains customer scoped', async () => {
@@ -452,38 +451,6 @@ test('funding details API returns not found when the customer has no active wall
     const response = await fetchJson(app, '/customers/me/funding-details', 'user_demo_charlie');
 
     assert.equal(response.status, 404);
-  } finally {
-    await app.close();
-  }
-});
-
-test('funding webhook API records a received webhook event', async () => {
-  const app = await createTestApp();
-
-  try {
-    const response = await postJson(app, '/webhooks/funding', {
-      data: {
-        amountMinor: 2500,
-        currency: 'USD',
-        customerExternalRef: 'user_demo_alice',
-        fundingDetailId: 'funding-detail-usd',
-      },
-      eventType: 'funding.completed',
-      externalEventId: 'evt_funding_123',
-      occurredAt: '2026-03-23T06:00:00.000Z',
-      provider: 'simulator_psp',
-    });
-
-    assert.equal(response.status, 202);
-    assert.equal(
-      (response.body.event as { externalEventId: string }).externalEventId,
-      'evt_funding_123',
-    );
-    assert.equal(
-      (response.body.event as { processingStatus: string }).processingStatus,
-      'received',
-    );
-    assert.equal((response.body.event as { provider: string }).provider, 'simulator_psp');
   } finally {
     await app.close();
   }

@@ -1,20 +1,16 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
+import { ApplyInboundFundingService } from '../../../funding/application/apply-inbound-funding.service';
 import {
-  FUNDING_WEBHOOK_REPOSITORY,
   type FundingWebhook,
-  type FundingWebhookRepository,
   type RecordedWebhookEvent,
-} from '../../domain/funding-webhook.repository';
+} from '../../../funding/domain/funding.types';
 
 @Injectable()
 export class RecordFundingWebhookCommand {
-  constructor(
-    @Inject(FUNDING_WEBHOOK_REPOSITORY)
-    private readonly fundingWebhookRepository: FundingWebhookRepository,
-  ) {}
+  constructor(private readonly applyInboundFundingService: ApplyInboundFundingService) {}
 
   execute(payload: FundingWebhook): Promise<RecordedWebhookEvent> {
-    return this.fundingWebhookRepository.recordReceivedFundingWebhook(payload);
+    return this.applyInboundFundingService.execute(payload);
   }
 }

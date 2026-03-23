@@ -11,7 +11,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 
-import { type FundingWebhook } from '../domain/funding-webhook.repository';
+import { type FundingWebhook } from '../../funding/domain/funding.types';
 
 export class FundingWebhookDataDto {
   @IsInt()

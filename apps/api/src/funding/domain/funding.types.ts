@@ -20,9 +20,3 @@ export type RecordedWebhookEvent = {
   provider: string;
   receivedAt: Date | string | null;
 };
-
-export interface FundingWebhookRepository {
-  recordReceivedFundingWebhook(payload: FundingWebhook): Promise<RecordedWebhookEvent>;
-}
-
-export const FUNDING_WEBHOOK_REPOSITORY = Symbol('FUNDING_WEBHOOK_REPOSITORY');

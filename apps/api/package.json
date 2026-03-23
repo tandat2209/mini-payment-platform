@@ -7,7 +7,7 @@
     "start": "node dist/main.js",
     "lint": "eslint \"src/**/*.ts\"",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "node --test -r ts-node/register src/**/*.spec.ts"
+    "test": "node --test -r ts-node/register src/**/*.spec.ts test/**/*.spec.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.17",

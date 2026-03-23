@@ -1,5 +1,5 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
-import { Pool, type QueryResult, type QueryResultRow } from 'pg';
+import { Pool, type PoolClient, type QueryResult, type QueryResultRow } from 'pg';
 
 type DatabaseHealth =
   | {
@@ -17,8 +17,15 @@ type DatabaseHealth =
       status: 'error';
     };
 
+export interface DatabaseQueryable {
+  query<T extends QueryResultRow = QueryResultRow>(
+    sql: string,
+    parameters?: readonly unknown[],
+  ): Promise<QueryResult<T>>;
+}
+
 @Injectable()
-export class DatabaseService implements OnModuleDestroy {
+export class DatabaseService implements DatabaseQueryable, OnModuleDestroy {
   private readonly databaseUrl = process.env.DATABASE_URL;
   private readonly pool = this.databaseUrl
     ? new Pool({
@@ -65,7 +72,39 @@ export class DatabaseService implements OnModuleDestroy {
     return await this.pool.query<T>(sql, [...parameters]);
   }
 
+  async transaction<T>(callback: (database: DatabaseQueryable) => Promise<T>): Promise<T> {
+    if (!this.pool) {
+      throw new Error('DATABASE_URL is not configured');
+    }
+
+    const client = await this.pool.connect();
+
+    try {
+      await client.query('BEGIN');
+      const result = await callback(createTransactionalQueryable(client));
+      await client.query('COMMIT');
+
+      return result;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
   async onModuleDestroy(): Promise<void> {
     await this.pool?.end();
   }
+}
+
+function createTransactionalQueryable(client: PoolClient): DatabaseQueryable {
+  return {
+    query<T extends QueryResultRow = QueryResultRow>(
+      sql: string,
+      parameters: readonly unknown[] = [],
+    ): Promise<QueryResult<T>> {
+      return client.query<T>(sql, [...parameters]);
+    },
+  };
 }

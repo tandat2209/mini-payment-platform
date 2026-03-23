@@ -7,9 +7,9 @@
 ## 2. Inbound Funding Processing In The API
 
 - [x] 2.1 Add a provider webhook endpoint and request contract that records raw funding webhook deliveries in `webhook_events`.
-- [ ] 2.2 Implement the transactional funding processor that resolves the funding target, creates or updates the wallet balance row, and records webhook processing status.
-- [ ] 2.3 Implement customer-visible funding transaction creation and balanced ledger posting, including lazy provisioning of required wallet/platform ledger accounts for the funded currency.
-- [ ] 2.4 Add automated coverage for first-time funding, duplicate provider event replay, invalid funding targets, and funding into a currency without an existing balance row.
+- [x] 2.2 Implement the transactional funding processor that resolves the funding target, creates or updates the wallet balance row, and records webhook processing status.
+- [x] 2.3 Implement customer-visible funding transaction creation and balanced ledger posting, including lazy provisioning of required wallet/platform ledger accounts for the funded currency.
+- [x] 2.4 Add automated coverage for first-time funding, duplicate provider event replay, invalid funding targets, and funding into a currency without an existing balance row.
 
 ## 3. Simulator Trigger And Web Add Money Experience
 
