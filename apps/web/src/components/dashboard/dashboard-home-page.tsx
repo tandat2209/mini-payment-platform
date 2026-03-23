@@ -9,7 +9,7 @@ import type {
   WalletBalance,
 } from '../../api';
 import { cn } from '../../lib/utils';
-import type { ActiveSection, CurrencyFilter, TransactionFilter } from '../../store/dashboard-store';
+import type { CurrencyFilter, TransactionFilter } from '../../store/dashboard-store';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { EmptyState, LoadingBlock, SectionHeader, SummaryFigure } from './shared';
@@ -28,11 +28,11 @@ import {
 } from './utils';
 
 export function DashboardHomePage({
-  activeSection,
   availableCurrencies,
   filteredTransactions,
   metrics,
   onAddMoney,
+  onStartPayout,
   onCurrencyFilterChange,
   onTransactionDetailClose,
   onTransactionSelect,
@@ -47,11 +47,11 @@ export function DashboardHomePage({
   transactionsQuery,
   visibleBalances,
 }: {
-  activeSection: ActiveSection;
   availableCurrencies: string[];
   filteredTransactions: TransactionItem[];
   metrics: SummaryMetric[];
   onAddMoney: () => void;
+  onStartPayout: () => void;
   onCurrencyFilterChange: (currency: CurrencyFilter) => void;
   onTransactionDetailClose: () => void;
   onTransactionSelect: (transactionId: string) => void;
@@ -153,7 +153,7 @@ export function DashboardHomePage({
                 <Plus className="h-4 w-4" />
                 Add money
               </Button>
-              <Button className="rounded-xl px-4" variant="outline">
+              <Button className="rounded-xl px-4" onClick={onStartPayout} variant="outline">
                 <Send className="h-4 w-4" />
                 Payout
               </Button>
@@ -170,12 +170,7 @@ export function DashboardHomePage({
       </section>
 
       <section className="grid gap-5" id="section-transactions">
-        <Card
-          className={cn(
-            'rounded-[30px] border-white/70 bg-white/88 shadow-[0_10px_40px_rgba(15,23,42,0.04)]',
-            activeSection === 'Transactions' && 'ring-2 ring-emerald-200',
-          )}
-        >
+        <Card className="rounded-[30px] border-white/70 bg-white/88 shadow-[0_10px_40px_rgba(15,23,42,0.04)]">
           <CardContent className="space-y-4 p-4">
             <SectionHeader
               action={`${filteredTransactions.length} shown`}

@@ -1,54 +1,50 @@
 import { Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
 import type { JSX } from 'react';
 
-import { DashboardShell } from './components/dashboard/dashboard-shell';
-import type { AppPage } from './components/dashboard/utils';
-import { type ActiveSection, useDashboardStore } from './store/dashboard-store';
+import { AppShell } from './components/shell/app-shell';
+import {
+  adminNavigationItems,
+  customerNavigationItems,
+  getActiveNavigationId,
+  getWorkspaceFromPath,
+  workspaceItems,
+} from './components/shell/navigation-config';
 
 function App(): JSX.Element {
   const navigate = useNavigate();
-  const activeSection = useDashboardStore((state) => state.activeSection);
-  const setActiveSection = useDashboardStore((state) => state.setActiveSection);
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
 
-  const currentPage: AppPage = pathname === '/add-money' ? 'add-money' : 'dashboard';
+  const activeWorkspace = getWorkspaceFromPath(pathname);
+  const activeNavigationId = getActiveNavigationId(pathname);
+  const navigationItems =
+    activeWorkspace === 'admin' ? adminNavigationItems : customerNavigationItems;
 
-  function scrollToSection(section: ActiveSection): void {
-    const sectionId = `section-${section.toLowerCase()}`;
+  function handleWorkspaceSelect(workspace: 'customer' | 'admin'): void {
+    const target = workspaceItems.find((item) => item.id === workspace);
 
-    globalThis.requestAnimationFrame(() => {
-      globalThis.requestAnimationFrame(() => {
-        globalThis.document?.getElementById(sectionId)?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start',
-        });
-      });
-    });
-  }
-
-  function handleSectionSelect(section: ActiveSection): void {
-    setActiveSection(section);
-
-    if (currentPage !== 'dashboard') {
-      void navigate({ to: '/' }).then(() => {
-        scrollToSection(section);
-      });
+    if (!target) {
       return;
     }
 
-    scrollToSection(section);
+    void navigate({ to: target.defaultPath });
+  }
+
+  function handleNavigationSelect(path: string): void {
+    void navigate({ to: path });
   }
 
   return (
-    <DashboardShell
-      activeSection={activeSection}
-      currentPage={currentPage}
-      onSectionSelect={handleSectionSelect}
+    <AppShell
+      activeNavigationId={activeNavigationId}
+      activeWorkspace={activeWorkspace}
+      navigationItems={navigationItems}
+      onNavigationSelect={handleNavigationSelect}
+      onWorkspaceSelect={handleWorkspaceSelect}
     >
       <Outlet />
-    </DashboardShell>
+    </AppShell>
   );
 }
 

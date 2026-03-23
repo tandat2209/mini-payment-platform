@@ -24,10 +24,13 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ children, className, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
+    hideOverlay?: boolean;
+    overlayClassName?: string;
+  }
+>(({ children, className, hideOverlay = false, overlayClassName, ...props }, ref) => (
   <DialogPortal>
-    <DialogOverlay />
+    {hideOverlay ? null : <DialogOverlay className={overlayClassName} />}
     <DialogPrimitive.Content
       className={cn(
         'fixed left-1/2 top-1/2 z-50 grid w-[calc(100%-1.5rem)] max-w-2xl -translate-x-1/2 -translate-y-1/2 gap-4 rounded-[32px] border border-[#e7e1d8] bg-[#fffdf9] shadow-[0_24px_80px_rgba(15,23,42,0.18)] sm:w-full',

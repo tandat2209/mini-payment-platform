@@ -1,23 +1,8 @@
 import type { LucideIcon } from 'lucide-react';
-import {
-  CreditCard,
-  DollarSign,
-  Euro,
-  LayoutGrid,
-  PoundSterling,
-  Settings,
-  Wallet,
-} from 'lucide-react';
+import { DollarSign, Euro, PoundSterling, Wallet } from 'lucide-react';
 
 import type { FundingDetailValue, MoneyDto, TransactionItem, WalletBalance } from '../../api';
-import type { ActiveSection, TransactionFilter } from '../../store/dashboard-store';
-
-export type AppPage = 'dashboard' | 'add-money';
-
-export type NavigationItem = {
-  icon: LucideIcon;
-  label: ActiveSection;
-};
+import type { TransactionFilter } from '../../store/dashboard-store';
 
 export type SummaryMetric = {
   label: string;
@@ -45,12 +30,6 @@ const currencyFlags: Record<string, string> = {
   USD: 'US',
   VND: 'VN',
 };
-
-export const navigationItems: NavigationItem[] = [
-  { icon: LayoutGrid, label: 'Overview' },
-  { icon: CreditCard, label: 'Transactions' },
-  { icon: Settings, label: 'Settings' },
-];
 
 export const transactionFilters: Array<{ label: string; value: TransactionFilter }> = [
   { label: 'All', value: 'all' },

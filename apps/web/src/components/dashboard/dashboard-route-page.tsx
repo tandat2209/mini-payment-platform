@@ -23,7 +23,6 @@ const dashboardRenderTimestamp = Date.now();
 
 export function DashboardRoutePage(): JSX.Element {
   const navigate = useNavigate();
-  const activeSection = useDashboardStore((state) => state.activeSection);
   const currencyFilter = useDashboardStore((state) => state.currencyFilter);
   const transactionFilter = useDashboardStore((state) => state.transactionFilter);
   const transactionSearchQuery = useDashboardStore((state) => state.transactionSearchQuery);
@@ -118,12 +117,14 @@ export function DashboardRoutePage(): JSX.Element {
 
   return (
     <DashboardHomePage
-      activeSection={activeSection}
       availableCurrencies={availableCurrencies}
       filteredTransactions={filteredTransactions}
       metrics={metrics}
       onAddMoney={() => {
-        void navigate({ to: '/add-money' });
+        void navigate({ to: '/funding-details' });
+      }}
+      onStartPayout={() => {
+        void navigate({ to: '/payout' });
       }}
       onCurrencyFilterChange={handleCurrencyFilterChange}
       onTransactionDetailClose={() => {
