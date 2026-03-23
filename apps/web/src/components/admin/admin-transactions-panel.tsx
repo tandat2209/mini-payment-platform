@@ -1,19 +1,13 @@
-import {
-  type ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  useReactTable,
-} from '@tanstack/react-table';
+import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import type { JSX } from 'react';
 import { useMemo } from 'react';
 
+import type { AdminTransactionDetailItem, AdminTransactionItem } from '../../api';
 import { cn } from '../../lib/utils';
 import {
   formatDate,
   formatMoney,
-  formatSignedTransactionMoney,
   getToneFromStatus,
   shortenIdentifier,
   toTitleCase,
@@ -22,37 +16,60 @@ import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { Sheet, SheetContent } from '../ui/sheet';
-import type { AdminTransactionRecord } from './admin-data';
 
 export function AdminTransactionsPanel({
+  canNextPage,
+  canPreviousPage,
+  detailError,
+  detailLoading,
+  error,
+  isLoading,
   onClose,
+  onNextPage,
+  onOpenLedger,
+  onPreviousPage,
   onSearchChange,
   onSelect,
   onTypeFilterChange,
+  pageIndex,
   searchQuery,
-  selectedTransactionId,
   selectedTransaction,
+  selectedTransactionId,
   transactions,
   typeFilter,
 }: {
+  canNextPage: boolean;
+  canPreviousPage: boolean;
+  detailError: string | null;
+  detailLoading: boolean;
+  error: string | null;
+  isLoading: boolean;
   onClose: () => void;
+  onNextPage: () => void;
+  onOpenLedger: (ledgerTransactionId: string) => void;
+  onPreviousPage: () => void;
   onSearchChange: (query: string) => void;
   onSelect: (transactionId: string) => void;
   onTypeFilterChange: (filter: 'all' | 'funding' | 'payout') => void;
+  pageIndex: number;
   searchQuery: string;
-  selectedTransaction: AdminTransactionRecord | null;
+  selectedTransaction: AdminTransactionItem | AdminTransactionDetailItem | null;
   selectedTransactionId: string | null;
-  transactions: AdminTransactionRecord[];
+  transactions: AdminTransactionItem[];
   typeFilter: 'all' | 'funding' | 'payout';
 }): JSX.Element {
-  const columns = useMemo<Array<ColumnDef<AdminTransactionRecord>>>(
+  const columns = useMemo<Array<ColumnDef<AdminTransactionItem>>>(
     () => [
       {
-        accessorKey: 'customerExternalRef',
+        accessorKey: 'customer.externalRef',
         cell: ({ row }) => (
           <div className="min-w-0">
-            <p className="truncate font-medium text-slate-950">{row.original.customerName}</p>
-            <p className="truncate text-xs text-slate-500">{row.original.customerExternalRef}</p>
+            <p className="truncate font-medium text-slate-950">
+              {row.original.customer.externalRef}
+            </p>
+            <p className="truncate text-xs text-slate-500">
+              {shortenIdentifier(row.original.walletId)}
+            </p>
           </div>
         ),
         header: 'Customer',
@@ -85,26 +102,30 @@ export function AdminTransactionsPanel({
                 : 'text-sm font-semibold text-slate-950'
             }
           >
-            {formatSignedTransactionMoney(row.original)}
+            {formatMoney(row.original.amounts.net)}
           </p>
         ),
         header: 'Net',
       },
       {
         accessorKey: 'reference',
-        cell: ({ row }) => <div className="text-xs text-slate-500">{row.original.reference}</div>,
+        cell: ({ row }) => (
+          <div className="text-xs text-slate-500">{row.original.reference ?? 'No reference'}</div>
+        ),
         header: 'Reference',
       },
       {
         accessorKey: 'postedAt',
         cell: ({ row }) => (
           <div className="text-xs text-slate-500">
-            {formatDate(row.original.postedAt, {
-              day: '2-digit',
-              hour: '2-digit',
-              minute: '2-digit',
-              month: 'short',
-            })}
+            {row.original.postedAt
+              ? formatDate(row.original.postedAt, {
+                  day: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  month: 'short',
+                })
+              : 'Not posted'}
           </div>
         ),
         header: 'Posted',
@@ -125,13 +146,6 @@ export function AdminTransactionsPanel({
     columns,
     data: transactions,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    initialState: {
-      pagination: {
-        pageIndex: 0,
-        pageSize: 8,
-      },
-    },
   });
 
   return (
@@ -146,7 +160,9 @@ export function AdminTransactionsPanel({
               Platform transaction watch
             </h2>
           </div>
-          <div className="text-sm text-slate-500">{transactions.length} records visible</div>
+          <div className="text-sm text-slate-500">
+            {isLoading ? 'Loading transactions...' : `${transactions.length} records on this page`}
+          </div>
         </div>
 
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
@@ -155,7 +171,7 @@ export function AdminTransactionsPanel({
             <input
               className="w-full border-0 bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400"
               onChange={(event) => onSearchChange(event.target.value)}
-              placeholder="Search customer, reference, or description"
+              placeholder="Search customer, wallet, reference, or description"
               type="search"
               value={searchQuery}
             />
@@ -180,6 +196,12 @@ export function AdminTransactionsPanel({
           </div>
         </div>
 
+        {error ? (
+          <div className="rounded-[20px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {error}
+          </div>
+        ) : null}
+
         <div className="overflow-hidden rounded-[24px] border border-slate-200 bg-[#fcfaf6]">
           <div className="overflow-x-auto">
             <table className="min-w-full border-collapse">
@@ -200,35 +222,47 @@ export function AdminTransactionsPanel({
                 ))}
               </thead>
               <tbody className="divide-y divide-slate-200/80 bg-white">
-                {table.getRowModel().rows.map((row) => (
-                  <tr
-                    className={cn(
-                      'cursor-pointer transition hover:bg-slate-50',
-                      selectedTransactionId === row.original.id && 'bg-emerald-50/50',
-                    )}
-                    key={row.id}
-                    onClick={() => onSelect(row.original.id)}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <td className="px-3 py-3 align-top text-sm" key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </td>
-                    ))}
+                {isLoading ? (
+                  <tr>
+                    <td className="px-4 py-10 text-center text-sm text-slate-500" colSpan={7}>
+                      Loading platform transactions...
+                    </td>
                   </tr>
-                ))}
+                ) : transactions.length === 0 ? (
+                  <tr>
+                    <td className="px-4 py-10 text-center text-sm text-slate-500" colSpan={7}>
+                      No transactions matched this admin view.
+                    </td>
+                  </tr>
+                ) : (
+                  table.getRowModel().rows.map((row) => (
+                    <tr
+                      className={cn(
+                        'cursor-pointer transition hover:bg-slate-50',
+                        selectedTransactionId === row.original.id && 'bg-emerald-50/50',
+                      )}
+                      key={row.id}
+                      onClick={() => onSelect(row.original.id)}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <td className="px-3 py-3 align-top text-sm" key={cell.id}>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </td>
+                      ))}
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
 
           <div className="flex flex-col gap-3 border-t border-slate-200 bg-[#faf7f2] px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs text-slate-500">
-              Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount() || 1}
-            </p>
+            <p className="text-xs text-slate-500">Page {pageIndex}</p>
             <div className="flex items-center gap-2">
               <Button
                 className="h-8 rounded-full px-3"
-                disabled={!table.getCanPreviousPage()}
-                onClick={() => table.previousPage()}
+                disabled={!canPreviousPage}
+                onClick={onPreviousPage}
                 variant="outline"
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -236,8 +270,8 @@ export function AdminTransactionsPanel({
               </Button>
               <Button
                 className="h-8 rounded-full px-3"
-                disabled={!table.getCanNextPage()}
-                onClick={() => table.nextPage()}
+                disabled={!canNextPage}
+                onClick={onNextPage}
                 variant="outline"
               >
                 Next
@@ -254,13 +288,21 @@ export function AdminTransactionsPanel({
             onClose();
           }
         }}
-        open={selectedTransaction !== null}
+        open={selectedTransactionId !== null}
       >
         <SheetContent
           className="grid h-screen overflow-y-auto border-y-0 border-r-0 border-l border-slate-200 bg-[#fffdf9] p-0"
           hideOverlay
           side="right"
         >
+          {selectedTransactionId && detailLoading && !selectedTransaction ? (
+            <div className="p-5 text-sm text-slate-500">Loading transaction detail...</div>
+          ) : null}
+          {selectedTransactionId && detailError ? (
+            <div className="m-5 rounded-[20px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              {detailError}
+            </div>
+          ) : null}
           {selectedTransaction ? (
             <div className="space-y-5 p-5">
               <div>
@@ -268,10 +310,10 @@ export function AdminTransactionsPanel({
                   Selected transaction
                 </p>
                 <p className="mt-3 text-2xl font-semibold text-slate-950">
-                  {selectedTransaction.customerName}
+                  {selectedTransaction.customer.externalRef}
                 </p>
                 <p className="mt-1 text-sm text-slate-500">
-                  {selectedTransaction.customerExternalRef}
+                  Customer {shortenIdentifier(selectedTransaction.customer.id)}
                 </p>
               </div>
 
@@ -282,36 +324,109 @@ export function AdminTransactionsPanel({
               </div>
 
               <dl className="space-y-3 rounded-[24px] border border-slate-200 bg-[#f9f6f1] p-4">
-                <DetailRow label="Reference" value={selectedTransaction.reference} />
+                <DetailRow label="Reference" value={selectedTransaction.reference ?? 'Not set'} />
                 <DetailRow
                   label="Transaction ID"
                   value={shortenIdentifier(selectedTransaction.id)}
                 />
                 <DetailRow label="Type" value={toTitleCase(selectedTransaction.type)} />
                 <DetailRow label="Direction" value={toTitleCase(selectedTransaction.direction)} />
-                <DetailRow label="Customer" value={selectedTransaction.customerName} />
+                <DetailRow label="Wallet" value={shortenIdentifier(selectedTransaction.walletId)} />
+                <DetailRow
+                  label="Webhook"
+                  value={
+                    selectedTransaction.webhookEventId
+                      ? shortenIdentifier(selectedTransaction.webhookEventId)
+                      : 'Not linked'
+                  }
+                />
                 <DetailRow
                   label="Occurred"
-                  value={formatDate(selectedTransaction.occurredAt, {
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    month: 'short',
-                    year: 'numeric',
-                  })}
+                  value={
+                    selectedTransaction.occurredAt
+                      ? formatDate(selectedTransaction.occurredAt, {
+                          day: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                        })
+                      : 'Not recorded'
+                  }
                 />
                 <DetailRow
                   label="Posted"
-                  value={formatDate(selectedTransaction.postedAt, {
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    month: 'short',
-                    year: 'numeric',
-                  })}
+                  value={
+                    selectedTransaction.postedAt
+                      ? formatDate(selectedTransaction.postedAt, {
+                          day: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                        })
+                      : 'Not posted'
+                  }
                 />
-                <DetailRow label="Source" value={toTitleCase(selectedTransaction.source)} />
               </dl>
+
+              {'linkedLedgers' in selectedTransaction ? (
+                <div className="rounded-[24px] border border-slate-200 bg-white p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                        Linked ledger postings
+                      </p>
+                      <p className="mt-1 text-sm text-slate-500">
+                        Jump from the business event into its accounting proof.
+                      </p>
+                    </div>
+                    <Badge tone="default">{selectedTransaction.linkedLedgers.length}</Badge>
+                  </div>
+                  <div className="mt-4 space-y-3">
+                    {selectedTransaction.linkedLedgers.length === 0 ? (
+                      <div className="rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                        No linked ledger postings found for this transaction.
+                      </div>
+                    ) : (
+                      selectedTransaction.linkedLedgers.map((ledgerTransaction) => (
+                        <div
+                          className="flex items-center justify-between gap-4 rounded-[18px] border border-slate-200 bg-[#fcfaf6] px-4 py-3"
+                          key={ledgerTransaction.id}
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-slate-950">
+                              {ledgerTransaction.reference ??
+                                shortenIdentifier(ledgerTransaction.id)}
+                            </p>
+                            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                              <span>{toTitleCase(ledgerTransaction.transactionType)}</span>
+                              <span>•</span>
+                              <span>
+                                {ledgerTransaction.postedAt
+                                  ? formatDate(ledgerTransaction.postedAt, {
+                                      day: '2-digit',
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                      month: 'short',
+                                    })
+                                  : 'Not posted'}
+                              </span>
+                            </div>
+                          </div>
+                          <Button
+                            className="h-9 rounded-full px-3"
+                            onClick={() => onOpenLedger(ledgerTransaction.id)}
+                            variant="outline"
+                          >
+                            Open ledger
+                          </Button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              ) : null}
             </div>
           ) : null}
         </SheetContent>

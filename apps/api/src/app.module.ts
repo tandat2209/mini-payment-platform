@@ -6,6 +6,7 @@ import { DatabaseModule } from './database/database.module';
 import { FundingModule } from './funding/funding.module';
 import { FundingWebhooksModule } from './funding-webhooks/funding-webhooks.module';
 import { HealthModule } from './health/health.module';
+import { LedgerModule } from './ledger/ledger.module';
 import { RecipientsModule } from './recipients/recipients.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { WalletsModule } from './wallets/wallets.module';
@@ -17,6 +18,7 @@ import { WalletsModule } from './wallets/wallets.module';
     CustomerAccessModule,
     FundingModule,
     FundingWebhooksModule,
+    LedgerModule,
     WalletsModule,
     TransactionsModule,
     RecipientsModule,

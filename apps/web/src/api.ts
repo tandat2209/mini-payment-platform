@@ -157,6 +157,126 @@ type AdminSimulationResponse = {
   receiverResponse: Record<string, unknown>;
 };
 
+type AdminTransactionItem = {
+  amounts: {
+    fee: MoneyDto;
+    gross: MoneyDto;
+    net: MoneyDto;
+  };
+  currency: string;
+  customer: {
+    externalRef: string;
+    id: string;
+  };
+  description: string;
+  direction: string;
+  id: string;
+  occurredAt: string | null;
+  postedAt: string | null;
+  reference: string | null;
+  status: string;
+  type: string;
+  walletId: string;
+  webhookEventId: string | null;
+};
+
+type AdminTransactionDetailItem = AdminTransactionItem & {
+  linkedLedgers: Array<{
+    description: string | null;
+    id: string;
+    postedAt: string | null;
+    reference: string | null;
+    status: string;
+    transactionType: string;
+  }>;
+  payout: {
+    payoutId: string;
+    payoutReference: string | null;
+    recipientId: string | null;
+    recipientName: string | null;
+  } | null;
+};
+
+type AdminTransactionListResponse = {
+  items: AdminTransactionItem[];
+  page: {
+    limit: number;
+    nextCursor: string | null;
+  };
+};
+
+type AdminLedgerItem = {
+  credits: MoneyDto;
+  currency: string;
+  debits: MoneyDto;
+  description: string | null;
+  entryCount: number;
+  id: string;
+  integrity: {
+    delta: MoneyDto;
+    isBalanced: boolean;
+  };
+  postedAt: string | null;
+  reference: string | null;
+  status: string;
+  transactionType: string;
+  userTransactionId: string | null;
+  webhookEventId: string | null;
+};
+
+type AdminLedgerDetailItem = AdminLedgerItem & {
+  entries: Array<{
+    account: {
+      code: string;
+      id: string;
+      name: string;
+      ownerId: string | null;
+      ownerType: string | null;
+      type: string;
+    };
+    amount: MoneyDto;
+    description: string | null;
+    direction: string;
+    id: string;
+  }>;
+};
+
+type AdminLedgerListResponse = {
+  items: AdminLedgerItem[];
+  page: {
+    limit: number;
+    nextCursor: string | null;
+  };
+  summary: {
+    accountGroupSummaries: Array<{
+      accountCount: number;
+      accountGroup: string;
+      credits: MoneyDto;
+      currency: string;
+      debits: MoneyDto;
+      description: string;
+      net: MoneyDto;
+    }>;
+    currencySummaries: Array<{
+      credits: MoneyDto;
+      currency: string;
+      debits: MoneyDto;
+      delta: MoneyDto;
+    }>;
+    trialBalanceRows: Array<{
+      accountCode: string;
+      accountGroup: string;
+      accountName: string;
+      accountType: string;
+      credits: MoneyDto;
+      currency: string;
+      debits: MoneyDto;
+      net: MoneyDto;
+    }>;
+    unbalancedTransactions: number;
+  };
+};
+
 function getErrorMessage(caughtError: unknown): string {
   return caughtError instanceof Error ? caughtError.message : 'Unknown error';
 }
@@ -281,8 +401,88 @@ export async function triggerAdminFundingSimulation(
   );
 }
 
+export async function fetchAdminTransactions(input: {
+  cursor?: string | null;
+  limit: number;
+  query?: string;
+  type?: string | null;
+}): Promise<AdminTransactionListResponse> {
+  const params = new URLSearchParams({
+    limit: String(input.limit),
+  });
+
+  if (input.cursor) {
+    params.set('cursor', input.cursor);
+  }
+
+  if (input.query) {
+    params.set('query', input.query);
+  }
+
+  if (input.type) {
+    params.set('type', input.type);
+  }
+
+  return await getJson<AdminTransactionListResponse>(`/admin/transactions?${params.toString()}`, {
+    errorLabel: 'Admin transactions request',
+    includeCustomerContext: false,
+  });
+}
+
+export async function fetchAdminTransactionDetail(
+  transactionId: string,
+): Promise<AdminTransactionDetailItem> {
+  return await getJson<AdminTransactionDetailItem>(`/admin/transactions/${transactionId}`, {
+    errorLabel: 'Admin transaction detail request',
+    includeCustomerContext: false,
+  });
+}
+
+export async function fetchAdminLedgers(input: {
+  cursor?: string | null;
+  limit: number;
+  query?: string;
+  transactionType?: string | null;
+}): Promise<AdminLedgerListResponse> {
+  const params = new URLSearchParams({
+    limit: String(input.limit),
+  });
+
+  if (input.cursor) {
+    params.set('cursor', input.cursor);
+  }
+
+  if (input.query) {
+    params.set('query', input.query);
+  }
+
+  if (input.transactionType) {
+    params.set('transactionType', input.transactionType);
+  }
+
+  return await getJson<AdminLedgerListResponse>(`/admin/ledgers?${params.toString()}`, {
+    errorLabel: 'Admin ledgers request',
+    includeCustomerContext: false,
+  });
+}
+
+export async function fetchAdminLedgerDetail(
+  ledgerTransactionId: string,
+): Promise<AdminLedgerDetailItem> {
+  return await getJson<AdminLedgerDetailItem>(`/admin/ledgers/${ledgerTransactionId}`, {
+    errorLabel: 'Admin ledger detail request',
+    includeCustomerContext: false,
+  });
+}
+
 export type {
+  AdminLedgerDetailItem,
+  AdminLedgerItem,
+  AdminLedgerListResponse,
   AdminSimulationResponse,
+  AdminTransactionDetailItem,
+  AdminTransactionItem,
+  AdminTransactionListResponse,
   FundingDetailValue,
   HealthResponse,
   MoneyDto,

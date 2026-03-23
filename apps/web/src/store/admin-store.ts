@@ -1,44 +1,26 @@
 import { create } from 'zustand';
 
 import { type AdminSimulationResponse, triggerAdminFundingSimulation } from '../api';
-import type {
-  AdminLedgerTransactionRecord,
-  AdminSimulationFormState,
-  AdminSimulationResult,
-  AdminTransactionRecord,
-} from '../components/admin/admin-data';
 import {
-  initialAdminLedgerTransactions,
+  type AdminSimulationFormState,
+  type AdminSimulationResult,
   initialAdminSimulationFormState,
-  initialAdminTransactions,
 } from '../components/admin/admin-data';
+import { queryClient } from '../lib/query-client';
 
 type AdminStore = {
   formState: AdminSimulationFormState;
   isSubmitting: boolean;
-  ledgerTransactions: AdminLedgerTransactionRecord[];
   simulationError: string | null;
-  selectedLedgerTransactionId: string | null;
-  selectedTransactionId: string | null;
   setFormField: (field: keyof AdminSimulationFormState, value: string) => void;
-  setSelectedLedgerTransactionId: (transactionId: string | null) => void;
-  setSelectedTransactionId: (transactionId: string | null) => void;
-  setTransactionSearchQuery: (query: string) => void;
-  setTransactionTypeFilter: (filter: 'all' | 'funding' | 'payout') => void;
   simulateFunding: () => Promise<void>;
   simulationResult: AdminSimulationResult | null;
-  transactionSearchQuery: string;
-  transactions: AdminTransactionRecord[];
-  transactionTypeFilter: 'all' | 'funding' | 'payout';
 };
 
 export const useAdminStore = create<AdminStore>((set, get) => ({
   formState: initialAdminSimulationFormState,
   isSubmitting: false,
-  ledgerTransactions: initialAdminLedgerTransactions,
   simulationError: null,
-  selectedLedgerTransactionId: initialAdminLedgerTransactions[0]?.id ?? null,
-  selectedTransactionId: initialAdminTransactions[0]?.id ?? null,
   setFormField: (field, value) =>
     set((state) => ({
       formState: {
@@ -46,11 +28,6 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
         [field]: value,
       },
     })),
-  setSelectedLedgerTransactionId: (selectedLedgerTransactionId) =>
-    set({ selectedLedgerTransactionId }),
-  setSelectedTransactionId: (selectedTransactionId) => set({ selectedTransactionId }),
-  setTransactionSearchQuery: (transactionSearchQuery) => set({ transactionSearchQuery }),
-  setTransactionTypeFilter: (transactionTypeFilter) => set({ transactionTypeFilter }),
   simulateFunding: async () => {
     if (get().isSubmitting) {
       return;
@@ -138,6 +115,10 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
           status: 'delivered',
         },
       });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['admin-transactions'] }),
+        queryClient.invalidateQueries({ queryKey: ['admin-ledgers'] }),
+      ]);
     } catch (caughtError) {
       set({
         isSubmitting: false,
@@ -147,9 +128,6 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
     }
   },
   simulationResult: null,
-  transactionSearchQuery: '',
-  transactions: initialAdminTransactions,
-  transactionTypeFilter: 'all',
 }));
 
 function toOptionalTrimmedString(value: string): string | undefined {

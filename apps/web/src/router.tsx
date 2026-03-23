@@ -61,12 +61,19 @@ const adminTransactionsRoute = createRoute({
   component: AdminTransactionsRoutePage,
   getParentRoute: () => rootRoute,
   path: '/admin/transactions',
+  validateSearch: (search: Record<string, unknown>) => ({
+    transactionId: typeof search.transactionId === 'string' ? search.transactionId : undefined,
+  }),
 });
 
 const adminLedgersRoute = createRoute({
   component: AdminLedgersRoutePage,
   getParentRoute: () => rootRoute,
   path: '/admin/ledgers',
+  validateSearch: (search: Record<string, unknown>) => ({
+    ledgerTransactionId:
+      typeof search.ledgerTransactionId === 'string' ? search.ledgerTransactionId : undefined,
+  }),
 });
 
 const routeTree = rootRoute.addChildren([
@@ -84,6 +91,8 @@ const routeTree = rootRoute.addChildren([
 export const router = createRouter({
   routeTree,
 });
+
+export { adminLedgersRoute, adminTransactionsRoute };
 
 declare module '@tanstack/react-router' {
   interface Register {

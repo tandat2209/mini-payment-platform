@@ -1,61 +1,144 @@
+import { useNavigate, useSearch } from '@tanstack/react-router';
 import type { JSX } from 'react';
-import { useDeferredValue, useMemo } from 'react';
+import { startTransition, useDeferredValue, useMemo, useState } from 'react';
 
-import { useAdminStore } from '../../store/admin-store';
-import { includesSearchMatch } from '../dashboard/utils';
+import {
+  useAdminTransactionDetailQuery,
+  useAdminTransactionsQuery,
+} from '../../hooks/use-admin-queries';
 import { AdminTransactionsPanel } from './admin-transactions-panel';
 
+const PAGE_SIZE = 20;
+
 export function AdminTransactionsRoutePage(): JSX.Element {
-  const selectedTransactionId = useAdminStore((state) => state.selectedTransactionId);
-  const setSelectedTransactionId = useAdminStore((state) => state.setSelectedTransactionId);
-  const setTransactionSearchQuery = useAdminStore((state) => state.setTransactionSearchQuery);
-  const setTransactionTypeFilter = useAdminStore((state) => state.setTransactionTypeFilter);
-  const transactionSearchQuery = useAdminStore((state) => state.transactionSearchQuery);
-  const transactions = useAdminStore((state) => state.transactions);
-  const transactionTypeFilter = useAdminStore((state) => state.transactionTypeFilter);
-
-  const deferredTransactionSearchQuery = useDeferredValue(
-    transactionSearchQuery.trim().toLowerCase(),
+  const navigate = useNavigate();
+  const search = useSearch({ from: '/admin/transactions' });
+  const [cursorStack, setCursorStack] = useState<Array<string | null>>([null]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'funding' | 'payout'>('all');
+  const selectedTransactionId = search.transactionId ?? null;
+  const currentCursor = cursorStack.at(-1) ?? null;
+  const deferredSearchQuery = useDeferredValue(searchQuery.trim());
+  const transactionQueryInput = useMemo(
+    () => ({
+      cursor: currentCursor,
+      limit: PAGE_SIZE,
+      ...(deferredSearchQuery.length > 0 ? { query: deferredSearchQuery } : {}),
+      ...(typeFilter !== 'all' ? { type: typeFilter } : {}),
+    }),
+    [currentCursor, deferredSearchQuery, typeFilter],
   );
-  const filteredTransactions = useMemo(
-    () =>
-      transactions.filter((transaction) => {
-        const matchesType =
-          transactionTypeFilter === 'all' ? true : transaction.type === transactionTypeFilter;
-        const matchesSearch = includesSearchMatch(
-          [
-            transaction.customerExternalRef,
-            transaction.customerName,
-            transaction.description,
-            transaction.reference,
-            transaction.type,
-          ],
-          deferredTransactionSearchQuery,
-        );
+  const transactionsQuery = useAdminTransactionsQuery(transactionQueryInput);
+  const transactionDetailQuery = useAdminTransactionDetailQuery(selectedTransactionId);
+  const selectedTransaction = useMemo(() => {
+    const selectedListItem =
+      transactionsQuery.data?.items.find(
+        (transaction) => transaction.id === selectedTransactionId,
+      ) ?? null;
 
-        return matchesType && matchesSearch;
-      }),
-    [deferredTransactionSearchQuery, transactionTypeFilter, transactions],
-  );
-
-  const selectedTransaction =
-    filteredTransactions.find((transaction) => transaction.id === selectedTransactionId) ?? null;
+    return transactionDetailQuery.data ?? selectedListItem;
+  }, [selectedTransactionId, transactionDetailQuery.data, transactionsQuery.data?.items]);
 
   return (
     <AdminTransactionsPanel
+      canNextPage={(transactionsQuery.data?.page.nextCursor ?? null) !== null}
+      canPreviousPage={cursorStack.length > 1}
+      detailError={transactionDetailQuery.error?.message ?? null}
+      detailLoading={transactionDetailQuery.isLoading}
+      error={transactionsQuery.error?.message ?? null}
+      isLoading={transactionsQuery.isLoading}
       onClose={() => {
-        setSelectedTransactionId(null);
+        void navigate({
+          search: (previous) => ({
+            ...previous,
+            transactionId: undefined,
+          }),
+          to: '/admin/transactions',
+        });
       }}
-      onSearchChange={setTransactionSearchQuery}
+      onNextPage={() => {
+        const nextCursor = transactionsQuery.data?.page.nextCursor ?? null;
+
+        if (!nextCursor) {
+          return;
+        }
+
+        startTransition(() => {
+          setCursorStack((previous) => [...previous, nextCursor]);
+          void navigate({
+            search: (previous) => ({
+              ...previous,
+              transactionId: undefined,
+            }),
+            to: '/admin/transactions',
+          });
+        });
+      }}
+      onPreviousPage={() => {
+        if (cursorStack.length <= 1) {
+          return;
+        }
+
+        startTransition(() => {
+          setCursorStack((previous) => previous.slice(0, -1));
+          void navigate({
+            search: (previous) => ({
+              ...previous,
+              transactionId: undefined,
+            }),
+            to: '/admin/transactions',
+          });
+        });
+      }}
+      onSearchChange={(query) => {
+        startTransition(() => {
+          setSearchQuery(query);
+          setCursorStack([null]);
+          void navigate({
+            search: (previous) => ({
+              ...previous,
+              transactionId: undefined,
+            }),
+            to: '/admin/transactions',
+          });
+        });
+      }}
+      onOpenLedger={(ledgerTransactionId) => {
+        void navigate({
+          search: {
+            ledgerTransactionId,
+          },
+          to: '/admin/ledgers',
+        });
+      }}
       onSelect={(transactionId) => {
-        setSelectedTransactionId(selectedTransactionId === transactionId ? null : transactionId);
+        void navigate({
+          search: (previous) => ({
+            ...previous,
+            transactionId: previous.transactionId === transactionId ? undefined : transactionId,
+          }),
+          to: '/admin/transactions',
+        });
       }}
-      onTypeFilterChange={setTransactionTypeFilter}
-      searchQuery={transactionSearchQuery}
+      onTypeFilterChange={(filter) => {
+        startTransition(() => {
+          setTypeFilter(filter);
+          setCursorStack([null]);
+          void navigate({
+            search: (previous) => ({
+              ...previous,
+              transactionId: undefined,
+            }),
+            to: '/admin/transactions',
+          });
+        });
+      }}
+      pageIndex={cursorStack.length}
+      searchQuery={searchQuery}
       selectedTransaction={selectedTransaction}
       selectedTransactionId={selectedTransactionId}
-      transactions={filteredTransactions}
-      typeFilter={transactionTypeFilter}
+      transactions={transactionsQuery.data?.items ?? []}
+      typeFilter={typeFilter}
     />
   );
 }
