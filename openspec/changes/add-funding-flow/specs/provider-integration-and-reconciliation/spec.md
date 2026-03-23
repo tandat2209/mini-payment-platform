@@ -1,12 +1,12 @@
 ## ADDED Requirements
 
-### Requirement: Demo provider funding webhooks can be ingested
+### Requirement: Provider funding webhooks can be ingested
 
-The system SHALL accept demo provider `funding.completed` webhook deliveries, persist the raw payload in `webhook_events`, and transition the webhook processing status to a terminal outcome after evaluation.
+The system SHALL accept provider `funding.completed` webhook deliveries, persist the raw payload in `webhook_events`, and transition the webhook processing status to a terminal outcome after evaluation.
 
 #### Scenario: Funding webhook is accepted for processing
 
-- **WHEN** the demo provider sends a valid `funding.completed` webhook for an active funding target
+- **WHEN** a provider sends a valid `funding.completed` webhook for an active funding target
 - **THEN** the system stores the webhook payload and marks the webhook record as processed after successful financial application
 
 ### Requirement: Funding webhook processing is idempotent per provider event

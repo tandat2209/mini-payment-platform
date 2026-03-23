@@ -1,13 +1,13 @@
 ## ADDED Requirements
 
-### Requirement: Simulator can trigger demo funding webhook deliveries
+### Requirement: Simulator can trigger provider funding webhook deliveries
 
-The simulator SHALL expose an API that accepts explicit funding inputs and delivers a demo `funding.completed` webhook payload to the configured application webhook endpoint. The trigger request SHALL support targeting a specific funding detail and customer context.
+The simulator SHALL expose an API that accepts explicit funding inputs and delivers a provider `funding.completed` webhook payload to the configured application webhook endpoint. The trigger request SHALL support targeting a specific funding detail and customer context.
 
 #### Scenario: Simulator triggers funding delivery successfully
 
 - **WHEN** a caller submits a valid simulator funding request with amount, currency, customer identity, and funding detail identity
-- **THEN** the simulator sends a demo funding webhook to the configured application endpoint and returns the delivery result with the provider event identifier
+- **THEN** the simulator sends a provider funding webhook to the configured application endpoint and returns the delivery result with the provider event identifier
 
 ### Requirement: Simulator can replay a provider event identifier intentionally
 

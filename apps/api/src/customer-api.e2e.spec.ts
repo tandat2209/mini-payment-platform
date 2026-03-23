@@ -11,6 +11,8 @@ import { DatabaseService } from './database/database.service';
 type QueryResponseRow = Record<string, unknown>;
 
 class ApiFakeDatabaseService {
+  private readonly webhookEvents = new Map<string, QueryResponseRow>();
+
   async getHealth() {
     return {
       configured: true as const,
@@ -75,6 +77,36 @@ class ApiFakeDatabaseService {
       }
 
       return withRows([]);
+    }
+
+    if (sql.includes('INSERT INTO webhook_events')) {
+      const [id, provider, externalEventId, eventType, payload, receivedAt] = parameters;
+      const lookupKey = `${String(provider)}:${String(externalEventId)}`;
+
+      if (this.webhookEvents.has(lookupKey)) {
+        return withRows([]);
+      }
+
+      const row = {
+        event_type: String(eventType),
+        external_event_id: String(externalEventId),
+        id: String(id),
+        payload,
+        processing_status: 'received',
+        provider: String(provider),
+        received_at: String(receivedAt),
+      };
+
+      this.webhookEvents.set(lookupKey, row);
+
+      return withRows([row]);
+    }
+
+    if (sql.includes('FROM webhook_events') && sql.includes('external_event_id = $2')) {
+      const [provider, externalEventId] = parameters;
+      const row = this.webhookEvents.get(`${String(provider)}:${String(externalEventId)}`);
+
+      return withRows(row ? [row] : []);
     }
 
     if (sql.includes('FROM wallets w') && sql.includes('wallet_funding_details')) {
@@ -307,6 +339,24 @@ async function fetchJson(app: INestApplication, path: string, customerExternalRe
   };
 }
 
+async function postJson(app: INestApplication, path: string, body: Record<string, unknown>) {
+  await app.listen(0);
+  const server = app.getHttpServer() as { address: () => { port: number } };
+  const { port } = server.address();
+  const response = await fetch(`http://127.0.0.1:${port}${path}`, {
+    body: JSON.stringify(body),
+    headers: {
+      'content-type': 'application/json',
+    },
+    method: 'POST',
+  });
+
+  return {
+    body: (await response.json()) as Record<string, unknown>,
+    status: response.status,
+  };
+}
+
 test('balance API remains customer scoped', async () => {
   const app = await createTestApp();
 
@@ -402,6 +452,38 @@ test('funding details API returns not found when the customer has no active wall
     const response = await fetchJson(app, '/customers/me/funding-details', 'user_demo_charlie');
 
     assert.equal(response.status, 404);
+  } finally {
+    await app.close();
+  }
+});
+
+test('funding webhook API records a received webhook event', async () => {
+  const app = await createTestApp();
+
+  try {
+    const response = await postJson(app, '/webhooks/funding', {
+      data: {
+        amountMinor: 2500,
+        currency: 'USD',
+        customerExternalRef: 'user_demo_alice',
+        fundingDetailId: 'funding-detail-usd',
+      },
+      eventType: 'funding.completed',
+      externalEventId: 'evt_funding_123',
+      occurredAt: '2026-03-23T06:00:00.000Z',
+      provider: 'simulator_psp',
+    });
+
+    assert.equal(response.status, 202);
+    assert.equal(
+      (response.body.event as { externalEventId: string }).externalEventId,
+      'evt_funding_123',
+    );
+    assert.equal(
+      (response.body.event as { processingStatus: string }).processingStatus,
+      'received',
+    );
+    assert.equal((response.body.event as { provider: string }).provider, 'simulator_psp');
   } finally {
     await app.close();
   }
