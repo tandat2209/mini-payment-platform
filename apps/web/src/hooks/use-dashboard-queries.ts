@@ -2,6 +2,7 @@ import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 
 import {
   fetchBalances,
+  fetchFundingDetails,
   fetchRecipients,
   fetchStatementOverview,
   fetchTransactions,
@@ -9,12 +10,23 @@ import {
   type StatementOverviewData,
   type TransactionListResponse,
   type WalletBalancesResponse,
+  type WalletFundingDetailsResponse,
 } from '../api';
 
 export function useBalancesQuery(): UseQueryResult<WalletBalancesResponse, Error> {
   return useQuery({
     queryFn: fetchBalances,
     queryKey: ['balances'],
+  });
+}
+
+export function useFundingDetailsQuery(
+  enabled: boolean,
+): UseQueryResult<WalletFundingDetailsResponse, Error> {
+  return useQuery({
+    enabled,
+    queryFn: fetchFundingDetails,
+    queryKey: ['funding-details'],
   });
 }
 

@@ -38,6 +38,10 @@ class ApiFakeDatabaseService {
         return withRows([{ external_ref: 'user_demo_bob', id: 'bob-id' }]);
       }
 
+      if (identifier === 'user_demo_charlie') {
+        return withRows([{ external_ref: 'user_demo_charlie', id: 'charlie-id' }]);
+      }
+
       return withRows([]);
     }
 
@@ -64,6 +68,54 @@ class ApiFakeDatabaseService {
             currency: 'USD',
             pending_amount_minor: '0',
             updated_at: '2026-03-22T00:10:00.000Z',
+            wallet_id: 'wallet-bob',
+            wallet_status: 'active',
+          },
+        ]);
+      }
+
+      return withRows([]);
+    }
+
+    if (sql.includes('FROM wallets w') && sql.includes('wallet_funding_details')) {
+      const customerId = parameters[0];
+
+      if (customerId === 'alice-id') {
+        return withRows([
+          {
+            funding_detail_currency: 'USD',
+            funding_detail_details: {
+              accountNumber: '1234567890',
+              routingNumber: '021000021',
+            },
+            funding_detail_id: 'funding-detail-usd',
+            funding_detail_rail: 'bank_transfer',
+            funding_detail_updated_at: '2026-03-22T01:00:00.000Z',
+            wallet_id: 'wallet-alice',
+            wallet_status: 'active',
+          },
+          {
+            funding_detail_currency: 'EUR',
+            funding_detail_details: {
+              iban: 'DE89370400440532013000',
+            },
+            funding_detail_id: 'funding-detail-eur',
+            funding_detail_rail: 'virtual_iban',
+            funding_detail_updated_at: '2026-03-22T01:05:00.000Z',
+            wallet_id: 'wallet-alice',
+            wallet_status: 'active',
+          },
+        ]);
+      }
+
+      if (customerId === 'bob-id') {
+        return withRows([
+          {
+            funding_detail_currency: null,
+            funding_detail_details: null,
+            funding_detail_id: null,
+            funding_detail_rail: null,
+            funding_detail_updated_at: null,
             wallet_id: 'wallet-bob',
             wallet_status: 'active',
           },
@@ -305,6 +357,49 @@ test('recipient detail returns not found for another customer', async () => {
       '/customers/me/recipients/recipient-alice',
       'user_demo_bob',
     );
+
+    assert.equal(response.status, 404);
+  } finally {
+    await app.close();
+  }
+});
+
+test('funding details API returns active funding details for the current customer', async () => {
+  const app = await createTestApp();
+
+  try {
+    const response = await fetchJson(app, '/customers/me/funding-details', 'user_demo_alice');
+
+    assert.equal(response.status, 200);
+    assert.equal((response.body.wallet as { id: string }).id, 'wallet-alice');
+    assert.deepEqual(
+      (response.body.fundingDetails as Array<{ id: string }>).map((detail) => detail.id),
+      ['funding-detail-usd', 'funding-detail-eur'],
+    );
+  } finally {
+    await app.close();
+  }
+});
+
+test('funding details API returns an empty collection when the active wallet has no active details', async () => {
+  const app = await createTestApp();
+
+  try {
+    const response = await fetchJson(app, '/customers/me/funding-details', 'user_demo_bob');
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(response.body.fundingDetails, []);
+    assert.equal((response.body.wallet as { id: string }).id, 'wallet-bob');
+  } finally {
+    await app.close();
+  }
+});
+
+test('funding details API returns not found when the customer has no active wallet', async () => {
+  const app = await createTestApp();
+
+  try {
+    const response = await fetchJson(app, '/customers/me/funding-details', 'user_demo_charlie');
 
     assert.equal(response.status, 404);
   } finally {

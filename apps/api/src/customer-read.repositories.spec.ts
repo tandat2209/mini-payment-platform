@@ -7,6 +7,7 @@ import { decodeTransactionCursor } from './shared/api/cursor';
 import { SqlStatementQueryRepository } from './transactions/infrastructure/sql-statement-query.repository';
 import { SqlTransactionQueryRepository } from './transactions/infrastructure/sql-transaction-query.repository';
 import { SqlWalletBalanceQueryRepository } from './wallets/infrastructure/sql-wallet-balance-query.repository';
+import { SqlWalletFundingDetailsQueryRepository } from './wallets/infrastructure/sql-wallet-funding-details-query.repository';
 
 class FakeDatabaseService {
   readonly calls: Array<{ parameters: readonly unknown[]; sql: string }> = [];
@@ -54,6 +55,68 @@ test('balance repository returns the active wallet balance summary for the custo
         currency: 'USD',
         pendingAmountMinor: '0',
         updatedAt: '2026-03-22T01:20:00.000Z',
+      },
+    ],
+    walletId: 'wallet-alice',
+    walletStatus: 'active',
+  });
+  assert.equal(databaseService.calls[0]?.parameters[0], 'customer-alice');
+});
+
+test('funding details repository returns the active wallet funding details for the customer', async () => {
+  const databaseService = new FakeDatabaseService([
+    [
+      {
+        funding_detail_currency: 'USD',
+        funding_detail_details: {
+          accountNumber: '1234567890',
+          routingNumber: '021000021',
+        },
+        funding_detail_id: 'funding-detail-1',
+        funding_detail_rail: 'bank_transfer',
+        funding_detail_updated_at: '2026-03-22T01:00:00.000Z',
+        wallet_id: 'wallet-alice',
+        wallet_status: 'active',
+      },
+      {
+        funding_detail_currency: 'EUR',
+        funding_detail_details: {
+          iban: 'DE89370400440532013000',
+        },
+        funding_detail_id: 'funding-detail-2',
+        funding_detail_rail: 'virtual_iban',
+        funding_detail_updated_at: '2026-03-22T01:05:00.000Z',
+        wallet_id: 'wallet-alice',
+        wallet_status: 'active',
+      },
+    ],
+  ]);
+  const repository = new SqlWalletFundingDetailsQueryRepository(
+    databaseService as unknown as DatabaseService,
+  );
+
+  const result = await repository.getActiveWalletFundingDetails('customer-alice');
+
+  assert.deepEqual(result, {
+    fundingDetails: [
+      {
+        currency: 'USD',
+        details: {
+          accountNumber: '1234567890',
+          routingNumber: '021000021',
+        },
+        id: 'funding-detail-1',
+        rail: 'bank_transfer',
+        updatedAt: '2026-03-22T01:00:00.000Z',
+      },
+      {
+        currency: 'EUR',
+        details: {
+          iban: 'DE89370400440532013000',
+        },
+        id: 'funding-detail-2',
+        rail: 'virtual_iban',
+        updatedAt: '2026-03-22T01:05:00.000Z',
       },
     ],
     walletId: 'wallet-alice',

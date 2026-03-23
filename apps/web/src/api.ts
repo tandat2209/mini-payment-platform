@@ -18,8 +18,26 @@ type WalletBalance = {
   updatedAt: string | null;
 };
 
+type FundingDetailValue = boolean | number | string | null;
+
+type WalletFundingDetail = {
+  currency: string;
+  details: Record<string, FundingDetailValue>;
+  id: string;
+  rail: string;
+  updatedAt: string | null;
+};
+
 type WalletBalancesResponse = {
   balances: WalletBalance[];
+  wallet: {
+    id: string;
+    status: string;
+  };
+};
+
+type WalletFundingDetailsResponse = {
+  fundingDetails: WalletFundingDetail[];
   wallet: {
     id: string;
     status: string;
@@ -131,6 +149,12 @@ export async function fetchBalances(): Promise<WalletBalancesResponse> {
   });
 }
 
+export async function fetchFundingDetails(): Promise<WalletFundingDetailsResponse> {
+  return await getJson<WalletFundingDetailsResponse>('/customers/me/funding-details', {
+    errorLabel: 'Funding details request',
+  });
+}
+
 export async function fetchTransactions(limit: number): Promise<TransactionListResponse> {
   const params = new URLSearchParams({
     limit: String(limit),
@@ -198,6 +222,7 @@ export async function fetchStatementOverview(): Promise<StatementOverviewData> {
 }
 
 export type {
+  FundingDetailValue,
   HealthResponse,
   MoneyDto,
   RecipientListResponse,
@@ -209,6 +234,8 @@ export type {
   TransactionListResponse,
   WalletBalance,
   WalletBalancesResponse,
+  WalletFundingDetail,
+  WalletFundingDetailsResponse,
 };
 
 export { getApiBaseUrl, getCustomerExternalRef } from './lib/runtime-env';
