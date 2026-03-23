@@ -2,6 +2,7 @@ import { ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 import type { JSX } from 'react';
 
 import type { TransactionItem } from '../../api';
+import { cn } from '../../lib/utils';
 import { Badge } from '../ui/badge';
 import {
   formatDate,
@@ -11,9 +12,26 @@ import {
   toTitleCase,
 } from './utils';
 
-export function TransactionRow({ transaction }: { transaction: TransactionItem }): JSX.Element {
+export function TransactionRow({
+  isSelected,
+  onSelect,
+  transaction,
+}: {
+  isSelected: boolean;
+  onSelect: (transactionId: string) => void;
+  transaction: TransactionItem;
+}): JSX.Element {
   return (
-    <div className="grid gap-3 rounded-[22px] border border-slate-200 bg-white px-4 py-3 md:grid-cols-[minmax(0,1.6fr)_120px_160px_120px_120px] md:items-center">
+    <button
+      className={cn(
+        'grid w-full gap-3 rounded-[22px] border bg-white px-4 py-3 text-left transition hover:border-slate-300 hover:shadow-[0_10px_30px_rgba(15,23,42,0.04)] md:grid-cols-[minmax(0,1.6fr)_120px_160px_120px_120px] md:items-center',
+        isSelected
+          ? 'border-emerald-300 bg-emerald-50/40 shadow-[0_12px_30px_rgba(16,185,129,0.08)]'
+          : 'border-slate-200',
+      )}
+      onClick={() => onSelect(transaction.id)}
+      type="button"
+    >
       <div className="min-w-0 md:pr-3">
         <div className="flex items-center gap-3">
           <div
@@ -76,6 +94,6 @@ export function TransactionRow({ transaction }: { transaction: TransactionItem }
           {toTitleCase(transaction.status)}
         </Badge>
       </div>
-    </div>
+    </button>
   );
 }

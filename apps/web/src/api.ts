@@ -61,6 +61,15 @@ type TransactionItem = {
   type: string;
 };
 
+type TransactionDetailItem = TransactionItem & {
+  payout: {
+    payoutId: string;
+    payoutReference: string | null;
+    recipientId: string | null;
+    recipientName: string | null;
+  } | null;
+};
+
 type TransactionListResponse = {
   items: TransactionItem[];
   page: {
@@ -165,6 +174,14 @@ export async function fetchTransactions(limit: number): Promise<TransactionListR
   });
 }
 
+export async function fetchTransactionDetail(
+  transactionId: string,
+): Promise<TransactionDetailItem> {
+  return await getJson<TransactionDetailItem>(`/customers/me/transactions/${transactionId}`, {
+    errorLabel: 'Transaction detail request',
+  });
+}
+
 export async function fetchRecipients(): Promise<RecipientListResponse> {
   return await getJson<RecipientListResponse>('/customers/me/recipients', {
     errorLabel: 'Recipient request',
@@ -230,6 +247,7 @@ export type {
   StatementDetailResponse,
   StatementOverviewData,
   StatementPeriod,
+  TransactionDetailItem,
   TransactionItem,
   TransactionListResponse,
   WalletBalance,

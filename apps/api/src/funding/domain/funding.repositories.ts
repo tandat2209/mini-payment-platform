@@ -51,6 +51,7 @@ export interface FundingTransactionWriter {
     input: {
       amountMinor: number;
       currency: string;
+      description: string;
       occurredAt: string;
       postedAt: string;
       reference: string;

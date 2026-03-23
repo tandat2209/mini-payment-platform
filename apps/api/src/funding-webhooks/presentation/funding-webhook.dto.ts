@@ -2,16 +2,46 @@ import { Transform, Type } from 'class-transformer';
 import {
   Equals,
   IsDefined,
+  IsIn,
   IsInt,
   IsISO8601,
   IsNotEmpty,
+  IsOptional,
   IsString,
   Matches,
   Min,
   ValidateNested,
 } from 'class-validator';
 
-import { type FundingWebhook } from '../../funding/domain/funding.types';
+import {
+  type FundingDestinationType,
+  type FundingWebhook,
+} from '../../funding/domain/funding.types';
+
+export class FundingWebhookSenderDto {
+  @Transform(({ value }) => normalizeTrimmedString(value))
+  @IsString()
+  @IsNotEmpty()
+  name!: string;
+
+  @Transform(({ value }) => normalizeTrimmedString(value))
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  accountIdentifier?: string;
+
+  @Transform(({ value }) => normalizeTrimmedString(value))
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  bankName?: string;
+
+  @Transform(({ value }) => normalizeTrimmedString(value))
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  bankCode?: string;
+}
 
 export class FundingWebhookDataDto {
   @IsInt()
@@ -27,12 +57,30 @@ export class FundingWebhookDataDto {
   @Transform(({ value }) => normalizeTrimmedString(value))
   @IsString()
   @IsNotEmpty()
-  customerExternalRef!: string;
+  destinationIdentifier!: string;
+
+  @Transform(({ value }) => normalizeTrimmedString(value))
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  description?: string;
 
   @Transform(({ value }) => normalizeTrimmedString(value))
   @IsString()
   @IsNotEmpty()
-  fundingDetailId!: string;
+  @IsIn(['account_number', 'iban', 'virtual_account'])
+  destinationType!: FundingDestinationType;
+
+  @Transform(({ value }) => normalizeTrimmedString(value))
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  providerReference?: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => FundingWebhookSenderDto)
+  sender?: FundingWebhookSenderDto;
 }
 
 export class FundingWebhookRequestDto {
@@ -63,12 +111,7 @@ export class FundingWebhookRequestDto {
 
   toDomain(): FundingWebhook {
     return {
-      data: {
-        amountMinor: this.data.amountMinor,
-        currency: this.data.currency,
-        customerExternalRef: this.data.customerExternalRef,
-        fundingDetailId: this.data.fundingDetailId,
-      },
+      data: toFundingWebhookData(this.data),
       eventType: this.eventType,
       externalEventId: this.externalEventId,
       occurredAt: this.occurredAt,
@@ -83,4 +126,41 @@ function normalizeTrimmedString(value: unknown): unknown {
 
 function normalizeTrimmedUppercaseString(value: unknown): unknown {
   return typeof value === 'string' ? value.trim().toUpperCase() : value;
+}
+
+function toFundingWebhookData(data: FundingWebhookDataDto): FundingWebhook['data'] {
+  const result: FundingWebhook['data'] = {
+    amountMinor: data.amountMinor,
+    currency: data.currency,
+    destinationIdentifier: data.destinationIdentifier,
+    destinationType: data.destinationType,
+  };
+
+  if (data.description !== undefined) {
+    result.description = data.description;
+  }
+
+  if (data.providerReference !== undefined) {
+    result.providerReference = data.providerReference;
+  }
+
+  if (data.sender !== undefined) {
+    result.sender = {
+      name: data.sender.name,
+    };
+
+    if (data.sender.accountIdentifier !== undefined) {
+      result.sender.accountIdentifier = data.sender.accountIdentifier;
+    }
+
+    if (data.sender.bankCode !== undefined) {
+      result.sender.bankCode = data.sender.bankCode;
+    }
+
+    if (data.sender.bankName !== undefined) {
+      result.sender.bankName = data.sender.bankName;
+    }
+  }
+
+  return result;
 }

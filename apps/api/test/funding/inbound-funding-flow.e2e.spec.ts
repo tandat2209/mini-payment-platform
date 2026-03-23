@@ -32,8 +32,10 @@ type FundingWallet = {
 
 type FundingDetail = {
   currency: string | null;
+  details: Record<string, unknown>;
   id: string;
   is_active: boolean;
+  rail: string;
   wallet_id: string;
 };
 
@@ -117,14 +119,23 @@ class FundingWebhookFakeDatabaseService {
       fundingDetails: [
         {
           currency: 'USD',
+          details: {
+            accountNumber: '1234567890',
+            routingNumber: '021000021',
+          },
           id: 'funding-detail-usd',
           is_active: true,
+          rail: 'bank_transfer',
           wallet_id: 'wallet-alice',
         },
         {
           currency: 'EUR',
+          details: {
+            iban: 'DE89370400440532013000',
+          },
           id: 'funding-detail-eur',
           is_active: true,
+          rail: 'virtual_iban',
           wallet_id: 'wallet-alice',
         },
       ],
@@ -252,32 +263,44 @@ class FundingWebhookFakeDatabaseService {
       return withRows([]);
     }
 
-    if (sql.includes('JOIN wallet_funding_details wfd') && sql.includes('wfd.currency = $3')) {
-      const [customerExternalRef, fundingDetailId, currency] = parameters;
-      const user = this.state.users.find(
-        (item) => item.external_ref === String(customerExternalRef),
-      );
-
-      if (!user) {
-        return withRows([]);
-      }
-
+    if (sql.includes('JOIN wallet_funding_details wfd') && sql.includes('wfd.currency = $2')) {
+      const [destinationIdentifier, currency] = parameters;
       const activeWallet = this.state.wallets.find(
-        (wallet) => wallet.user_id === user.id && wallet.status === 'active',
+        (wallet) => wallet.id === 'wallet-alice' && wallet.status === 'active',
       );
-      const detail = this.state.fundingDetails.find(
-        (item) =>
-          item.id === String(fundingDetailId) &&
-          item.wallet_id === activeWallet?.id &&
-          item.is_active &&
-          item.currency === String(currency),
-      );
+      const detail = this.state.fundingDetails.find((item) => {
+        if (
+          item.wallet_id !== activeWallet?.id ||
+          !item.is_active ||
+          item.currency !== String(currency)
+        ) {
+          return false;
+        }
+
+        if (sql.includes("wfd.details->>'accountNumber' = $1")) {
+          return item.details.accountNumber === String(destinationIdentifier);
+        }
+
+        if (sql.includes("UPPER(wfd.details->>'iban') = UPPER($1)")) {
+          return String(item.details.iban ?? '').toUpperCase() === String(destinationIdentifier);
+        }
+
+        if (sql.includes('virtual_account')) {
+          return (
+            (item.rail === 'virtual_account' || item.rail === 'virtual_iban') &&
+            String(item.details.virtualAccountNumber ?? item.details.accountNumber ?? '') ===
+              String(destinationIdentifier)
+          );
+        }
+
+        return false;
+      });
 
       if (!activeWallet || !detail) {
         return withRows([]);
       }
 
-      return withRows([{ user_id: user.id, wallet_id: activeWallet.id }]);
+      return withRows([{ user_id: 'alice-id', wallet_id: activeWallet.id }]);
     }
 
     if (sql.includes('INSERT INTO wallet_balances')) {
@@ -379,6 +402,7 @@ class FundingWebhookFakeDatabaseService {
         webhookEventId,
         currency,
         amountMinor,
+        description,
         reference,
         occurredAt,
         postedAt,
@@ -386,7 +410,7 @@ class FundingWebhookFakeDatabaseService {
 
       this.state.userTransactions.push({
         currency: String(currency),
-        description: 'Funding received',
+        description: String(description),
         direction: 'credit',
         fee_amount_minor: 0,
         gross_amount_minor: Number(amountMinor),
@@ -406,12 +430,20 @@ class FundingWebhookFakeDatabaseService {
     }
 
     if (sql.includes('INSERT INTO ledger_transactions')) {
-      const [id, userTransactionId, webhookEventId, transactionType, currency, reference, , now] =
-        parameters;
+      const [
+        id,
+        userTransactionId,
+        webhookEventId,
+        transactionType,
+        currency,
+        reference,
+        description,
+        now,
+      ] = parameters;
 
       this.state.ledgerTransactions.push({
         currency: String(currency),
-        description: 'Inbound funding recognized from funding webhook',
+        description: String(description),
         id: String(id),
         posted_at: String(now),
         reference: String(reference),
@@ -513,8 +545,16 @@ function buildFundingPayload(overrides?: Partial<Record<string, unknown>>) {
     data: {
       amountMinor: 2500,
       currency: 'USD',
-      customerExternalRef: 'user_demo_alice',
-      fundingDetailId: 'funding-detail-usd',
+      description: 'Salary top up',
+      destinationIdentifier: '1234567890',
+      destinationType: 'account_number',
+      providerReference: 'bank-ref-001',
+      sender: {
+        accountIdentifier: '99887766',
+        bankCode: 'VCB',
+        bankName: 'Vietcombank',
+        name: 'Alice Nguyen',
+      },
     },
     eventType: 'funding.completed',
     externalEventId: 'evt_funding_test_001',
@@ -553,12 +593,17 @@ test('funding webhook end-to-end flow updates webhook, balance, transaction, and
     assert.equal(userTransaction?.direction, 'credit');
     assert.equal(userTransaction?.gross_amount_minor, 2500);
     assert.equal(userTransaction?.net_amount_minor, 2500);
+    assert.equal(userTransaction?.description, 'Funding received from Alice Nguyen: Salary top up');
     assert.equal(userTransaction?.wallet_id, 'wallet-alice');
     assert.equal(userTransaction?.user_id, 'alice-id');
     assert.equal(userTransaction?.reference, 'funding-evt_funding_test_001');
     assert.equal(databaseService.state.ledgerTransactions.length, 1);
     assert.equal(ledgerTransaction?.transaction_type, 'funding');
     assert.equal(ledgerTransaction?.currency, 'USD');
+    assert.equal(
+      ledgerTransaction?.description,
+      'Inbound funding recognized from provider webhook (bank-ref-001)',
+    );
     assert.equal(ledgerTransaction?.reference, 'funding-evt_funding_test_001');
     assert.equal(ledgerTransaction?.user_transaction_id, userTransaction?.id ?? null);
     assert.equal(databaseService.state.ledgerEntries.length, 2);
@@ -630,8 +675,8 @@ test('funding webhook marks invalid funding targets as failed without mutations'
         data: {
           amountMinor: 2500,
           currency: 'USD',
-          customerExternalRef: 'user_demo_alice',
-          fundingDetailId: 'missing-funding-detail',
+          destinationIdentifier: '0000000000',
+          destinationType: 'account_number',
         },
         externalEventId: 'evt_funding_invalid_001',
       }),
@@ -660,8 +705,12 @@ test('funding webhook provisions missing balance rows and ledger accounts for a 
       fundingDetails: [
         {
           currency: 'GBP',
+          details: {
+            accountNumber: '4455667788',
+          },
           id: 'funding-detail-gbp',
           is_active: true,
+          rail: 'bank_transfer',
           wallet_id: 'wallet-alice',
         },
       ],
@@ -678,8 +727,8 @@ test('funding webhook provisions missing balance rows and ledger accounts for a 
         data: {
           amountMinor: 3300,
           currency: 'GBP',
-          customerExternalRef: 'user_demo_alice',
-          fundingDetailId: 'funding-detail-gbp',
+          destinationIdentifier: '4455667788',
+          destinationType: 'account_number',
         },
         externalEventId: 'evt_funding_gbp_001',
       }),

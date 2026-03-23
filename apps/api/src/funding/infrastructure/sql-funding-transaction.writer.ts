@@ -13,6 +13,7 @@ export class SqlFundingTransactionWriter implements FundingTransactionWriter {
     input: {
       amountMinor: number;
       currency: string;
+      description: string;
       occurredAt: string;
       postedAt: string;
       reference: string;
@@ -56,12 +57,12 @@ export class SqlFundingTransactionWriter implements FundingTransactionWriter {
           $6,
           0,
           $6,
-          'Funding received',
           $7,
-          $8::timestamptz,
+          $8,
           $9::timestamptz,
-          $9::timestamptz,
-          $9::timestamptz
+          $10::timestamptz,
+          $10::timestamptz,
+          $10::timestamptz
         )
       `,
       [
@@ -71,6 +72,7 @@ export class SqlFundingTransactionWriter implements FundingTransactionWriter {
         input.webhookEventId,
         input.currency,
         input.amountMinor,
+        input.description,
         input.reference,
         input.occurredAt,
         input.postedAt,

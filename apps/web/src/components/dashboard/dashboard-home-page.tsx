@@ -2,12 +2,18 @@ import type { UseQueryResult } from '@tanstack/react-query';
 import { Plus, Search, Send, Wallet } from 'lucide-react';
 import type { JSX } from 'react';
 
-import type { TransactionItem, TransactionListResponse, WalletBalance } from '../../api';
+import type {
+  TransactionDetailItem,
+  TransactionItem,
+  TransactionListResponse,
+  WalletBalance,
+} from '../../api';
 import { cn } from '../../lib/utils';
 import type { ActiveSection, CurrencyFilter, TransactionFilter } from '../../store/dashboard-store';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { EmptyState, LoadingBlock, SectionHeader, SummaryFigure } from './shared';
+import { TransactionDetailPanel } from './transaction-detail-panel';
 import { TransactionRow } from './transaction-row';
 import {
   formatMoney,
@@ -28,10 +34,14 @@ export function DashboardHomePage({
   metrics,
   onAddMoney,
   onCurrencyFilterChange,
+  onTransactionDetailClose,
+  onTransactionSelect,
   onTransactionFilterChange,
   onTransactionSearchQueryChange,
   resolvedCurrencyFilter,
+  selectedTransactionId,
   totalBalanceUsdEquivalent,
+  transactionDetailQuery,
   transactionFilter,
   transactionSearchQuery,
   transactionsQuery,
@@ -43,10 +53,14 @@ export function DashboardHomePage({
   metrics: SummaryMetric[];
   onAddMoney: () => void;
   onCurrencyFilterChange: (currency: CurrencyFilter) => void;
+  onTransactionDetailClose: () => void;
+  onTransactionSelect: (transactionId: string) => void;
   onTransactionFilterChange: (filter: TransactionFilter) => void;
   onTransactionSearchQueryChange: (query: string) => void;
   resolvedCurrencyFilter: CurrencyFilter;
+  selectedTransactionId: string | null;
   totalBalanceUsdEquivalent: string;
+  transactionDetailQuery: UseQueryResult<TransactionDetailItem, Error>;
   transactionFilter: TransactionFilter;
   transactionSearchQuery: string;
   transactionsQuery: UseQueryResult<TransactionListResponse, Error>;
@@ -246,7 +260,12 @@ export function DashboardHomePage({
                   <span className="text-right">Status</span>
                 </div>
                 {filteredTransactions.map((transaction) => (
-                  <TransactionRow key={transaction.id} transaction={transaction} />
+                  <TransactionRow
+                    isSelected={selectedTransactionId === transaction.id}
+                    key={transaction.id}
+                    onSelect={onTransactionSelect}
+                    transaction={transaction}
+                  />
                 ))}
               </div>
             ) : null}
@@ -262,6 +281,18 @@ export function DashboardHomePage({
           </CardContent>
         </Card>
       </section>
+
+      {selectedTransactionId !== null ? (
+        <TransactionDetailPanel
+          onClose={onTransactionDetailClose}
+          query={transactionDetailQuery}
+          selectedTransaction={
+            filteredTransactions.find((transaction) => transaction.id === selectedTransactionId) ??
+            null
+          }
+          selectedTransactionId={selectedTransactionId}
+        />
+      ) : null}
     </>
   );
 }

@@ -5,9 +5,11 @@ import {
   fetchFundingDetails,
   fetchRecipients,
   fetchStatementOverview,
+  fetchTransactionDetail,
   fetchTransactions,
   type RecipientListResponse,
   type StatementOverviewData,
+  type TransactionDetailItem,
   type TransactionListResponse,
   type WalletBalancesResponse,
   type WalletFundingDetailsResponse,
@@ -36,6 +38,16 @@ export function useTransactionsQuery(
   return useQuery({
     queryFn: async () => await fetchTransactions(limit),
     queryKey: ['transactions', limit],
+  });
+}
+
+export function useTransactionDetailQuery(
+  transactionId: string | null,
+): UseQueryResult<TransactionDetailItem, Error> {
+  return useQuery({
+    enabled: transactionId !== null,
+    queryFn: async () => await fetchTransactionDetail(transactionId ?? ''),
+    queryKey: ['transaction-detail', transactionId],
   });
 }
 

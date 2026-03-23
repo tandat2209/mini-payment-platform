@@ -11,9 +11,17 @@ interface SimulatorHealthResponse {
 type FundingSimulationRequest = {
   amountMinor: number;
   currency: string;
-  customerExternalRef: string;
+  description?: string;
+  destinationIdentifier: string;
+  destinationType: 'account_number' | 'iban' | 'virtual_account';
   externalEventId?: string;
-  fundingDetailId: string;
+  providerReference?: string;
+  sender?: {
+    accountIdentifier?: string;
+    bankCode?: string;
+    bankName?: string;
+    name: string;
+  };
 };
 
 type FundingSimulationResponse = {
@@ -47,13 +55,41 @@ export class AppService {
       request.externalEventId ?? `evt_funding_${randomUUID().replace(/-/g, '').slice(0, 16)}`;
     const occurredAt = new Date().toISOString();
     const deliveryTarget = `${this.getTargetApiBaseUrl()}/webhooks/funding`;
+    const data: FundingSimulationRequest = {
+      amountMinor: request.amountMinor,
+      currency: request.currency.toUpperCase(),
+      destinationIdentifier: request.destinationIdentifier,
+      destinationType: request.destinationType,
+    };
+
+    if (request.description !== undefined) {
+      data.description = request.description;
+    }
+
+    if (request.providerReference !== undefined) {
+      data.providerReference = request.providerReference;
+    }
+
+    if (request.sender !== undefined) {
+      data.sender = {
+        name: request.sender.name,
+      };
+
+      if (request.sender.accountIdentifier !== undefined) {
+        data.sender.accountIdentifier = request.sender.accountIdentifier;
+      }
+
+      if (request.sender.bankCode !== undefined) {
+        data.sender.bankCode = request.sender.bankCode;
+      }
+
+      if (request.sender.bankName !== undefined) {
+        data.sender.bankName = request.sender.bankName;
+      }
+    }
+
     const payload = {
-      data: {
-        amountMinor: request.amountMinor,
-        currency: request.currency.toUpperCase(),
-        customerExternalRef: request.customerExternalRef,
-        fundingDetailId: request.fundingDetailId,
-      },
+      data,
       eventType: 'funding.completed' as const,
       externalEventId,
       occurredAt,

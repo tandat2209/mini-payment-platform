@@ -1,9 +1,21 @@
+export type FundingDestinationType = 'account_number' | 'iban' | 'virtual_account';
+
+export type FundingWebhookSender = {
+  accountIdentifier?: string;
+  bankCode?: string;
+  bankName?: string;
+  name: string;
+};
+
 export type FundingWebhook = {
   data: {
     amountMinor: number;
     currency: string;
-    customerExternalRef: string;
-    fundingDetailId: string;
+    description?: string;
+    destinationIdentifier: string;
+    destinationType: FundingDestinationType;
+    providerReference?: string;
+    sender?: FundingWebhookSender;
   };
   eventType: 'funding.completed';
   externalEventId: string;

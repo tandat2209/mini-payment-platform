@@ -12,6 +12,7 @@
     "verify:connectivity": "tsx scripts/verify-connectivity.tsx"
   },
   "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.15",
     "@tailwindcss/vite": "^4.2.2",
     "@tanstack/react-query": "^5.94.5",
     "@tanstack/react-router": "^1.168.2",

@@ -238,6 +238,72 @@ This allows testing:
 - reconciliation
 - failure handling
 
+## Local Funding Flow
+
+The inbound funding demo now models a provider-style webhook rather than an internal funding-detail reference.
+
+1. Open the customer dashboard at `http://localhost:5173` and click `Add money`.
+2. Copy one of the active funding identifiers shown on the page:
+   - `accountNumber` for `destinationType: "account_number"`
+   - `iban` for `destinationType: "iban"`
+3. Trigger the simulator webhook:
+
+```bash
+curl -X POST http://localhost:3002/simulate/funding \
+  -H 'content-type: application/json' \
+  -d '{
+    "amountMinor": 2500,
+    "currency": "USD",
+    "destinationType": "account_number",
+    "destinationIdentifier": "1234567890",
+    "description": "Salary top up",
+    "providerReference": "bank-ref-001",
+    "sender": {
+      "name": "Alice Nguyen",
+      "accountIdentifier": "99887766",
+      "bankName": "Vietcombank",
+      "bankCode": "VCB"
+    },
+    "externalEventId": "evt_funding_replay_test_001"
+  }'
+```
+
+4. Trigger the same command again to verify replay handling. The second response should include `duplicate: true`.
+5. Verify the resulting records in the local database:
+   - `webhook_events` contains one provider event for the given `externalEventId`
+   - `wallet_balances` reflects the credited amount
+   - `user_transactions` contains one `funding` credit
+   - `ledger_transactions` contains one `funding` posting
+   - `ledger_entries` contains one debit to platform cash and one credit to wallet liability
+
+Example SQL checks:
+
+```sql
+select provider, external_event_id, processing_status, processed_at
+from webhook_events
+where external_event_id = 'evt_funding_replay_test_001';
+
+select wallet_id, currency, available_amount_minor
+from wallet_balances
+where wallet_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2';
+
+select id, type, direction, description, reference, gross_amount_minor
+from user_transactions
+where reference = 'funding-evt_funding_replay_test_001';
+
+select id, transaction_type, description, reference
+from ledger_transactions
+where reference = 'funding-evt_funding_replay_test_001';
+
+select ledger_account_id, direction, amount_minor, description
+from ledger_entries
+where ledger_transaction_id in (
+  select id
+  from ledger_transactions
+  where reference = 'funding-evt_funding_replay_test_001'
+);
+```
+
 ## Goals
 
 This project demonstrates:

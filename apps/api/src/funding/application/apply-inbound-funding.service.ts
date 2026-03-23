@@ -103,6 +103,7 @@ export class ApplyInboundFundingService {
         {
           amountMinor: payload.data.amountMinor,
           currency: payload.data.currency,
+          description: buildFundingTransactionDescription(payload),
           occurredAt: payload.occurredAt,
           postedAt: now,
           reference,
@@ -114,7 +115,7 @@ export class ApplyInboundFundingService {
 
       await this.ledgerPostingService.createPostedTransaction(context, {
         currency: payload.data.currency,
-        description: 'Inbound funding recognized from funding webhook',
+        description: buildLedgerTransactionDescription(payload),
         entries: [
           {
             amountMinor: payload.data.amountMinor,
@@ -146,4 +147,33 @@ export class ApplyInboundFundingService {
       );
     });
   }
+}
+
+function buildFundingTransactionDescription(payload: FundingWebhook): string {
+  const senderName = payload.data.sender?.name?.trim();
+  const remittance = payload.data.description?.trim();
+
+  if (senderName && remittance) {
+    return `Funding received from ${senderName}: ${remittance}`;
+  }
+
+  if (senderName) {
+    return `Funding received from ${senderName}`;
+  }
+
+  if (remittance) {
+    return `Funding received: ${remittance}`;
+  }
+
+  return 'Funding received';
+}
+
+function buildLedgerTransactionDescription(payload: FundingWebhook): string {
+  const providerReference = payload.data.providerReference?.trim();
+
+  if (providerReference) {
+    return `Inbound funding recognized from provider webhook (${providerReference})`;
+  }
+
+  return 'Inbound funding recognized from funding webhook';
 }

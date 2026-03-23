@@ -1,8 +1,12 @@
 import { useNavigate } from '@tanstack/react-router';
 import type { JSX } from 'react';
-import { useDeferredValue, useMemo } from 'react';
+import { useDeferredValue, useMemo, useState } from 'react';
 
-import { useBalancesQuery, useTransactionsQuery } from '../../hooks/use-dashboard-queries';
+import {
+  useBalancesQuery,
+  useTransactionDetailQuery,
+  useTransactionsQuery,
+} from '../../hooks/use-dashboard-queries';
 import { type CurrencyFilter, useDashboardStore } from '../../store/dashboard-store';
 import { DashboardHomePage } from './dashboard-home-page';
 import {
@@ -26,6 +30,7 @@ export function DashboardRoutePage(): JSX.Element {
   const setCurrencyFilter = useDashboardStore((state) => state.setCurrencyFilter);
   const setTransactionFilter = useDashboardStore((state) => state.setTransactionFilter);
   const setTransactionSearchQuery = useDashboardStore((state) => state.setTransactionSearchQuery);
+  const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
 
   const balancesQuery = useBalancesQuery();
   const transactionsQuery = useTransactionsQuery(12);
@@ -69,6 +74,18 @@ export function DashboardRoutePage(): JSX.Element {
       }),
     [deferredTransactionSearchQuery, resolvedCurrencyFilter, transactionFilter, transactionItems],
   );
+  const resolvedSelectedTransactionId = filteredTransactions.some(
+    (transaction) => transaction.id === selectedTransactionId,
+  )
+    ? selectedTransactionId
+    : null;
+  const transactionDetailQuery = useTransactionDetailQuery(resolvedSelectedTransactionId);
+
+  function handleTransactionSelect(transactionId: string): void {
+    setSelectedTransactionId((currentTransactionId) =>
+      currentTransactionId === transactionId ? null : transactionId,
+    );
+  }
 
   const metrics: SummaryMetric[] = [
     {
@@ -109,12 +126,18 @@ export function DashboardRoutePage(): JSX.Element {
         void navigate({ to: '/add-money' });
       }}
       onCurrencyFilterChange={handleCurrencyFilterChange}
+      onTransactionDetailClose={() => {
+        setSelectedTransactionId(null);
+      }}
+      onTransactionSelect={handleTransactionSelect}
       onTransactionFilterChange={setTransactionFilter}
       onTransactionSearchQueryChange={setTransactionSearchQuery}
       resolvedCurrencyFilter={resolvedCurrencyFilter}
+      selectedTransactionId={resolvedSelectedTransactionId}
       totalBalanceUsdEquivalent={formatUsdAmount(
         sumBalanceUsdEquivalent(balanceItems ?? [], 'available'),
       )}
+      transactionDetailQuery={transactionDetailQuery}
       transactionFilter={transactionFilter}
       transactionSearchQuery={transactionSearchQuery}
       transactionsQuery={transactionsQuery}

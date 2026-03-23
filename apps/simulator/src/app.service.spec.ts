@@ -43,9 +43,17 @@ test('simulateFundingWebhook reuses an explicit external event id', async () => 
     const response = await service.simulateFundingWebhook({
       amountMinor: 2500,
       currency: 'USD',
-      customerExternalRef: 'user_demo_alice',
+      description: 'March top up',
+      destinationIdentifier: '1234567890',
+      destinationType: 'account_number',
       externalEventId: 'evt_funding_replay',
-      fundingDetailId: 'funding-detail-1',
+      providerReference: 'bank-ref-001',
+      sender: {
+        accountIdentifier: '99887766',
+        bankCode: 'VCB',
+        bankName: 'Vietcombank',
+        name: 'Alice Nguyen',
+      },
     });
 
     assert.equal(requestUrl, 'http://api.test/webhooks/funding');
@@ -55,6 +63,18 @@ test('simulateFundingWebhook reuses an explicit external event id', async () => 
       'evt_funding_replay',
     );
     assert.equal((requestBody as { provider: string }).provider, 'simulator_psp');
+    assert.equal(
+      (requestBody as { data: { description: string } }).data.description,
+      'March top up',
+    );
+    assert.equal(
+      (requestBody as { data: { providerReference: string } }).data.providerReference,
+      'bank-ref-001',
+    );
+    assert.equal(
+      (requestBody as { data: { sender: { name: string } } }).data.sender.name,
+      'Alice Nguyen',
+    );
   } finally {
     globalThis.fetch = originalFetch;
 
@@ -104,8 +124,8 @@ test('simulateFundingWebhook generates an external event id when omitted', async
     const response = await service.simulateFundingWebhook({
       amountMinor: 4200,
       currency: 'EUR',
-      customerExternalRef: 'user_demo_alice',
-      fundingDetailId: 'funding-detail-2',
+      destinationIdentifier: 'DE89370400440532013000',
+      destinationType: 'iban',
     });
 
     assert.match(response.externalEventId, /^evt_funding_/);

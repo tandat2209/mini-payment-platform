@@ -17,6 +17,9 @@ export class SqlFundingTargetRepository implements FundingTargetRepository {
     payload: FundingWebhook,
   ): Promise<FundingTarget | null> {
     const database = getDatabaseQueryable(context);
+    const { destinationIdentifierPredicate, destinationRailPredicate } = getDestinationLookup(
+      payload.data.destinationType,
+    );
     const result = await database.query<FundingTargetRow>(
       `
         SELECT
@@ -29,12 +32,13 @@ export class SqlFundingTargetRepository implements FundingTargetRepository {
         JOIN wallet_funding_details wfd
           ON wfd.wallet_id = w.id
          AND wfd.is_active = TRUE
-        WHERE u.external_ref = $1
-          AND wfd.id = $2
-          AND wfd.currency = $3
+        WHERE w.status = 'active'
+          AND wfd.currency = $2
+          AND ${destinationIdentifierPredicate}
+          ${destinationRailPredicate}
         LIMIT 1
       `,
-      [payload.data.customerExternalRef, payload.data.fundingDetailId, payload.data.currency],
+      [payload.data.destinationIdentifier, payload.data.currency],
     );
     const row = result.rows[0];
 
@@ -44,5 +48,29 @@ export class SqlFundingTargetRepository implements FundingTargetRepository {
           walletId: row.wallet_id,
         }
       : null;
+  }
+}
+
+function getDestinationLookup(destinationType: FundingWebhook['data']['destinationType']): {
+  destinationIdentifierPredicate: string;
+  destinationRailPredicate: string;
+} {
+  switch (destinationType) {
+    case 'account_number':
+      return {
+        destinationIdentifierPredicate: "wfd.details->>'accountNumber' = $1",
+        destinationRailPredicate: '',
+      };
+    case 'iban':
+      return {
+        destinationIdentifierPredicate: "UPPER(wfd.details->>'iban') = UPPER($1)",
+        destinationRailPredicate: '',
+      };
+    case 'virtual_account':
+      return {
+        destinationIdentifierPredicate:
+          "COALESCE(wfd.details->>'virtualAccountNumber', wfd.details->>'accountNumber') = $1",
+        destinationRailPredicate: "AND (wfd.rail = 'virtual_account' OR wfd.rail = 'virtual_iban')",
+      };
   }
 }

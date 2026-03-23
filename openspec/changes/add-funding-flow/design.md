@@ -47,7 +47,7 @@ Alternatives considered:
 
 ### Decision: Use the simulator as an HTTP webhook sender, not as a direct database mutator
 
-The simulator will expose a trigger endpoint, such as `POST /simulate/funding`, that accepts explicit demo inputs like `amountMinor`, `currency`, `customerExternalRef`, and `fundingDetailId`. The simulator will then deliver a demo `funding.completed` webhook over HTTP to the API application.
+The simulator will expose a trigger endpoint, such as `POST /simulate/funding`, that accepts explicit funding inputs like `amountMinor`, `currency`, `destinationType`, `destinationIdentifier`, and optional remittance metadata (`description`, `providerReference`, `sender`). The simulator will then deliver a `funding.completed` webhook over HTTP to the API application.
 
 This preserves a realistic provider boundary and exercises the same ingestion path that a real PSP would use. It also keeps the simulator decoupled from the API database schema.
 
@@ -74,16 +74,16 @@ Alternatives considered:
 - Split balance, user transaction, and ledger work into separate asynchronous jobs: more extensible long term, but too much failure handling and state choreography for the first inbound flow.
 - Store the webhook first and process it later in a poller only: resilient, but it slows local feedback and adds infrastructure the project does not yet use.
 
-### Decision: Target funding by funding-detail identity plus customer context
+### Decision: Target funding by external destination details, not internal identifiers
 
-The demo webhook payload will include `fundingDetailId`, `customerExternalRef`, `currency`, and `amountMinor`. The processor will validate that the referenced funding detail is active, belongs to the current customer’s active wallet, and matches the webhook currency before applying funds.
+The webhook payload will include `destinationType`, `destinationIdentifier`, `currency`, and `amountMinor`. Optional remittance context such as `description`, `providerReference`, and `sender` may also be present. The processor will resolve the active funding detail by matching the external destination against the wallet funding instructions stored in `wallet_funding_details.details`, then validate currency and active-wallet ownership before applying funds.
 
-This makes the inbound event clearly tied to the funding instructions shown in the UI and reduces ambiguity when one wallet has multiple funding methods.
+This keeps the provider contract closer to real bank and PSP payloads, avoids leaking internal ids into the external boundary, and still ties the inbound event to the funding instructions shown in the UI.
 
 Alternatives considered:
 
-- Target only by customer external reference: simpler payload, but ambiguous when multiple funding details or rails exist.
-- Target only by wallet id: technically enough for booking funds, but weaker for demonstrating “money came into this funding detail.”
+- Target by internal funding-detail id plus customer context: easy for local demos, but unrealistic for a provider-facing webhook.
+- Target only by wallet id: technically enough for booking funds, but weaker for demonstrating “money came into this funding rail.”
 
 ### Decision: Provision missing balance rows and required ledger accounts lazily for supported currencies
 

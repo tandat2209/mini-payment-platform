@@ -21,4 +21,4 @@
 
 - [ ] 4.1 Verify that a simulated funding event results in updated wallet balances, customer transaction history, webhook records, and ledger postings in the local environment.
 - [ ] 4.2 Verify that replaying the same simulator event does not create duplicate balance, transaction, or ledger side effects.
-- [ ] 4.3 Document the local funding flow for opening `Add money`, triggering simulator funding, and checking the resulting account updates.
+- [x] 4.3 Document the local funding flow for opening `Add money`, triggering simulator funding, and checking the resulting account updates.

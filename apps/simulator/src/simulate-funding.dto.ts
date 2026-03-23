@@ -1,9 +1,43 @@
-import { Transform } from 'class-transformer';
-import { IsInt, IsNotEmpty, IsOptional, IsString, Matches, Min } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import {
+  IsIn,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Matches,
+  Min,
+  ValidateNested,
+} from 'class-validator';
 
 import { type FundingSimulationRequest } from './app.service';
 
-export class SimulateFundingRequestDto implements FundingSimulationRequest {
+class SimulateFundingSenderDto {
+  @Transform(({ value }) => normalizeTrimmedString(value))
+  @IsString()
+  @IsNotEmpty()
+  name!: string;
+
+  @Transform(({ value }) => normalizeTrimmedString(value))
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  accountIdentifier?: string;
+
+  @Transform(({ value }) => normalizeTrimmedString(value))
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  bankName?: string;
+
+  @Transform(({ value }) => normalizeTrimmedString(value))
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  bankCode?: string;
+}
+
+export class SimulateFundingRequestDto {
   @IsInt()
   @Min(1)
   amountMinor!: number;
@@ -17,7 +51,13 @@ export class SimulateFundingRequestDto implements FundingSimulationRequest {
   @Transform(({ value }) => normalizeTrimmedString(value))
   @IsString()
   @IsNotEmpty()
-  customerExternalRef!: string;
+  destinationIdentifier!: string;
+
+  @Transform(({ value }) => normalizeTrimmedString(value))
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  description?: string;
 
   @Transform(({ value }) => normalizeTrimmedString(value))
   @IsOptional()
@@ -28,7 +68,24 @@ export class SimulateFundingRequestDto implements FundingSimulationRequest {
   @Transform(({ value }) => normalizeTrimmedString(value))
   @IsString()
   @IsNotEmpty()
-  fundingDetailId!: string;
+  @IsIn(['account_number', 'iban', 'virtual_account'])
+  destinationType!: FundingSimulationRequest['destinationType'];
+
+  @Transform(({ value }) => normalizeTrimmedString(value))
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  providerReference?: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => SimulateFundingSenderDto)
+  sender?: {
+    accountIdentifier?: string;
+    bankCode?: string;
+    bankName?: string;
+    name: string;
+  };
 }
 
 function normalizeTrimmedString(value: unknown): unknown {
