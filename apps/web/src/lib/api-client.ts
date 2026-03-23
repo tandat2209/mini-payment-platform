@@ -44,3 +44,28 @@ export async function getJson<T>(path: string, options?: RequestOptions): Promis
     throw new Error(getRequestErrorMessage(caughtError, options?.errorLabel ?? 'Request'));
   }
 }
+
+export async function postJson<TResponse, TBody>(
+  path: string,
+  body: TBody,
+  options?: RequestOptions,
+): Promise<TResponse> {
+  try {
+    const requestConfig: AxiosRequestConfig =
+      options?.includeCustomerContext === false
+        ? {}
+        : {
+            headers: { 'x-customer-external-ref': getCustomerExternalRef() },
+          };
+
+    const response = await apiClient.post<TResponse, { data: TResponse }>(
+      path,
+      body,
+      requestConfig,
+    );
+
+    return response.data;
+  } catch (caughtError) {
+    throw new Error(getRequestErrorMessage(caughtError, options?.errorLabel ?? 'Request'));
+  }
+}

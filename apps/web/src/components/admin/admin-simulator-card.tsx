@@ -6,21 +6,23 @@ import { Card, CardContent } from '../ui/card';
 import type { AdminSimulationFormState, AdminSimulationResult } from './admin-data';
 
 export function AdminSimulatorCard({
+  error,
   formState,
   isSubmitting,
   onChange,
   onSubmit,
   result,
 }: {
+  error: string | null;
   formState: AdminSimulationFormState;
   isSubmitting: boolean;
   onChange: (field: keyof AdminSimulationFormState, value: string) => void;
-  onSubmit: () => void;
+  onSubmit: () => Promise<void> | void;
   result: AdminSimulationResult | null;
 }): JSX.Element {
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
-    onSubmit();
+    void onSubmit();
   }
 
   return (
@@ -35,14 +37,14 @@ export function AdminSimulatorCard({
               Funding control desk
             </h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-              Preview-mode admin UI for provider-style funding events. It mirrors the request
-              contract now and is ready to wire to the admin API next.
+              Sandbox-only admin tool for dispatching provider-style funding events through the API
+              relay into the simulator service.
             </p>
           </div>
 
           <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-amber-700">
             <Sparkles className="h-3.5 w-3.5" />
-            Preview mode
+            Sandbox mode
           </div>
         </div>
 
@@ -123,20 +125,20 @@ export function AdminSimulatorCard({
             <div className="rounded-[26px] border border-[#d7d3cc] bg-slate-950 p-4 text-white">
               <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-300">
                 <Radar className="h-4 w-4" />
-                Dispatch preview
+                Dispatch request
               </div>
               <p className="mt-4 text-sm leading-6 text-slate-300">
-                This prepares the exact provider-style payload shape the future admin endpoint will
-                submit to the simulator service.
+                This sends the exact provider-style payload to the API, and the API relays it to the
+                simulator service.
               </p>
               <Button className="mt-5 w-full rounded-2xl" disabled={isSubmitting} type="submit">
                 {isSubmitting ? (
                   <>
                     <LoaderCircle className="h-4 w-4 animate-spin" />
-                    Booking preview...
+                    Dispatching event...
                   </>
                 ) : (
-                  'Preview simulator booking'
+                  'Send simulator funding event'
                 )}
               </Button>
             </div>
@@ -150,15 +152,32 @@ export function AdminSimulatorCard({
                   <ResultRow label="Status" value={result.status} />
                   <ResultRow label="Provider" value={result.provider} />
                   <ResultRow label="External event" value={result.externalEventId} />
-                  <ResultRow label="Ledger booking" value={result.createdLedgerTransactionId} />
-                  <ResultRow label="User transaction" value={result.createdTransactionId} />
+                  <ResultRow label="Delivery target" value={result.deliveryTarget} />
+                  <ResultRow
+                    label="Receiver duplicate"
+                    value={
+                      result.receiverDuplicate === null
+                        ? 'Unknown'
+                        : String(result.receiverDuplicate)
+                    }
+                  />
+                  <ResultRow
+                    label="Receiver status"
+                    value={result.receiverProcessingStatus ?? 'Unknown'}
+                  />
                 </dl>
               ) : (
                 <p className="mt-4 text-sm leading-6 text-slate-500">
-                  No preview booked yet. Submit a simulator request to see the admin workflow update
-                  the transactions and ledger panels below.
+                  No sandbox event sent yet. Submit a simulator request to see the delivery result
+                  from the API relay.
                 </p>
               )}
+
+              {error ? (
+                <div className="mt-4 rounded-[18px] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                  {error}
+                </div>
+              ) : null}
             </div>
           </div>
         </form>

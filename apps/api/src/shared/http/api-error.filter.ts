@@ -4,7 +4,10 @@ import {
   type ExceptionFilter,
   HttpException,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
+
+import { toStructuredLog } from '../logging/structured-log';
 
 type ErrorResponseBody = {
   error: {
@@ -16,16 +19,42 @@ type ErrorResponseBody = {
 
 @Catch()
 export class ApiErrorFilter implements ExceptionFilter {
+  private readonly logger = new Logger(ApiErrorFilter.name);
+
   catch(exception: unknown, host: ArgumentsHost): void {
+    const request = host.switchToHttp().getRequest<{
+      method?: string;
+      originalUrl?: string;
+      requestId?: string;
+      url?: string;
+    }>();
     const response = host.switchToHttp().getResponse<{
       status: (statusCode: number) => { json: (body: ErrorResponseBody) => void };
     }>();
+    const method = request?.method ?? 'UNKNOWN';
+    const path = request?.originalUrl ?? request?.url ?? 'UNKNOWN';
+    const requestId = request?.requestId ?? null;
 
     if (exception instanceof HttpException) {
       const statusCode = exception.getStatus();
       const payload = exception.getResponse();
       const message = this.extractMessage(payload, exception.message);
       const code = this.extractCode(payload, statusCode);
+      const logMessage = toStructuredLog({
+        code,
+        event: 'http_request_failed',
+        message,
+        method,
+        path,
+        requestId,
+        statusCode,
+      });
+
+      if (statusCode >= HttpStatus.INTERNAL_SERVER_ERROR) {
+        this.logger.error(logMessage, exception.stack);
+      } else {
+        this.logger.warn(logMessage);
+      }
 
       response.status(statusCode).json({
         error: {
@@ -37,6 +66,23 @@ export class ApiErrorFilter implements ExceptionFilter {
 
       return;
     }
+
+    const unexpectedError =
+      exception instanceof Error
+        ? exception
+        : new Error(typeof exception === 'string' ? exception : 'Unexpected error');
+    this.logger.error(
+      toStructuredLog({
+        code: 'INTERNAL_SERVER_ERROR',
+        event: 'http_request_failed',
+        message: unexpectedError.message,
+        method,
+        path,
+        requestId,
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+      }),
+      unexpectedError.stack,
+    );
 
     response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       error: {

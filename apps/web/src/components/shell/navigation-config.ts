@@ -31,9 +31,12 @@ export const customerNavigationItems: NavigationItem[] = [
 export const adminNavigationItems: NavigationItem[] = [
   { icon: Wallet, id: 'wallet', label: 'Wallet', path: '/admin' },
   { icon: Boxes, id: 'balances', label: 'Balances', path: '/admin/balances' },
-  { icon: Shield, id: 'simulator', label: 'Simulator', path: '/admin/simulator' },
   { icon: CreditCard, id: 'transactions', label: 'Transactions', path: '/admin/transactions' },
   { icon: ReceiptText, id: 'ledgers', label: 'Ledgers', path: '/admin/ledgers' },
+];
+
+export const adminSandboxNavigationItems: NavigationItem[] = [
+  { icon: Shield, id: 'simulator', label: 'Simulator', path: '/admin/simulator' },
 ];
 
 export const workspaceItems: Array<{

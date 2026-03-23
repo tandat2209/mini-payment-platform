@@ -2,7 +2,7 @@ import type { JSX } from 'react';
 
 import { cn } from '../../lib/utils';
 import type { NavigationId, NavigationItem, Workspace } from './navigation-config';
-import { workspaceItems } from './navigation-config';
+import { adminSandboxNavigationItems, workspaceItems } from './navigation-config';
 
 export function SidebarNavigation({
   activeNavigationId,
@@ -60,6 +60,28 @@ export function SidebarNavigation({
               : 'Each customer workflow has its own page, which keeps balances, payout setup, recipients, and funding details easier to reason about.'}
           </p>
         </div>
+
+        {activeWorkspace === 'admin' ? (
+          <div className="mt-6 rounded-[24px] border border-amber-200 bg-amber-50/70 p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-amber-700">
+              Sandbox
+            </p>
+            <p className="mt-2 text-sm leading-6 text-amber-900">
+              Simulator controls stay separate from core admin workflows because they are only
+              intended for local sandbox usage.
+            </p>
+            <div className="mt-3 space-y-1">
+              {adminSandboxNavigationItems.map((item) => (
+                <NavigationButton
+                  isActive={item.id === activeNavigationId}
+                  item={item}
+                  key={item.id}
+                  onClick={() => onNavigationSelect(item.path)}
+                />
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         <div className="mt-auto rounded-[24px] border border-[#e7e1d8] bg-white/90 p-3">
           <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-[#faf7f2] px-3 py-3">

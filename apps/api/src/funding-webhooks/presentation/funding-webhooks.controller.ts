@@ -1,6 +1,15 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, ValidationPipe } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Logger,
+  Post,
+  ValidationPipe,
+} from '@nestjs/common';
 
 import { toIsoTimestamp } from '../../shared/api/api-primitives';
+import { toStructuredLog } from '../../shared/logging/structured-log';
 import { RecordFundingWebhookCommand } from '../application/commands/record-funding-webhook.command';
 import { FundingWebhookRequestDto } from './funding-webhook.dto';
 
@@ -25,6 +34,8 @@ const fundingWebhookValidationPipe = new ValidationPipe({
 
 @Controller('webhooks/funding')
 export class FundingWebhooksController {
+  private readonly logger = new Logger(FundingWebhooksController.name);
+
   constructor(private readonly recordFundingWebhookCommand: RecordFundingWebhookCommand) {}
 
   @Post()
@@ -32,7 +43,27 @@ export class FundingWebhooksController {
   async recordFundingWebhook(
     @Body(fundingWebhookValidationPipe) body: FundingWebhookRequestDto,
   ): Promise<FundingWebhookResponse> {
+    this.logger.log(
+      toStructuredLog({
+        destinationIdentifier: body.data.destinationIdentifier,
+        destinationType: body.data.destinationType,
+        event: 'funding_webhook_received',
+        externalEventId: body.externalEventId,
+        provider: body.provider,
+      }),
+    );
     const recordedEvent = await this.recordFundingWebhookCommand.execute(body.toDomain());
+
+    this.logger.log(
+      toStructuredLog({
+        duplicate: recordedEvent.duplicate,
+        event: 'funding_webhook_recorded',
+        externalEventId: recordedEvent.externalEventId,
+        processingStatus: recordedEvent.processingStatus,
+        provider: recordedEvent.provider,
+        webhookEventId: recordedEvent.id,
+      }),
+    );
 
     return {
       accepted: true,

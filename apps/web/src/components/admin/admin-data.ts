@@ -17,14 +17,16 @@ export type AdminSimulationFormState = {
 };
 
 export type AdminSimulationResult = {
-  createdLedgerTransactionId: string;
-  createdTransactionId: string;
+  delivered: true;
+  deliveryTarget: string;
   externalEventId: string;
-  mode: 'preview';
+  mode: 'sandbox_live';
   postedAt: string;
   provider: string;
   providerReference: string | null;
-  status: 'preview_booked';
+  receiverDuplicate: boolean | null;
+  receiverProcessingStatus: string | null;
+  status: 'delivered';
 };
 
 export type AdminTransactionRecord = {
@@ -272,89 +274,6 @@ export const adminBalanceSnapshots: AdminBalanceSnapshot[] = [
     postedToday: 13,
   },
 ];
-
-export function buildPreviewFundingActivity(form: AdminSimulationFormState): {
-  ledgerTransaction: AdminLedgerTransactionRecord;
-  result: AdminSimulationResult;
-  transaction: AdminTransactionRecord;
-} {
-  const postedAt = new Date().toISOString();
-  const externalEventId =
-    form.externalEventId.trim().length > 0
-      ? form.externalEventId.trim()
-      : `evt_admin_preview_${postedAt.slice(11, 19).replace(/:/g, '')}`;
-  const transactionId = `txn-preview-${postedAt.slice(11, 19).replace(/:/g, '')}`;
-  const ledgerTransactionId = `lt-preview-${postedAt.slice(11, 19).replace(/:/g, '')}`;
-  const reference = `funding-${externalEventId}`;
-  const description =
-    form.senderName.trim().length > 0 && form.description.trim().length > 0
-      ? `Funding received from ${form.senderName.trim()}: ${form.description.trim()}`
-      : form.description.trim().length > 0
-        ? `Funding received: ${form.description.trim()}`
-        : 'Funding received';
-
-  return {
-    ledgerTransaction: {
-      currency: form.currency,
-      description:
-        form.providerReference.trim().length > 0
-          ? `Inbound funding recognized from provider webhook (${form.providerReference.trim()})`
-          : 'Inbound funding recognized from provider webhook',
-      entries: [
-        createLedgerEntry({
-          accountCode: `platform_cash_${form.currency.toLowerCase()}`,
-          accountName: `Platform Cash ${form.currency}`,
-          amountMinor: form.amountMinor,
-          currency: form.currency,
-          description: 'Provider cash received',
-          direction: 'debit',
-          id: `${ledgerTransactionId}-debit`,
-        }),
-        createLedgerEntry({
-          accountCode: `wallet_preview_${form.currency.toLowerCase()}`,
-          accountName: `Preview Wallet ${form.currency}`,
-          amountMinor: form.amountMinor,
-          currency: form.currency,
-          description: 'Wallet liability increased',
-          direction: 'credit',
-          id: `${ledgerTransactionId}-credit`,
-        }),
-      ],
-      id: ledgerTransactionId,
-      postedAt,
-      reference,
-      source: 'preview',
-      status: 'preview_booked',
-      transactionType: 'funding',
-      userTransactionId: transactionId,
-    },
-    result: {
-      createdLedgerTransactionId: ledgerTransactionId,
-      createdTransactionId: transactionId,
-      externalEventId,
-      mode: 'preview',
-      postedAt,
-      provider: 'simulator_psp',
-      providerReference: form.providerReference.trim() || null,
-      status: 'preview_booked',
-    },
-    transaction: createTransactionRecord({
-      amountMinor: form.amountMinor,
-      currency: form.currency,
-      customerExternalRef: 'preview_admin_trigger',
-      customerName: 'Preview booking',
-      description,
-      direction: 'credit',
-      id: transactionId,
-      occurredAt: postedAt,
-      postedAt,
-      reference,
-      source: 'preview',
-      status: 'preview_booked',
-      type: 'funding',
-    }),
-  };
-}
 
 function createMoneyDto(currency: string, amountMinor: string): MoneyDto {
   return {

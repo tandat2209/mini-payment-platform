@@ -6,6 +6,7 @@ import { AdminSimulatorCard } from './admin-simulator-card';
 export function AdminSimulatorRoutePage(): JSX.Element {
   const formState = useAdminStore((state) => state.formState);
   const isSubmitting = useAdminStore((state) => state.isSubmitting);
+  const simulationError = useAdminStore((state) => state.simulationError);
   const setFormField = useAdminStore((state) => state.setFormField);
   const simulateFunding = useAdminStore((state) => state.simulateFunding);
   const simulationResult = useAdminStore((state) => state.simulationResult);
@@ -14,6 +15,7 @@ export function AdminSimulatorRoutePage(): JSX.Element {
     <AdminSimulatorCard
       formState={formState}
       isSubmitting={isSubmitting}
+      error={simulationError}
       onChange={setFormField}
       onSubmit={simulateFunding}
       result={simulationResult}

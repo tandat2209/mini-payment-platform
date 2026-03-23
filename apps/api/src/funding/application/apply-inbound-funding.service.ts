@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 
 import { LedgerAccountService } from '../../ledger/application/ledger-account.service';
 import { LedgerPostingService } from '../../ledger/application/ledger-posting.service';
@@ -8,6 +8,7 @@ import {
   TRANSACTION_MANAGER,
   type TransactionManager,
 } from '../../shared/application/transaction-manager';
+import { toStructuredLog } from '../../shared/logging/structured-log';
 import {
   FUNDING_TARGET_REPOSITORY,
   FUNDING_TRANSACTION_WRITER,
@@ -22,6 +23,8 @@ import { type FundingWebhook, type RecordedWebhookEvent } from '../domain/fundin
 
 @Injectable()
 export class ApplyInboundFundingService {
+  private readonly logger = new Logger(ApplyInboundFundingService.name);
+
   constructor(
     @Inject(TRANSACTION_MANAGER)
     private readonly transactionManager: TransactionManager,
@@ -38,6 +41,18 @@ export class ApplyInboundFundingService {
   ) {}
 
   async execute(payload: FundingWebhook): Promise<RecordedWebhookEvent> {
+    this.logger.log(
+      toStructuredLog({
+        amountMinor: payload.data.amountMinor,
+        currency: payload.data.currency,
+        destinationIdentifier: payload.data.destinationIdentifier,
+        destinationType: payload.data.destinationType,
+        event: 'funding_processing_started',
+        externalEventId: payload.externalEventId,
+        provider: payload.provider,
+      }),
+    );
+
     return await this.transactionManager.runInTransaction(async (context) => {
       const webhookId = randomUUID();
       const now = new Date().toISOString();
@@ -59,6 +74,16 @@ export class ApplyInboundFundingService {
           throw new Error('Webhook event could not be loaded after duplicate detection');
         }
 
+        this.logger.warn(
+          toStructuredLog({
+            event: 'funding_duplicate_detected',
+            externalEventId: payload.externalEventId,
+            processingStatus: existingEvent.processingStatus,
+            provider: payload.provider,
+            webhookEventId: existingEvent.id,
+          }),
+        );
+
         return {
           ...existingEvent,
           duplicate: true,
@@ -71,6 +96,17 @@ export class ApplyInboundFundingService {
       );
 
       if (!fundingTarget) {
+        this.logger.warn(
+          toStructuredLog({
+            destinationIdentifier: payload.data.destinationIdentifier,
+            destinationType: payload.data.destinationType,
+            event: 'funding_target_not_found',
+            externalEventId: payload.externalEventId,
+            provider: payload.provider,
+            webhookEventId: insertedRow.id,
+          }),
+        );
+
         return await this.fundingWebhookStore.markProcessingStatus(
           context,
           insertedRow.id,
@@ -138,6 +174,21 @@ export class ApplyInboundFundingService {
         userTransactionId,
         webhookEventId: insertedRow.id,
       });
+
+      this.logger.log(
+        toStructuredLog({
+          amountMinor: payload.data.amountMinor,
+          currency: payload.data.currency,
+          event: 'funding_processed',
+          externalEventId: payload.externalEventId,
+          provider: payload.provider,
+          reference,
+          userId: fundingTarget.userId,
+          userTransactionId,
+          walletId: fundingTarget.walletId,
+          webhookEventId: insertedRow.id,
+        }),
+      );
 
       return await this.fundingWebhookStore.markProcessingStatus(
         context,

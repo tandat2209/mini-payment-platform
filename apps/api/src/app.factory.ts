@@ -4,6 +4,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { loadLocalEnv } from './shared/config/load-local-env';
 import { ApiErrorFilter } from './shared/http/api-error.filter';
+import { RequestLoggingInterceptor } from './shared/http/request-logging.interceptor';
 
 export function configureApp(app: INestApplication): INestApplication {
   const frontendOrigin = process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173';
@@ -14,6 +15,7 @@ export function configureApp(app: INestApplication): INestApplication {
   });
 
   app.useGlobalFilters(new ApiErrorFilter());
+  app.useGlobalInterceptors(new RequestLoggingInterceptor());
 
   return app;
 }

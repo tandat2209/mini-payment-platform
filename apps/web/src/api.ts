@@ -1,4 +1,4 @@
-import { getJson } from './lib/api-client';
+import { getJson, postJson } from './lib/api-client';
 
 type HealthResponse = {
   service: string;
@@ -127,6 +127,36 @@ type StatementOverviewData = {
   latestPeriod: StatementPeriod | null;
 };
 
+type AdminSimulationRequest = {
+  amountMinor: number;
+  currency: string;
+  description?: string;
+  destinationIdentifier: string;
+  destinationType: 'account_number' | 'iban' | 'virtual_account';
+  externalEventId?: string;
+  providerReference?: string;
+  sender?: {
+    accountIdentifier?: string;
+    bankCode?: string;
+    bankName?: string;
+    name: string;
+  };
+};
+
+type AdminSimulationResponse = {
+  deliveryTarget: string;
+  delivered: true;
+  externalEventId: string;
+  payload: {
+    data: AdminSimulationRequest;
+    eventType: 'funding.completed';
+    externalEventId: string;
+    occurredAt: string;
+    provider: string;
+  };
+  receiverResponse: Record<string, unknown>;
+};
+
 function getErrorMessage(caughtError: unknown): string {
   return caughtError instanceof Error ? caughtError.message : 'Unknown error';
 }
@@ -238,7 +268,21 @@ export async function fetchStatementOverview(): Promise<StatementOverviewData> {
   }
 }
 
+export async function triggerAdminFundingSimulation(
+  request: AdminSimulationRequest,
+): Promise<AdminSimulationResponse> {
+  return await postJson<AdminSimulationResponse, AdminSimulationRequest>(
+    '/admin/simulator/funding',
+    request,
+    {
+      errorLabel: 'Admin simulator request',
+      includeCustomerContext: false,
+    },
+  );
+}
+
 export type {
+  AdminSimulationResponse,
   FundingDetailValue,
   HealthResponse,
   MoneyDto,
