@@ -1,8 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
 @import 'tailwindcss';
 
 @theme {
   --font-sans: 'Manrope', 'IBM Plex Sans', 'Segoe UI', sans-serif;
+  --font-display: 'Cormorant Garamond', Georgia, serif;
 }
 
 @layer base {
@@ -20,8 +21,9 @@
     margin: 0;
     min-height: 100vh;
     background:
-      radial-gradient(circle at top left, rgba(148, 163, 184, 0.1), transparent 28%),
-      linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+      radial-gradient(circle at top left, rgba(16, 185, 129, 0.09), transparent 26%),
+      radial-gradient(circle at top right, rgba(59, 130, 246, 0.06), transparent 24%),
+      linear-gradient(180deg, #f6f8fb 0%, #eef3f8 100%);
     color: #0f172a;
   }
 

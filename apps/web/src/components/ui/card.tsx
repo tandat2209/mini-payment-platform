@@ -26,7 +26,7 @@ export function CardContent({
   ...props
 }: HTMLAttributes<HTMLDivElement>): JSX.Element {
   return (
-    <div className={cn('p-5 sm:p-6', className)} {...props}>
+    <div className={cn('p-4 sm:p-4', className)} {...props}>
       {children}
     </div>
   );

@@ -1,7 +1,9 @@
+import { QueryClientProvider } from '@tanstack/react-query';
 import { JSDOM } from 'jsdom';
 import { createRoot } from 'react-dom/client';
 
 import App from '../src/App';
+import { queryClient } from '../src/lib/query-client';
 
 async function waitForStatus(container: HTMLDivElement): Promise<string> {
   const timeoutAt = Date.now() + 10_000;
@@ -10,8 +12,8 @@ async function waitForStatus(container: HTMLDivElement): Promise<string> {
     const text = container.textContent;
 
     if (
-      text.includes('Aster Pay') &&
       text.includes('Total balance') &&
+      text.includes('Add money') &&
       text.includes('Recent transactions')
     ) {
       return text;
@@ -57,12 +59,19 @@ async function main(): Promise<void> {
   }
 
   const root = createRoot(container);
-  root.render(<App />);
+  root.render(
+    <QueryClientProvider client={queryClient}>
+      <App />
+    </QueryClientProvider>,
+  );
 
   const renderedText = await waitForStatus(container);
 
   console.log('Web connectivity verification succeeded.');
   console.log(renderedText);
+
+  queryClient.clear();
+  root.unmount();
 }
 
 void main();

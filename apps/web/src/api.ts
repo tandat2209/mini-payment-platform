@@ -1,10 +1,4 @@
-const fallbackApiBaseUrl = 'http://localhost:3001';
-const fallbackCustomerExternalRef = 'user_demo_alice';
-
-interface AppRuntimeEnv {
-  VITE_API_BASE_URL?: string;
-  VITE_CUSTOMER_EXTERNAL_REF?: string;
-}
+import { getJson } from './lib/api-client';
 
 type HealthResponse = {
   service: string;
@@ -106,61 +100,8 @@ type StatementOverviewData = {
   latestPeriod: StatementPeriod | null;
 };
 
-function getNodeEnv(): AppRuntimeEnv | undefined {
-  const runtime = globalThis as typeof globalThis & {
-    process?: {
-      env?: AppRuntimeEnv;
-    };
-  };
-
-  return runtime.process?.env;
-}
-
-function getImportMetaEnv(): AppRuntimeEnv | undefined {
-  const meta = import.meta as ImportMeta & {
-    env?: AppRuntimeEnv;
-  };
-
-  return meta.env;
-}
-
 function getErrorMessage(caughtError: unknown): string {
   return caughtError instanceof Error ? caughtError.message : 'Unknown error';
-}
-
-function buildApiUrl(path: string): string {
-  const normalizedBaseUrl = getApiBaseUrl().replace(/\/$/, '');
-
-  return `${normalizedBaseUrl}${path}`;
-}
-
-function createHeaders(includeCustomerContext: boolean, headers?: HeadersInit): Headers {
-  const requestHeaders = new Headers(headers);
-
-  if (includeCustomerContext) {
-    requestHeaders.set('x-customer-external-ref', getCustomerExternalRef());
-  }
-
-  return requestHeaders;
-}
-
-async function fetchJson<T>(
-  path: string,
-  options?: {
-    errorLabel?: string;
-    headers?: HeadersInit;
-    includeCustomerContext?: boolean;
-  },
-): Promise<T> {
-  const response = await fetch(buildApiUrl(path), {
-    headers: createHeaders(options?.includeCustomerContext ?? true, options?.headers),
-  });
-
-  if (!response.ok) {
-    throw new Error(`${options?.errorLabel ?? 'Request'} failed with status ${response.status}`);
-  }
-
-  return (await response.json()) as T;
 }
 
 function sortStatementPeriods(periods: StatementPeriod[]): StatementPeriod[] {
@@ -177,29 +118,15 @@ function sortStatementPeriods(periods: StatementPeriod[]): StatementPeriod[] {
   });
 }
 
-export function getApiBaseUrl(): string {
-  return (
-    getImportMetaEnv()?.VITE_API_BASE_URL ?? getNodeEnv()?.VITE_API_BASE_URL ?? fallbackApiBaseUrl
-  );
-}
-
-export function getCustomerExternalRef(): string {
-  return (
-    getImportMetaEnv()?.VITE_CUSTOMER_EXTERNAL_REF ??
-    getNodeEnv()?.VITE_CUSTOMER_EXTERNAL_REF ??
-    fallbackCustomerExternalRef
-  );
-}
-
 export async function fetchHealth(): Promise<HealthResponse> {
-  return await fetchJson<HealthResponse>('/health', {
+  return await getJson<HealthResponse>('/health', {
     errorLabel: 'Health request',
     includeCustomerContext: false,
   });
 }
 
 export async function fetchBalances(): Promise<WalletBalancesResponse> {
-  return await fetchJson<WalletBalancesResponse>('/customers/me/balances', {
+  return await getJson<WalletBalancesResponse>('/customers/me/balances', {
     errorLabel: 'Balance request',
   });
 }
@@ -209,22 +136,19 @@ export async function fetchTransactions(limit: number): Promise<TransactionListR
     limit: String(limit),
   });
 
-  return await fetchJson<TransactionListResponse>(
-    `/customers/me/transactions?${params.toString()}`,
-    {
-      errorLabel: 'Transaction request',
-    },
-  );
+  return await getJson<TransactionListResponse>(`/customers/me/transactions?${params.toString()}`, {
+    errorLabel: 'Transaction request',
+  });
 }
 
 export async function fetchRecipients(): Promise<RecipientListResponse> {
-  return await fetchJson<RecipientListResponse>('/customers/me/recipients', {
+  return await getJson<RecipientListResponse>('/customers/me/recipients', {
     errorLabel: 'Recipient request',
   });
 }
 
 export async function fetchStatementPeriods(): Promise<StatementPeriodListResponse> {
-  return await fetchJson<StatementPeriodListResponse>('/customers/me/statements', {
+  return await getJson<StatementPeriodListResponse>('/customers/me/statements', {
     errorLabel: 'Statement period request',
   });
 }
@@ -232,7 +156,7 @@ export async function fetchStatementPeriods(): Promise<StatementPeriodListRespon
 export async function fetchStatementDetail(
   period: StatementPeriod,
 ): Promise<StatementDetailResponse> {
-  return await fetchJson<StatementDetailResponse>(
+  return await getJson<StatementDetailResponse>(
     `/customers/me/statements/${period.walletId}/${period.currency}/${period.year}/${period.month}`,
     {
       errorLabel: 'Statement detail request',
@@ -286,3 +210,5 @@ export type {
   WalletBalance,
   WalletBalancesResponse,
 };
+
+export { getApiBaseUrl, getCustomerExternalRef } from './lib/runtime-env';
