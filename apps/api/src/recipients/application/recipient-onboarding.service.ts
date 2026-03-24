@@ -14,6 +14,10 @@ import {
   RecipientRailValidationError,
 } from '../domain/recipient-onboarding.types';
 import {
+  RECIPIENT_PROVIDER_REGISTRATION_GATEWAY,
+  type RecipientProviderRegistrationGateway,
+} from '../domain/recipient-provider-registration.gateway';
+import {
   RECIPIENT_WRITE_REPOSITORY,
   type RecipientWriteRepository,
 } from '../domain/recipient-write.repository';
@@ -54,6 +58,8 @@ export class RecipientOnboardingService {
     private readonly transactionManager: TransactionManager,
     @Inject(RECIPIENT_WRITE_REPOSITORY)
     private readonly recipientWriteRepository: RecipientWriteRepository,
+    @Inject(RECIPIENT_PROVIDER_REGISTRATION_GATEWAY)
+    private readonly recipientProviderRegistrationGateway: RecipientProviderRegistrationGateway,
     private readonly requirementResolver: RecipientRailRequirementResolver,
   ) {}
 
@@ -70,7 +76,7 @@ export class RecipientOnboardingService {
     const railId = randomUUID();
     const normalizedDetails = normalizeRailDetails(requirements.fields, input.details);
 
-    return await this.transactionManager.runInTransaction(async (context) => {
+    const created = await this.transactionManager.runInTransaction(async (context) => {
       const recipient = await this.recipientWriteRepository.createRecipient(context, {
         createdAt: now,
         id: recipientId,
@@ -98,6 +104,11 @@ export class RecipientOnboardingService {
 
       return { rail, recipient };
     });
+
+    return {
+      rail: await this.finalizeProviderManagedRail(created.recipient.name, created.rail),
+      recipient: created.recipient,
+    };
   }
 
   async addRailToRecipient(input: AddRecipientRailInput): Promise<RecipientRailRecord> {
@@ -106,7 +117,7 @@ export class RecipientOnboardingService {
     const railId = randomUUID();
     const normalizedDetails = normalizeRailDetails(requirements.fields, input.details);
 
-    return await this.transactionManager.runInTransaction(async (context) => {
+    const created = await this.transactionManager.runInTransaction(async (context) => {
       const recipient = await this.recipientWriteRepository.findRecipientOwnedByUser(
         context,
         input.customerId,
@@ -117,7 +128,7 @@ export class RecipientOnboardingService {
         throw new RecipientNotFoundError(input.recipientId);
       }
 
-      return await this.recipientWriteRepository.createRecipientRail(context, {
+      const rail = await this.recipientWriteRepository.createRecipientRail(context, {
         countryCode: requirements.countryCode,
         createdAt: now,
         currency: requirements.currency,
@@ -133,6 +144,50 @@ export class RecipientOnboardingService {
         readinessStatus: requirements.initialReadinessStatus,
         recipientId: recipient.id,
         updatedAt: now,
+      });
+
+      return {
+        rail,
+        recipientName: recipient.name,
+      };
+    });
+
+    return await this.finalizeProviderManagedRail(created.recipientName, created.rail);
+  }
+
+  private async finalizeProviderManagedRail(
+    recipientName: string,
+    rail: RecipientRailRecord,
+  ): Promise<RecipientRailRecord> {
+    if (rail.providerRegistrationStrategy !== 'provider_managed') {
+      return rail;
+    }
+
+    const registrationResult =
+      await this.recipientProviderRegistrationGateway.registerRecipientRail({
+        countryCode: rail.countryCode,
+        currency: rail.currency,
+        details: rail.details,
+        rail: rail.rail,
+        recipientName,
+      });
+
+    return await this.transactionManager.runInTransaction(async (context) => {
+      const updatedAt = new Date().toISOString();
+
+      if (registrationResult.status === 'active') {
+        return await this.recipientWriteRepository.markProviderRegistrationSucceeded(context, {
+          providerReference: registrationResult.providerReference,
+          providerRegisteredAt: registrationResult.providerRegisteredAt,
+          recipientRailId: rail.id,
+          updatedAt,
+        });
+      }
+
+      return await this.recipientWriteRepository.markProviderRegistrationFailed(context, {
+        providerRegistrationError: registrationResult.errorMessage,
+        recipientRailId: rail.id,
+        updatedAt,
       });
     });
   }

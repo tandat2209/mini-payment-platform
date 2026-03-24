@@ -7,6 +7,7 @@ import { Test } from '@nestjs/testing';
 import { configureApp } from './app.factory';
 import { AppModule } from './app.module';
 import { DatabaseService } from './database/database.service';
+import { RECIPIENT_PROVIDER_REGISTRATION_GATEWAY } from './recipients/domain/recipient-provider-registration.gateway';
 
 type QueryResponseRow = Record<string, unknown>;
 
@@ -372,6 +373,40 @@ class ApiFakeDatabaseService {
       return withRows([row]);
     }
 
+    if (sql.includes('UPDATE recipient_rails') && sql.includes("readiness_status = 'active'")) {
+      const [recipientRailId, providerReference, providerRegisteredAt, updatedAt] = parameters;
+      const rail = this.recipientRails.find((item) => item.id === recipientRailId);
+
+      if (!rail) {
+        return withRows([]);
+      }
+
+      rail.provider_reference = String(providerReference);
+      rail.provider_registered_at = String(providerRegisteredAt);
+      rail.provider_registration_error = null;
+      rail.readiness_status = 'active';
+      rail.updated_at = String(updatedAt);
+
+      return withRows([rail]);
+    }
+
+    if (sql.includes('UPDATE recipient_rails') && sql.includes("readiness_status = 'failed'")) {
+      const [recipientRailId, providerRegistrationError, updatedAt] = parameters;
+      const rail = this.recipientRails.find((item) => item.id === recipientRailId);
+
+      if (!rail) {
+        return withRows([]);
+      }
+
+      rail.provider_reference = null;
+      rail.provider_registered_at = null;
+      rail.provider_registration_error = String(providerRegistrationError);
+      rail.readiness_status = 'failed';
+      rail.updated_at = String(updatedAt);
+
+      return withRows([rail]);
+    }
+
     throw new Error(`Unhandled SQL in API fake database: ${sql}`);
   }
 
@@ -386,6 +421,16 @@ async function createTestApp() {
   })
     .overrideProvider(DatabaseService)
     .useValue(new ApiFakeDatabaseService())
+    .overrideProvider(RECIPIENT_PROVIDER_REGISTRATION_GATEWAY)
+    .useValue({
+      async registerRecipientRail() {
+        return {
+          providerReference: 'bene_swift_test',
+          providerRegisteredAt: '2026-03-24T09:30:00.000Z',
+          status: 'active' as const,
+        };
+      },
+    })
     .compile();
 
   const app = configureApp(testingModule.createNestApplication());
@@ -592,7 +637,7 @@ test('recipient create API creates a provider-managed SWIFT rail', async () => {
     );
     assert.equal(
       (response.body.rails as Array<Record<string, unknown>>)[0]?.readinessStatus,
-      'pending_provider_registration',
+      'active',
     );
   } finally {
     await app.close();

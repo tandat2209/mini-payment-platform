@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnprocessableEntityException } from '@nestjs/common';
 
 interface PspSandboxHealthResponse {
   service: 'psp-sandbox';
@@ -36,6 +36,25 @@ type FundingSimulationResponse = {
     provider: string;
   };
   receiverResponse: Record<string, unknown>;
+};
+
+type RegisterBeneficiaryRequest = {
+  countryCode: string;
+  currency: string;
+  details: Record<string, unknown>;
+  rail: 'sepa' | 'swift';
+  recipientName: string;
+};
+
+type RegisterBeneficiaryResponse = {
+  beneficiaryId: string;
+  countryCode: string;
+  currency: string;
+  provider: 'psp_sandbox';
+  rail: 'sepa' | 'swift';
+  recipientName: string;
+  registeredAt: string;
+  status: 'active';
 };
 
 @Injectable()
@@ -123,6 +142,23 @@ export class AppService {
     };
   }
 
+  async registerBeneficiary(
+    request: RegisterBeneficiaryRequest,
+  ): Promise<RegisterBeneficiaryResponse> {
+    validateBeneficiaryRequest(request);
+
+    return {
+      beneficiaryId: `bene_${randomUUID().replace(/-/g, '').slice(0, 16)}`,
+      countryCode: request.countryCode,
+      currency: request.currency,
+      provider: 'psp_sandbox',
+      rail: request.rail,
+      recipientName: request.recipientName,
+      registeredAt: new Date().toISOString(),
+      status: 'active',
+    };
+  }
+
   private getTargetApiBaseUrl(): string {
     return (process.env.PSP_SANDBOX_TARGET_API_BASE_URL ?? 'http://127.0.0.1:3001').replace(
       /\/$/,
@@ -131,4 +167,44 @@ export class AppService {
   }
 }
 
-export type { FundingSimulationRequest, FundingSimulationResponse, PspSandboxHealthResponse };
+function validateBeneficiaryRequest(request: RegisterBeneficiaryRequest): void {
+  if (request.rail === 'sepa') {
+    const iban = typeof request.details.iban === 'string' ? request.details.iban.trim() : '';
+
+    if (!iban || !/^[A-Z]{2}[A-Z0-9]{13,32}$/u.test(iban.toUpperCase())) {
+      throw new UnprocessableEntityException({
+        error: 'BENEFICIARY_VALIDATION_FAILED',
+        message: 'Valid IBAN is required for SEPA beneficiary registration',
+      });
+    }
+
+    return;
+  }
+
+  const accountNumber =
+    typeof request.details.accountNumber === 'string' ? request.details.accountNumber.trim() : '';
+  const swiftCode =
+    typeof request.details.swiftCode === 'string' ? request.details.swiftCode.trim() : '';
+
+  if (!accountNumber) {
+    throw new UnprocessableEntityException({
+      error: 'BENEFICIARY_VALIDATION_FAILED',
+      message: 'Account number is required for SWIFT beneficiary registration',
+    });
+  }
+
+  if (!/^[A-Z0-9]{8}([A-Z0-9]{3})?$/u.test(swiftCode.toUpperCase())) {
+    throw new UnprocessableEntityException({
+      error: 'BENEFICIARY_VALIDATION_FAILED',
+      message: 'Valid SWIFT/BIC is required for SWIFT beneficiary registration',
+    });
+  }
+}
+
+export type {
+  FundingSimulationRequest,
+  FundingSimulationResponse,
+  PspSandboxHealthResponse,
+  RegisterBeneficiaryRequest,
+  RegisterBeneficiaryResponse,
+};

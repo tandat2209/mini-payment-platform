@@ -12,9 +12,9 @@
 
 ## 3. Provider Registration Strategy And Payout Linkage
 
-- [ ] 3.1 Implement recipient rail provider-registration persistence so provider-managed rails can store external beneficiary references and failed registration outcomes.
-- [ ] 3.2 Add PSP sandbox support for beneficiary creation and validation scenarios needed by the initial provider-managed rails.
-- [ ] 3.3 Update payout design contracts and write-side boundaries so future payout creation references `recipientRailId` instead of inline destination details.
+- [x] 3.1 Implement recipient rail provider-registration persistence so provider-managed rails can store external beneficiary references and failed registration outcomes.
+- [x] 3.2 Add PSP sandbox support for beneficiary creation and validation scenarios needed by the initial provider-managed rails.
+- [x] 3.3 Update payout design contracts and write-side boundaries so future payout creation references `recipientRailId` instead of inline destination details.
 
 ## 4. Integration Verification And Documentation
 

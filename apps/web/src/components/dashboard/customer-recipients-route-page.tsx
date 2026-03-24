@@ -35,12 +35,15 @@ export function CustomerRecipientsRoutePage(): JSX.Element {
   const createRecipientMutation = useMutation({
     mutationFn: createRecipient,
     onSuccess: async (recipient) => {
+      const createdRail = recipient.rails[0];
       setSuccessMessage(
-        `${recipient.name} was saved. ${
-          recipient.rails[0]?.payoutReady
-            ? 'This rail is ready for payout.'
-            : 'This rail is waiting on provider registration.'
-        }`,
+        createdRail?.providerRegistrationError
+          ? `${recipient.name} was saved, but the provider rejected this rail: ${createdRail.providerRegistrationError}`
+          : `${recipient.name} was saved. ${
+              createdRail?.payoutReady
+                ? 'This rail is ready for payout.'
+                : 'This rail is waiting on provider registration.'
+            }`,
       );
       setRecipientName('');
       setDetailValues({});
@@ -59,11 +62,13 @@ export function CustomerRecipientsRoutePage(): JSX.Element {
       }),
     onSuccess: async (result) => {
       setSuccessMessage(
-        `${toTitleCase(result.rail.rail)} rail added. ${
-          result.rail.payoutReady
-            ? 'It is immediately available for payout.'
-            : 'It is waiting on provider registration.'
-        }`,
+        result.rail.providerRegistrationError
+          ? `${toTitleCase(result.rail.rail)} rail was added, but the provider rejected it: ${result.rail.providerRegistrationError}`
+          : `${toTitleCase(result.rail.rail)} rail added. ${
+              result.rail.payoutReady
+                ? 'It is immediately available for payout.'
+                : 'It is waiting on provider registration.'
+            }`,
       );
       setDetailValues({});
       await queryClient.invalidateQueries({ queryKey: ['recipients'] });

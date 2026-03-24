@@ -53,10 +53,15 @@ export class SqlRecipientQueryRepository implements RecipientQueryRepository {
       id: recipient.id,
       name: recipient.name,
       rails: (railsByRecipientId.get(recipient.id) ?? []).map((rail: RecipientRailSummaryView) => ({
+        countryCode: rail.countryCode,
         currency: rail.currency,
         id: rail.id,
         isDefault: rail.isDefault,
+        payoutReady: rail.payoutReady,
+        providerRegistrationError: rail.providerRegistrationError,
+        providerRegistrationStrategy: rail.providerRegistrationStrategy,
         rail: rail.rail,
+        readinessStatus: rail.readinessStatus,
       })),
       status: recipient.status,
     }));

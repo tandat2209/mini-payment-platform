@@ -140,3 +140,41 @@ test('simulateFundingWebhook generates an external event id when omitted', async
     }
   }
 });
+
+test('registerBeneficiary succeeds for valid SEPA beneficiary details', async () => {
+  const service = new AppService();
+
+  const response = await service.registerBeneficiary({
+    countryCode: 'DE',
+    currency: 'EUR',
+    details: {
+      iban: 'DE89370400440532013000',
+    },
+    rail: 'sepa',
+    recipientName: 'Acme Europe GmbH',
+  });
+
+  assert.equal(response.status, 'active');
+  assert.equal(response.provider, 'psp_sandbox');
+  assert.equal(response.rail, 'sepa');
+  assert.match(response.beneficiaryId, /^bene_/);
+});
+
+test('registerBeneficiary rejects invalid SWIFT beneficiary details', async () => {
+  const service = new AppService();
+
+  await assert.rejects(
+    () =>
+      service.registerBeneficiary({
+        countryCode: 'GB',
+        currency: 'USD',
+        details: {
+          accountNumber: '111122223333',
+          swiftCode: 'BAD',
+        },
+        rail: 'swift',
+        recipientName: 'Global Vendor',
+      }),
+    /Valid SWIFT\/BIC is required/,
+  );
+});

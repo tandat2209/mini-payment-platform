@@ -37,7 +37,11 @@ export const transactionFilters: Array<{ label: string; value: TransactionFilter
   { label: 'Outflow', value: 'debit' },
 ];
 
-export function toTitleCase(value: string): string {
+export function toTitleCase(value: string | null | undefined): string {
+  if (!value) {
+    return 'Unknown';
+  }
+
   return value
     .split(/[_\s-]+/)
     .filter((segment) => segment.length > 0)

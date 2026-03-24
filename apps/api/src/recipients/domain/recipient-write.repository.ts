@@ -46,6 +46,23 @@ export interface RecipientWriteRepository {
     userId: string,
     recipientId: string,
   ): Promise<RecipientIdentity | null>;
+  markProviderRegistrationFailed(
+    context: TransactionContext,
+    input: {
+      providerRegistrationError: string;
+      recipientRailId: string;
+      updatedAt: string;
+    },
+  ): Promise<RecipientRailRecord>;
+  markProviderRegistrationSucceeded(
+    context: TransactionContext,
+    input: {
+      providerReference: string;
+      providerRegisteredAt: string;
+      recipientRailId: string;
+      updatedAt: string;
+    },
+  ): Promise<RecipientRailRecord>;
 }
 
 export const RECIPIENT_WRITE_REPOSITORY = Symbol('RECIPIENT_WRITE_REPOSITORY');

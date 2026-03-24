@@ -197,6 +197,103 @@ export class SqlRecipientWriteRepository implements RecipientWriteRepository {
       userId: row.user_id,
     };
   }
+
+  async markProviderRegistrationFailed(
+    context: TransactionContext,
+    input: {
+      providerRegistrationError: string;
+      recipientRailId: string;
+      updatedAt: string;
+    },
+  ): Promise<RecipientRailRecord> {
+    const queryable = getDatabaseQueryable(context);
+    const result = await queryable.query<RecipientRailRow>(
+      `
+        UPDATE recipient_rails
+        SET
+          readiness_status = 'failed',
+          provider_registration_error = $2,
+          provider_reference = NULL,
+          provider_registered_at = NULL,
+          updated_at = $3::timestamptz
+        WHERE id = $1::uuid
+        RETURNING
+          id,
+          recipient_id,
+          rail,
+          currency,
+          country_code,
+          details,
+          readiness_status,
+          provider_registration_strategy,
+          provider_reference,
+          provider_registration_error,
+          provider_registered_at,
+          is_default,
+          is_active,
+          created_at,
+          updated_at
+      `,
+      [input.recipientRailId, input.providerRegistrationError, input.updatedAt],
+    );
+
+    const row = result.rows[0];
+
+    if (!row) {
+      throw new Error('Recipient rail update did not return a row');
+    }
+
+    return mapRecipientRailRow(row);
+  }
+
+  async markProviderRegistrationSucceeded(
+    context: TransactionContext,
+    input: {
+      providerReference: string;
+      providerRegisteredAt: string;
+      recipientRailId: string;
+      updatedAt: string;
+    },
+  ): Promise<RecipientRailRecord> {
+    const queryable = getDatabaseQueryable(context);
+    const result = await queryable.query<RecipientRailRow>(
+      `
+        UPDATE recipient_rails
+        SET
+          readiness_status = 'active',
+          provider_registration_error = NULL,
+          provider_reference = $2,
+          provider_registered_at = $3::timestamptz,
+          updated_at = $4::timestamptz
+        WHERE id = $1::uuid
+        RETURNING
+          id,
+          recipient_id,
+          rail,
+          currency,
+          country_code,
+          details,
+          readiness_status,
+          provider_registration_strategy,
+          provider_reference,
+          provider_registration_error,
+          provider_registered_at,
+          is_default,
+          is_active,
+          created_at,
+          updated_at
+      `,
+      [input.recipientRailId, input.providerReference, input.providerRegisteredAt, input.updatedAt],
+    );
+
+    const row = result.rows[0];
+
+    if (!row) {
+      throw new Error('Recipient rail update did not return a row');
+    }
+
+    return mapRecipientRailRow(row);
+  }
 }
 
 function mapRecipientRailRow(row: RecipientRailRow): RecipientRailRecord {
