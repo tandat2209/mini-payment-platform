@@ -7,7 +7,7 @@ import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { EmptyState, LoadingBlock } from './shared';
-import { toTitleCase } from './utils';
+import { getCountryFlag, toTitleCase } from './utils';
 
 export function RecipientDirectory({
   isLoading,
@@ -105,7 +105,8 @@ export function RecipientDirectory({
                           {formatReadinessStatus(rail.readinessStatus)}
                         </Badge>
                         <span className="text-xs text-slate-500">
-                          {rail.countryCode} · {rail.currency ?? 'No currency'}
+                          {getCountryFlag(rail.countryCode)} {rail.countryCode} ·{' '}
+                          {rail.currency ?? 'No currency'}
                         </span>
                         <span className="text-xs text-slate-500">
                           {rail.providerRegistrationStrategy === 'provider_managed'

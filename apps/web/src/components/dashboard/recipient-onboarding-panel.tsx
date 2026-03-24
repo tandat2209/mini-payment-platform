@@ -12,7 +12,7 @@ import { Card, CardContent } from '../ui/card';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { EmptyState, LoadingBlock } from './shared';
-import { toTitleCase } from './utils';
+import { getCountryFlag, toTitleCase } from './utils';
 
 const railOptions = [
   { description: 'US domestic bank rails', label: 'ACH', value: 'ach' },
@@ -156,7 +156,7 @@ export function RecipientOnboardingPanel({
               <SelectContent>
                 {countryOptions.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
-                    {option.label}
+                    {getCountryFlag(option.value)} {option.label}
                   </SelectItem>
                 ))}
               </SelectContent>

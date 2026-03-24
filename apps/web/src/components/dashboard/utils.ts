@@ -133,6 +133,22 @@ export function getCurrencyFlag(currency: string): string {
   return currencyFlags[currency] ?? currency.slice(0, 2);
 }
 
+export function getCountryFlag(countryCode: string | null | undefined): string {
+  if (!countryCode) {
+    return '🏳';
+  }
+
+  const normalizedCountryCode = countryCode.trim().toUpperCase();
+
+  if (!/^[A-Z]{2}$/u.test(normalizedCountryCode)) {
+    return '🏳';
+  }
+
+  return String.fromCodePoint(
+    ...normalizedCountryCode.split('').map((character) => 127397 + character.charCodeAt(0)),
+  );
+}
+
 function getPlaceholderUsdRate(currency: string): number {
   return placeholderUsdRates[currency] ?? 1;
 }
