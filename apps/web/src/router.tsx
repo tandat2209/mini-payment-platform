@@ -3,13 +3,15 @@ import { createRootRoute, createRoute, createRouter } from '@tanstack/react-rout
 import App from './App';
 import { AdminBalancesRoutePage } from './components/admin/admin-balances-route-page';
 import { AdminLedgersRoutePage } from './components/admin/admin-ledgers-route-page';
-import { AdminSimulatorRoutePage } from './components/admin/admin-simulator-route-page';
 import { AdminTransactionsRoutePage } from './components/admin/admin-transactions-route-page';
 import { AdminWalletRoutePage } from './components/admin/admin-wallet-route-page';
 import { AddMoneyRoutePage } from './components/dashboard/add-money-route-page';
 import { CustomerPayoutRoutePage } from './components/dashboard/customer-payout-route-page';
 import { CustomerRecipientsRoutePage } from './components/dashboard/customer-recipients-route-page';
 import { DashboardRoutePage } from './components/dashboard/dashboard-route-page';
+import { SandboxFundingRoutePage } from './components/sandbox/sandbox-funding-route-page';
+import { SandboxPayoutUpdatesRoutePage } from './components/sandbox/sandbox-payout-updates-route-page';
+import { SandboxReconciliationReportsRoutePage } from './components/sandbox/sandbox-reconciliation-reports-route-page';
 
 const rootRoute = createRootRoute({
   component: App,
@@ -51,12 +53,6 @@ const adminBalancesRoute = createRoute({
   path: '/admin/balances',
 });
 
-const adminSimulatorRoute = createRoute({
-  component: AdminSimulatorRoutePage,
-  getParentRoute: () => rootRoute,
-  path: '/admin/simulator',
-});
-
 const adminTransactionsRoute = createRoute({
   component: AdminTransactionsRoutePage,
   getParentRoute: () => rootRoute,
@@ -76,6 +72,24 @@ const adminLedgersRoute = createRoute({
   }),
 });
 
+const sandboxFundingRoute = createRoute({
+  component: SandboxFundingRoutePage,
+  getParentRoute: () => rootRoute,
+  path: '/sandbox/funding',
+});
+
+const sandboxPayoutUpdatesRoute = createRoute({
+  component: SandboxPayoutUpdatesRoutePage,
+  getParentRoute: () => rootRoute,
+  path: '/sandbox/payout-updates',
+});
+
+const sandboxReconciliationReportsRoute = createRoute({
+  component: SandboxReconciliationReportsRoutePage,
+  getParentRoute: () => rootRoute,
+  path: '/sandbox/reconciliation-reports',
+});
+
 const routeTree = rootRoute.addChildren([
   overviewRoute,
   payoutRoute,
@@ -83,9 +97,11 @@ const routeTree = rootRoute.addChildren([
   fundingDetailsRoute,
   adminWalletRoute,
   adminBalancesRoute,
-  adminSimulatorRoute,
   adminTransactionsRoute,
   adminLedgersRoute,
+  sandboxFundingRoute,
+  sandboxPayoutUpdatesRoute,
+  sandboxReconciliationReportsRoute,
 ]);
 
 export const router = createRouter({

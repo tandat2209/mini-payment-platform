@@ -3,6 +3,7 @@ import type { JSX, ReactNode } from 'react';
 import { MobileNavigation } from './mobile-navigation';
 import type { NavigationId, NavigationItem, Workspace } from './navigation-config';
 import { SidebarNavigation } from './sidebar-navigation';
+import { WorkspaceSwitcher } from './workspace-switcher';
 
 export function AppShell({
   activeNavigationId,
@@ -36,12 +37,13 @@ export function AppShell({
             activeWorkspace={activeWorkspace}
             navigationItems={navigationItems}
             onNavigationSelect={onNavigationSelect}
-            onWorkspaceSelect={onWorkspaceSelect}
           />
 
           <div className="space-y-5 py-2">{children}</div>
         </div>
       </div>
+
+      <WorkspaceSwitcher activeWorkspace={activeWorkspace} onWorkspaceSelect={onWorkspaceSelect} />
     </div>
   );
 }

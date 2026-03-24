@@ -2,25 +2,24 @@ import { create } from 'zustand';
 
 import { type AdminSimulationResponse, triggerAdminFundingSimulation } from '../api';
 import {
-  type AdminSimulationFormState,
-  type AdminSimulationResult,
-  initialAdminSimulationFormState,
-} from '../components/admin/admin-data';
+  initialSandboxFundingSimulationFormState,
+  type SandboxFundingSimulationFormState,
+  type SandboxFundingSimulationResult,
+} from '../components/sandbox/sandbox-data';
 import { queryClient } from '../lib/query-client';
 
-type AdminStore = {
-  formState: AdminSimulationFormState;
+type SandboxStore = {
+  formState: SandboxFundingSimulationFormState;
   isSubmitting: boolean;
-  simulationError: string | null;
-  setFormField: (field: keyof AdminSimulationFormState, value: string) => void;
+  setFormField: (field: keyof SandboxFundingSimulationFormState, value: string) => void;
   simulateFunding: () => Promise<void>;
-  simulationResult: AdminSimulationResult | null;
+  simulationError: string | null;
+  simulationResult: SandboxFundingSimulationResult | null;
 };
 
-export const useAdminStore = create<AdminStore>((set, get) => ({
-  formState: initialAdminSimulationFormState,
+export const useSandboxStore = create<SandboxStore>((set, get) => ({
+  formState: initialSandboxFundingSimulationFormState,
   isSubmitting: false,
-  simulationError: null,
   setFormField: (field, value) =>
     set((state) => ({
       formState: {
@@ -123,10 +122,11 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
       set({
         isSubmitting: false,
         simulationError:
-          caughtError instanceof Error ? caughtError.message : 'Admin simulator request failed.',
+          caughtError instanceof Error ? caughtError.message : 'Sandbox simulator request failed.',
       });
     }
   },
+  simulationError: null,
   simulationResult: null,
 }));
 

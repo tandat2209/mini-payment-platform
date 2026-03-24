@@ -3,16 +3,19 @@ import {
   ArrowLeftRight,
   Boxes,
   CreditCard,
+  FlaskConical,
   LayoutGrid,
+  Radar,
   ReceiptText,
   Shield,
   Wallet,
 } from 'lucide-react';
 
-export type Workspace = 'customer' | 'admin';
-export type CustomerPageId = 'overview' | 'payout' | 'recipients' | 'funding-details';
-export type AdminPageId = 'wallet' | 'balances' | 'simulator' | 'transactions' | 'ledgers';
-export type NavigationId = CustomerPageId | AdminPageId;
+export type Workspace = 'admin' | 'customer' | 'sandbox';
+export type CustomerPageId = 'funding-details' | 'overview' | 'payout' | 'recipients';
+export type AdminPageId = 'balances' | 'ledgers' | 'transactions' | 'wallet';
+export type SandboxPageId = 'funding' | 'payout-updates' | 'reconciliation-reports';
+export type NavigationId = AdminPageId | CustomerPageId | SandboxPageId;
 
 export type NavigationItem = {
   icon: LucideIcon;
@@ -35,35 +38,87 @@ export const adminNavigationItems: NavigationItem[] = [
   { icon: ReceiptText, id: 'ledgers', label: 'Ledgers', path: '/admin/ledgers' },
 ];
 
-export const adminSandboxNavigationItems: NavigationItem[] = [
-  { icon: Shield, id: 'simulator', label: 'Simulator', path: '/admin/simulator' },
+export const sandboxNavigationItems: NavigationItem[] = [
+  { icon: FlaskConical, id: 'funding', label: 'Funding', path: '/sandbox/funding' },
+  { icon: Radar, id: 'payout-updates', label: 'Payout updates', path: '/sandbox/payout-updates' },
+  {
+    icon: ReceiptText,
+    id: 'reconciliation-reports',
+    label: 'Reconciliation reports',
+    path: '/sandbox/reconciliation-reports',
+  },
 ];
 
 export const workspaceItems: Array<{
   defaultPath: string;
-  description: string;
   icon: LucideIcon;
   id: Workspace;
   label: string;
 }> = [
   {
     defaultPath: '/',
-    description: 'Customer dashboard, payouts, recipients, and funding details',
     icon: LayoutGrid,
     id: 'customer',
     label: 'Customer',
   },
   {
     defaultPath: '/admin',
-    description: 'Admin console for simulator, transactions, wallets, balances, and ledgers',
     icon: Shield,
     id: 'admin',
     label: 'Admin',
   },
+  {
+    defaultPath: '/sandbox/funding',
+    icon: FlaskConical,
+    id: 'sandbox',
+    label: 'Sandbox Tool',
+  },
 ];
 
 export function getWorkspaceFromPath(pathname: string): Workspace {
-  return pathname.startsWith('/admin') ? 'admin' : 'customer';
+  if (pathname.startsWith('/sandbox')) {
+    return 'sandbox';
+  }
+
+  if (pathname.startsWith('/admin')) {
+    return 'admin';
+  }
+
+  return 'customer';
+}
+
+export function getWorkspaceNavigationItems(workspace: Workspace): NavigationItem[] {
+  switch (workspace) {
+    case 'admin':
+      return adminNavigationItems;
+    case 'sandbox':
+      return sandboxNavigationItems;
+    default:
+      return customerNavigationItems;
+  }
+}
+
+export function getWorkspaceHeadline(workspace: Workspace): {
+  navLabel: string;
+  title: string;
+} {
+  switch (workspace) {
+    case 'admin':
+      return {
+        navLabel: 'Admin navigation',
+        title: 'Admin',
+      };
+    case 'sandbox':
+      return {
+        navLabel: 'Sandbox tools',
+        title: 'Sandbox',
+      };
+    default:
+      return {
+        navLabel: 'Customer navigation',
+        title: 'Customer',
+      };
+  }
 }
 
 export function getActiveNavigationId(pathname: string): NavigationId {
@@ -80,13 +135,29 @@ export function getActiveNavigationId(pathname: string): NavigationId {
       return 'wallet';
     case '/admin/balances':
       return 'balances';
-    case '/admin/simulator':
-      return 'simulator';
     case '/admin/transactions':
       return 'transactions';
     case '/admin/ledgers':
       return 'ledgers';
+    case '/sandbox/funding':
+      return 'funding';
+    case '/sandbox/payout-updates':
+      return 'payout-updates';
+    case '/sandbox/reconciliation-reports':
+      return 'reconciliation-reports';
     default:
+      if (pathname.startsWith('/sandbox/reconciliation-reports')) {
+        return 'reconciliation-reports';
+      }
+
+      if (pathname.startsWith('/sandbox/payout-updates')) {
+        return 'payout-updates';
+      }
+
+      if (pathname.startsWith('/sandbox')) {
+        return 'funding';
+      }
+
       return pathname.startsWith('/admin') ? 'wallet' : 'overview';
   }
 }

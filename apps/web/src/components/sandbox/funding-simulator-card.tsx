@@ -3,9 +3,12 @@ import type { ChangeEvent, FormEvent, JSX } from 'react';
 
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
-import type { AdminSimulationFormState, AdminSimulationResult } from './admin-data';
+import type {
+  SandboxFundingSimulationFormState,
+  SandboxFundingSimulationResult,
+} from './sandbox-data';
 
-export function AdminSimulatorCard({
+export function FundingSimulatorCard({
   error,
   formState,
   isSubmitting,
@@ -14,11 +17,11 @@ export function AdminSimulatorCard({
   result,
 }: {
   error: string | null;
-  formState: AdminSimulationFormState;
+  formState: SandboxFundingSimulationFormState;
   isSubmitting: boolean;
-  onChange: (field: keyof AdminSimulationFormState, value: string) => void;
+  onChange: (field: keyof SandboxFundingSimulationFormState, value: string) => void;
   onSubmit: () => Promise<void> | void;
-  result: AdminSimulationResult | null;
+  result: SandboxFundingSimulationResult | null;
 }): JSX.Element {
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
@@ -31,14 +34,14 @@ export function AdminSimulatorCard({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-              Simulator
+              Sandbox simulator
             </p>
             <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
-              Funding control desk
+              Funding webhook dispatch
             </h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-              Sandbox-only admin tool for dispatching provider-style funding events through the API
-              relay into the simulator service.
+              Send provider-style inbound funding events through the API relay into the simulator
+              service.
             </p>
           </div>
 
@@ -128,7 +131,7 @@ export function AdminSimulatorCard({
                 Dispatch request
               </div>
               <p className="mt-4 text-sm leading-6 text-slate-300">
-                This sends the exact provider-style payload to the API, and the API relays it to the
+                This sends the provider-style payload to the API, and the API relays it to the
                 simulator service.
               </p>
               <Button className="mt-5 w-full rounded-2xl" disabled={isSubmitting} type="submit">
@@ -138,7 +141,7 @@ export function AdminSimulatorCard({
                     Dispatching event...
                   </>
                 ) : (
-                  'Send simulator funding event'
+                  'Send funding webhook'
                 )}
               </Button>
             </div>
@@ -168,7 +171,7 @@ export function AdminSimulatorCard({
                 </dl>
               ) : (
                 <p className="mt-4 text-sm leading-6 text-slate-500">
-                  No sandbox event sent yet. Submit a simulator request to see the delivery result
+                  No sandbox event sent yet. Submit a funding webhook to see the delivery result
                   from the API relay.
                 </p>
               )}

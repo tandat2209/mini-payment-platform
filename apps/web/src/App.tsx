@@ -3,10 +3,9 @@ import type { JSX } from 'react';
 
 import { AppShell } from './components/shell/app-shell';
 import {
-  adminNavigationItems,
-  customerNavigationItems,
   getActiveNavigationId,
   getWorkspaceFromPath,
+  getWorkspaceNavigationItems,
   workspaceItems,
 } from './components/shell/navigation-config';
 
@@ -18,10 +17,8 @@ function App(): JSX.Element {
 
   const activeWorkspace = getWorkspaceFromPath(pathname);
   const activeNavigationId = getActiveNavigationId(pathname);
-  const navigationItems =
-    activeWorkspace === 'admin' ? adminNavigationItems : customerNavigationItems;
 
-  function handleWorkspaceSelect(workspace: 'customer' | 'admin'): void {
+  function handleWorkspaceSelect(workspace: 'customer' | 'admin' | 'sandbox'): void {
     const target = workspaceItems.find((item) => item.id === workspace);
 
     if (!target) {
@@ -39,7 +36,7 @@ function App(): JSX.Element {
     <AppShell
       activeNavigationId={activeNavigationId}
       activeWorkspace={activeWorkspace}
-      navigationItems={navigationItems}
+      navigationItems={getWorkspaceNavigationItems(activeWorkspace)}
       onNavigationSelect={handleNavigationSelect}
       onWorkspaceSelect={handleWorkspaceSelect}
     >
