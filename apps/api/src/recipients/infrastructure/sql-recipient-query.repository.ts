@@ -17,11 +17,15 @@ type RecipientRow = {
 };
 
 type RecipientRailRow = {
+  country_code: string;
   currency: string | null;
   details: Record<string, unknown>;
   id: string;
   is_default: boolean;
+  provider_registration_error: string | null;
+  provider_registration_strategy: string;
   rail: string;
+  readiness_status: string;
   recipient_id: string;
 };
 
@@ -81,7 +85,17 @@ export class SqlRecipientQueryRepository implements RecipientQueryRepository {
 
     const railsResult = await this.databaseService.query<RecipientRailRow>(
       `
-        SELECT id, recipient_id, rail, currency, details, is_default
+        SELECT
+          id,
+          recipient_id,
+          rail,
+          currency,
+          country_code,
+          details,
+          readiness_status,
+          provider_registration_strategy,
+          provider_registration_error,
+          is_default
         FROM recipient_rails
         WHERE recipient_id = $1
           AND is_active = TRUE
@@ -95,11 +109,16 @@ export class SqlRecipientQueryRepository implements RecipientQueryRepository {
       id: recipient.id,
       name: recipient.name,
       rails: railsResult.rows.map((rail) => ({
+        countryCode: rail.country_code,
         currency: rail.currency,
         details: maskRecipientRailDetails(rail.details),
         id: rail.id,
         isDefault: rail.is_default,
+        payoutReady: rail.readiness_status === 'active',
+        providerRegistrationError: rail.provider_registration_error,
+        providerRegistrationStrategy: rail.provider_registration_strategy,
         rail: rail.rail,
+        readinessStatus: rail.readiness_status,
       })),
       status: recipient.status,
     };
@@ -110,7 +129,17 @@ export class SqlRecipientQueryRepository implements RecipientQueryRepository {
   ): Promise<Map<string, RecipientRailSummaryView[]>> {
     const railsResult = await this.databaseService.query<RecipientRailRow>(
       `
-        SELECT id, recipient_id, rail, currency, details, is_default
+        SELECT
+          id,
+          recipient_id,
+          rail,
+          currency,
+          country_code,
+          details,
+          readiness_status,
+          provider_registration_strategy,
+          provider_registration_error,
+          is_default
         FROM recipient_rails
         WHERE recipient_id = ANY($1::uuid[])
           AND is_active = TRUE
@@ -123,10 +152,15 @@ export class SqlRecipientQueryRepository implements RecipientQueryRepository {
       const existing = grouped.get(rail.recipient_id) ?? [];
 
       existing.push({
+        countryCode: rail.country_code,
         currency: rail.currency,
         id: rail.id,
         isDefault: rail.is_default,
+        payoutReady: rail.readiness_status === 'active',
+        providerRegistrationError: rail.provider_registration_error,
+        providerRegistrationStrategy: rail.provider_registration_strategy,
         rail: rail.rail,
+        readinessStatus: rail.readiness_status,
       });
 
       grouped.set(rail.recipient_id, existing);

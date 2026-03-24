@@ -6,9 +6,9 @@
 
 ## 2. Customer Recipient Onboarding APIs And Web Flow
 
-- [ ] 2.1 Add customer-facing API endpoints for recipient requirement discovery, recipient creation, and adding a new rail to an existing recipient.
-- [ ] 2.2 Expand the existing customer recipient read responses to include rail onboarding or payout-readiness status while keeping sensitive identifiers masked.
-- [ ] 2.3 Build the web recipient onboarding flow so a customer can create a recipient, select a rail, enter dynamic rail details, and review the saved result.
+- [x] 2.1 Add customer-facing API endpoints for recipient requirement discovery, recipient creation, and adding a new rail to an existing recipient.
+- [x] 2.2 Expand the existing customer recipient read responses to include rail onboarding or payout-readiness status while keeping sensitive identifiers masked.
+- [x] 2.3 Build the web recipient onboarding flow so a customer can create a recipient, select a rail, enter dynamic rail details, and review the saved result.
 
 ## 3. Provider Registration Strategy And Payout Linkage
 

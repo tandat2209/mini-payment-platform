@@ -27,6 +27,11 @@ type RecipientRailInput = {
   rail: string;
 };
 
+type RecipientRequirementLookupInput = Pick<
+  RecipientRailInput,
+  'countryCode' | 'currency' | 'rail'
+>;
+
 type CreateRecipientWithRailInput = RecipientRailInput & {
   customerId: string;
   recipientName: string;
@@ -52,7 +57,7 @@ export class RecipientOnboardingService {
     private readonly requirementResolver: RecipientRailRequirementResolver,
   ) {}
 
-  getRequirements(input: RecipientRailInput): RecipientRailRequirementSet {
+  getRequirements(input: RecipientRequirementLookupInput): RecipientRailRequirementSet {
     return this.requirementResolver.resolve(input);
   }
 

@@ -1,4 +1,4 @@
-import { getJson, postJsonToBase } from './lib/api-client';
+import { getJson, postJson, postJsonToBase } from './lib/api-client';
 import { getPspSandboxBaseUrl } from './lib/runtime-env';
 
 type HealthResponse = {
@@ -84,16 +84,60 @@ type RecipientSummary = {
   id: string;
   name: string;
   rails: Array<{
+    countryCode: string;
     currency: string | null;
     id: string;
     isDefault: boolean;
+    payoutReady: boolean;
+    providerRegistrationError: string | null;
+    providerRegistrationStrategy: string;
     rail: string;
+    readinessStatus: string;
   }>;
   status: string;
 };
 
 type RecipientListResponse = {
   items: RecipientSummary[];
+};
+
+type RecipientRequirementField = {
+  key: string;
+  kind: string;
+  label: string;
+  required: boolean;
+};
+
+type RecipientRequirementsResponse = {
+  countryCode: string;
+  currency: string;
+  fields: RecipientRequirementField[];
+  initialReadinessStatus: string;
+  providerRegistrationStrategy: string;
+  rail: string;
+};
+
+type RecipientRailCreateRequest = {
+  countryCode: string;
+  currency: string;
+  details: Record<string, string>;
+  isDefault?: boolean;
+  rail: 'ach' | 'sepa' | 'swift';
+};
+
+type CreateRecipientRequest = {
+  name: string;
+  rail: RecipientRailCreateRequest;
+};
+
+type AddRecipientRailRequest = RecipientRailCreateRequest;
+
+type RecipientCreateResponse = {
+  createdAt: string | null;
+  id: string;
+  name: string;
+  rails: RecipientSummary['rails'];
+  status: string;
 };
 
 type StatementPeriod = {
@@ -339,6 +383,50 @@ export async function fetchRecipients(): Promise<RecipientListResponse> {
   });
 }
 
+export async function fetchRecipientRequirements(input: {
+  countryCode: string;
+  currency: string;
+  rail: 'ach' | 'sepa' | 'swift';
+}): Promise<RecipientRequirementsResponse> {
+  const params = new URLSearchParams({
+    countryCode: input.countryCode,
+    currency: input.currency,
+    rail: input.rail,
+  });
+
+  return await getJson<RecipientRequirementsResponse>(
+    `/customers/me/recipients/requirements?${params.toString()}`,
+    {
+      errorLabel: 'Recipient requirements request',
+    },
+  );
+}
+
+export async function createRecipient(
+  request: CreateRecipientRequest,
+): Promise<RecipientCreateResponse> {
+  return await postJson<RecipientCreateResponse, CreateRecipientRequest>(
+    '/customers/me/recipients',
+    request,
+    {
+      errorLabel: 'Create recipient request',
+    },
+  );
+}
+
+export async function addRecipientRail(
+  recipientId: string,
+  request: AddRecipientRailRequest,
+): Promise<{ rail: RecipientSummary['rails'][number] }> {
+  return await postJson<{ rail: RecipientSummary['rails'][number] }, AddRecipientRailRequest>(
+    `/customers/me/recipients/${recipientId}/rails`,
+    request,
+    {
+      errorLabel: 'Add recipient rail request',
+    },
+  );
+}
+
 export async function fetchStatementPeriods(): Promise<StatementPeriodListResponse> {
   return await getJson<StatementPeriodListResponse>('/customers/me/statements', {
     errorLabel: 'Statement period request',
@@ -487,7 +575,10 @@ export type {
   FundingDetailValue,
   HealthResponse,
   MoneyDto,
+  RecipientCreateResponse,
   RecipientListResponse,
+  RecipientRequirementField,
+  RecipientRequirementsResponse,
   RecipientSummary,
   SandboxFundingRequest,
   SandboxFundingResponse,

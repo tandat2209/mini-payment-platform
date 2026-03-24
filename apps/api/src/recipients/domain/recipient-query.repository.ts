@@ -1,8 +1,13 @@
 export type RecipientRailSummaryView = {
+  countryCode: string;
   currency: string | null;
   id: string;
   isDefault: boolean;
+  payoutReady: boolean;
+  providerRegistrationError: string | null;
+  providerRegistrationStrategy: string;
   rail: string;
+  readinessStatus: string;
 };
 
 export type RecipientRailDetailView = RecipientRailSummaryView & {

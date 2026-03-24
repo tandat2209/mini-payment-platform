@@ -64,6 +64,12 @@ export async function postJson<TResponse, TBody>(
   }
 }
 
+export async function getJsonWithoutThrow<T>(path: string, options?: RequestOptions): Promise<T> {
+  const response = await apiClient.get<T, { data: T }>(path, buildRequestConfig(options));
+
+  return response.data;
+}
+
 export async function postJsonToBase<TResponse, TBody>(
   baseUrl: string,
   path: string,

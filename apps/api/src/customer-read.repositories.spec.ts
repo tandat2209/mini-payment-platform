@@ -137,6 +137,7 @@ test('recipient repository masks sensitive rail details for recipient detail', a
     ],
     [
       {
+        country_code: 'US',
         currency: 'USD',
         details: {
           accountNumber: '9876543210',
@@ -144,7 +145,10 @@ test('recipient repository masks sensitive rail details for recipient detail', a
         },
         id: 'rail-1',
         is_default: true,
+        provider_registration_error: null,
+        provider_registration_strategy: 'platform_managed',
         rail: 'ach',
+        readiness_status: 'active',
         recipient_id: 'recipient-1',
       },
     ],
@@ -157,6 +161,8 @@ test('recipient repository masks sensitive rail details for recipient detail', a
     accountNumber: '******3210',
     routingNumber: '*****0015',
   });
+  assert.equal(result?.rails[0]?.countryCode, 'US');
+  assert.equal(result?.rails[0]?.readinessStatus, 'active');
   assert.deepEqual(databaseService.calls[0]?.parameters, ['customer-alice', 'recipient-1']);
 });
 

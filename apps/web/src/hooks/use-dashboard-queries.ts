@@ -3,11 +3,13 @@ import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 import {
   fetchBalances,
   fetchFundingDetails,
+  fetchRecipientRequirements,
   fetchRecipients,
   fetchStatementOverview,
   fetchTransactionDetail,
   fetchTransactions,
   type RecipientListResponse,
+  type RecipientRequirementsResponse,
   type StatementOverviewData,
   type TransactionDetailItem,
   type TransactionListResponse,
@@ -55,6 +57,24 @@ export function useRecipientsQuery(): UseQueryResult<RecipientListResponse, Erro
   return useQuery({
     queryFn: fetchRecipients,
     queryKey: ['recipients'],
+  });
+}
+
+export function useRecipientRequirementsQuery(input: {
+  countryCode: string;
+  currency: string;
+  enabled: boolean;
+  rail: 'ach' | 'sepa' | 'swift';
+}): UseQueryResult<RecipientRequirementsResponse, Error> {
+  return useQuery({
+    enabled: input.enabled,
+    queryFn: async () =>
+      await fetchRecipientRequirements({
+        countryCode: input.countryCode,
+        currency: input.currency,
+        rail: input.rail,
+      }),
+    queryKey: ['recipient-requirements', input.rail, input.countryCode, input.currency],
   });
 }
 

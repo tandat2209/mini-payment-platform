@@ -12,6 +12,38 @@ type QueryResponseRow = Record<string, unknown>;
 
 class ApiFakeDatabaseService {
   private readonly webhookEvents = new Map<string, QueryResponseRow>();
+  private readonly recipients: QueryResponseRow[] = [
+    {
+      created_at: '2026-03-22T01:15:00.000Z',
+      id: 'recipient-alice',
+      name: 'Vendor One',
+      status: 'active',
+      updated_at: '2026-03-22T01:15:00.000Z',
+      user_id: 'alice-id',
+    },
+  ];
+  private readonly recipientRails: QueryResponseRow[] = [
+    {
+      country_code: 'US',
+      created_at: '2026-03-22T01:15:00.000Z',
+      currency: 'USD',
+      details: {
+        accountNumber: '9876543210',
+        routingNumber: '011000015',
+      },
+      id: 'rail-1',
+      is_active: true,
+      is_default: true,
+      provider_reference: null,
+      provider_registered_at: null,
+      provider_registration_error: null,
+      provider_registration_strategy: 'platform_managed',
+      rail: 'ach',
+      readiness_status: 'active',
+      recipient_id: 'recipient-alice',
+      updated_at: '2026-03-22T01:15:00.000Z',
+    },
+  ];
 
   async getHealth() {
     return {
@@ -189,40 +221,31 @@ class ApiFakeDatabaseService {
     if (sql.includes('FROM recipients') && sql.includes('AND id = $2')) {
       const [customerId, recipientId] = parameters;
 
-      if (customerId === 'alice-id' && recipientId === 'recipient-alice') {
-        return withRows([
-          {
-            created_at: '2026-03-22T01:15:00.000Z',
-            id: 'recipient-alice',
-            name: 'Vendor One',
-            status: 'active',
-          },
-        ]);
-      }
+      return withRows(
+        this.recipients.filter(
+          (recipient) => recipient.user_id === customerId && recipient.id === recipientId,
+        ),
+      );
+    }
 
-      return withRows([]);
+    if (sql.includes('WHERE id = $1::uuid') && sql.includes('AND user_id = $2::uuid')) {
+      const [recipientId, customerId] = parameters;
+
+      return withRows(
+        this.recipients.filter(
+          (recipient) => recipient.user_id === customerId && recipient.id === recipientId,
+        ),
+      );
     }
 
     if (sql.includes('FROM recipient_rails') && sql.includes('recipient_id = $1')) {
       const [recipientId] = parameters;
 
-      if (recipientId === 'recipient-alice') {
-        return withRows([
-          {
-            currency: 'USD',
-            details: {
-              accountNumber: '9876543210',
-              routingNumber: '011000015',
-            },
-            id: 'rail-1',
-            is_default: true,
-            rail: 'ach',
-            recipient_id: 'recipient-alice',
-          },
-        ]);
-      }
-
-      return withRows([]);
+      return withRows(
+        this.recipientRails.filter(
+          (rail) => rail.recipient_id === recipientId && rail.is_active === true,
+        ),
+      );
     }
 
     if (sql.includes('FROM wallets') && sql.includes("status = 'active'")) {
@@ -271,37 +294,82 @@ class ApiFakeDatabaseService {
     if (sql.includes('FROM recipients') && sql.includes('WHERE user_id = $1')) {
       const [customerId] = parameters;
 
-      if (customerId === 'alice-id') {
-        return withRows([
-          {
-            created_at: '2026-03-22T01:15:00.000Z',
-            id: 'recipient-alice',
-            name: 'Vendor One',
-            status: 'active',
-          },
-        ]);
-      }
-
-      return withRows([]);
+      return withRows(this.recipients.filter((recipient) => recipient.user_id === customerId));
     }
 
     if (sql.includes('recipient_id = ANY')) {
       const [recipientIds] = parameters as [string[]];
 
-      if (recipientIds.includes('recipient-alice')) {
-        return withRows([
-          {
-            currency: 'USD',
-            details: {},
-            id: 'rail-1',
-            is_default: true,
-            rail: 'ach',
-            recipient_id: 'recipient-alice',
-          },
-        ]);
-      }
+      return withRows(
+        this.recipientRails.filter(
+          (rail) => recipientIds.includes(String(rail.recipient_id)) && rail.is_active === true,
+        ),
+      );
+    }
 
-      return withRows([]);
+    if (
+      sql.includes('INSERT INTO recipients') &&
+      sql.includes('RETURNING id, user_id, name, status')
+    ) {
+      const [id, userId, name, createdAt, updatedAt] = parameters;
+      const row = {
+        created_at: String(createdAt),
+        id: String(id),
+        name: String(name),
+        status: 'active',
+        updated_at: String(updatedAt),
+        user_id: String(userId),
+      };
+
+      this.recipients.push(row);
+
+      return withRows([row]);
+    }
+
+    if (
+      sql.includes('INSERT INTO recipient_rails') &&
+      sql.includes('provider_registration_strategy')
+    ) {
+      const [
+        id,
+        recipientId,
+        rail,
+        currency,
+        countryCode,
+        details,
+        readinessStatus,
+        providerRegistrationStrategy,
+        providerReference,
+        providerRegistrationError,
+        providerRegisteredAt,
+        isDefault,
+        isActive,
+        createdAt,
+        updatedAt,
+      ] = parameters;
+      const row = {
+        country_code: String(countryCode),
+        created_at: String(createdAt),
+        currency: String(currency),
+        details: JSON.parse(String(details)),
+        id: String(id),
+        is_active: Boolean(isActive),
+        is_default: Boolean(isDefault),
+        provider_reference: providerReference ? String(providerReference) : null,
+        provider_registered_at: providerRegisteredAt ? String(providerRegisteredAt) : null,
+        provider_registration_error: providerRegistrationError
+          ? String(providerRegistrationError)
+          : null,
+        provider_registration_strategy: String(providerRegistrationStrategy),
+        rail: String(rail),
+        readiness_status: String(readinessStatus),
+        recipient_id: String(recipientId),
+        updated_at: String(updatedAt),
+      };
+
+      this.recipientRails.push(row);
+
+      return withRows([row]);
     }
 
     throw new Error(`Unhandled SQL in API fake database: ${sql}`);
@@ -333,6 +401,28 @@ async function fetchJson(app: INestApplication, path: string, customerExternalRe
     headers: {
       'x-customer-external-ref': customerExternalRef,
     },
+  });
+
+  return {
+    body: (await response.json()) as Record<string, unknown>,
+    status: response.status,
+  };
+}
+
+async function postJson(
+  app: INestApplication,
+  path: string,
+  customerExternalRef: string,
+  body: Record<string, unknown>,
+) {
+  const port = await ensureListening(app);
+  const response = await fetch(`http://127.0.0.1:${port}${path}`, {
+    body: JSON.stringify(body),
+    headers: {
+      'content-type': 'application/json',
+      'x-customer-external-ref': customerExternalRef,
+    },
+    method: 'POST',
   });
 
   return {
@@ -451,6 +541,59 @@ test('funding details API returns not found when the customer has no active wall
     const response = await fetchJson(app, '/customers/me/funding-details', 'user_demo_charlie');
 
     assert.equal(response.status, 404);
+  } finally {
+    await app.close();
+  }
+});
+
+test('recipient requirements API returns SEPA requirements for supported country and currency', async () => {
+  const app = await createTestApp();
+
+  try {
+    const response = await fetchJson(
+      app,
+      '/customers/me/recipients/requirements?rail=sepa&countryCode=DE&currency=EUR',
+      'user_demo_alice',
+    );
+
+    assert.equal(response.status, 200);
+    assert.equal(response.body.providerRegistrationStrategy, 'provider_managed');
+    assert.deepEqual(
+      (response.body.fields as Array<{ key: string }>).map((field) => field.key),
+      ['iban'],
+    );
+  } finally {
+    await app.close();
+  }
+});
+
+test('recipient create API creates a provider-managed SWIFT rail', async () => {
+  const app = await createTestApp();
+
+  try {
+    const response = await postJson(app, '/customers/me/recipients', 'user_demo_alice', {
+      name: 'Global Vendor',
+      rail: {
+        countryCode: 'GB',
+        currency: 'USD',
+        details: {
+          accountNumber: '111122223333',
+          swiftCode: 'BARCGB22',
+        },
+        rail: 'swift',
+      },
+    });
+
+    assert.equal(response.status, 201);
+    assert.equal(response.body.name, 'Global Vendor');
+    assert.equal(
+      (response.body.rails as Array<Record<string, unknown>>)[0]?.providerRegistrationStrategy,
+      'provider_managed',
+    );
+    assert.equal(
+      (response.body.rails as Array<Record<string, unknown>>)[0]?.readinessStatus,
+      'pending_provider_registration',
+    );
   } finally {
     await app.close();
   }
