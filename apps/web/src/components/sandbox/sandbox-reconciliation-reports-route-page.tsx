@@ -24,7 +24,7 @@ export function SandboxReconciliationReportsRoutePage(): JSX.Element {
         },
       ]}
       description="This placeholder page is for daily reconciliation reports and report-style provider webhooks. It gives us a dedicated home for end-of-day matching and exception review."
-      eyebrow="Sandbox tool"
+      eyebrow="PSP sandbox"
       metrics={[
         { icon: ReceiptText, label: 'Cadence', value: 'Daily report intake' },
         { icon: Rows3, label: 'Granularity', value: 'Line-by-line matching' },

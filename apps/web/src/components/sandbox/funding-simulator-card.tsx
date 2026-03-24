@@ -34,14 +34,13 @@ export function FundingSimulatorCard({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-              Sandbox simulator
+              PSP sandbox
             </p>
             <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
               Funding webhook dispatch
             </h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-              Send provider-style inbound funding events through the API relay into the simulator
-              service.
+              Send provider-style inbound funding events directly to the PSP sandbox service.
             </p>
           </div>
 
@@ -131,8 +130,8 @@ export function FundingSimulatorCard({
                 Dispatch request
               </div>
               <p className="mt-4 text-sm leading-6 text-slate-300">
-                This sends the provider-style payload to the API, and the API relays it to the
-                simulator service.
+                This sends the provider-style payload straight to the PSP sandbox service, which
+                then delivers the webhook into the API.
               </p>
               <Button className="mt-5 w-full rounded-2xl" disabled={isSubmitting} type="submit">
                 {isSubmitting ? (
@@ -172,7 +171,7 @@ export function FundingSimulatorCard({
               ) : (
                 <p className="mt-4 text-sm leading-6 text-slate-500">
                   No sandbox event sent yet. Submit a funding webhook to see the delivery result
-                  from the API relay.
+                  from the PSP sandbox.
                 </p>
               )}
 

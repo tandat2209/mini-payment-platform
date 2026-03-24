@@ -1,9 +1,11 @@
 const fallbackApiBaseUrl = 'http://localhost:3001';
 const fallbackCustomerExternalRef = 'user_demo_alice';
+const fallbackPspSandboxBaseUrl = 'http://localhost:3002';
 
 interface AppRuntimeEnv {
   VITE_API_BASE_URL?: string;
   VITE_CUSTOMER_EXTERNAL_REF?: string;
+  VITE_PSP_SANDBOX_BASE_URL?: string;
 }
 
 function getNodeEnv(): AppRuntimeEnv | undefined {
@@ -35,5 +37,13 @@ export function getCustomerExternalRef(): string {
     getImportMetaEnv()?.VITE_CUSTOMER_EXTERNAL_REF ??
     getNodeEnv()?.VITE_CUSTOMER_EXTERNAL_REF ??
     fallbackCustomerExternalRef
+  );
+}
+
+export function getPspSandboxBaseUrl(): string {
+  return (
+    getImportMetaEnv()?.VITE_PSP_SANDBOX_BASE_URL ??
+    getNodeEnv()?.VITE_PSP_SANDBOX_BASE_URL ??
+    fallbackPspSandboxBaseUrl
   );
 }

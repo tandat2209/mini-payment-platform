@@ -24,7 +24,7 @@ export function SandboxPayoutUpdatesRoutePage(): JSX.Element {
         },
       ]}
       description="This placeholder page is for payout acknowledgements and status callbacks. “Payout updates” is the broad term here; settlement is only one later final event in that lifecycle."
-      eyebrow="Sandbox tool"
+      eyebrow="PSP sandbox"
       metrics={[
         { icon: CheckCheck, label: 'Scope', value: 'Acks + statuses' },
         { icon: Radar, label: 'Future flow', value: 'Settlement and failures' },

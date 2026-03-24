@@ -35,7 +35,7 @@ export function SidebarNavigation({
       >
         <div>
           <p className="text-[36px] leading-none text-slate-950 [font-family:var(--font-display)]">
-            {activeWorkspace === 'sandbox' ? 'Lab' : 'Pay'}
+            {activeWorkspace === 'sandbox' ? 'PSP' : 'Pay'}
           </p>
           <div className="mt-3 inline-flex items-center rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
             {workspaceHeadline.title}

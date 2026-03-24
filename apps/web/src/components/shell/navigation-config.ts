@@ -71,7 +71,7 @@ export const workspaceItems: Array<{
     defaultPath: '/sandbox/funding',
     icon: FlaskConical,
     id: 'sandbox',
-    label: 'Sandbox Tool',
+    label: 'PSP Sandbox',
   },
 ];
 
@@ -111,7 +111,7 @@ export function getWorkspaceHeadline(workspace: Workspace): {
     case 'sandbox':
       return {
         navLabel: 'Sandbox tools',
-        title: 'Sandbox',
+        title: 'PSP Sandbox',
       };
     default:
       return {

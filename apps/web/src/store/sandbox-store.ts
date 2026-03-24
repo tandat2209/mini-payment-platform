@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import { type AdminSimulationResponse, triggerAdminFundingSimulation } from '../api';
+import { type SandboxFundingResponse, triggerSandboxFundingSimulation } from '../api';
 import {
   initialSandboxFundingSimulationFormState,
   type SandboxFundingSimulationFormState,
@@ -35,7 +35,7 @@ export const useSandboxStore = create<SandboxStore>((set, get) => ({
     set({ isSubmitting: true, simulationError: null });
 
     const formState = get().formState;
-    const request: Parameters<typeof triggerAdminFundingSimulation>[0] = {
+    const request: Parameters<typeof triggerSandboxFundingSimulation>[0] = {
       amountMinor: Number.parseInt(formState.amountMinor, 10),
       currency: formState.currency.trim().toUpperCase(),
       destinationIdentifier: formState.destinationIdentifier.trim(),
@@ -89,7 +89,7 @@ export const useSandboxStore = create<SandboxStore>((set, get) => ({
     }
 
     try {
-      const response: AdminSimulationResponse = await triggerAdminFundingSimulation(request);
+      const response: SandboxFundingResponse = await triggerSandboxFundingSimulation(request);
       const receiverDuplicate =
         typeof response.receiverResponse.duplicate === 'boolean'
           ? response.receiverResponse.duplicate
@@ -122,7 +122,7 @@ export const useSandboxStore = create<SandboxStore>((set, get) => ({
       set({
         isSubmitting: false,
         simulationError:
-          caughtError instanceof Error ? caughtError.message : 'Sandbox simulator request failed.',
+          caughtError instanceof Error ? caughtError.message : 'PSP sandbox request failed.',
       });
     }
   },

@@ -16,14 +16,14 @@ export function SandboxFundingRoutePage(): JSX.Element {
   return (
     <SandboxPageShell
       badge="Local sandbox only"
-      description="Use this page to dispatch provider-style inbound funding webhooks through the API relay into the simulator service."
-      eyebrow="Sandbox tool"
+      description="Use this page to dispatch provider-style inbound funding webhooks directly to the PSP sandbox service."
+      eyebrow="PSP sandbox"
       metrics={[
         { icon: FlaskConical, label: 'Current flow', value: 'Funding webhook' },
-        { icon: Radar, label: 'Relay path', value: 'Web -> API -> Simulator' },
+        { icon: Radar, label: 'Delivery path', value: 'Web -> PSP sandbox -> API' },
         { icon: ReceiptText, label: 'Audit result', value: 'Webhook + balance + ledger' },
       ]}
-      title="Funding simulator"
+      title="Funding webhooks"
     >
       <FundingSimulatorCard
         error={simulationError}

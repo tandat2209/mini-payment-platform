@@ -1,4 +1,5 @@
-import { getJson, postJson } from './lib/api-client';
+import { getJson, postJsonToBase } from './lib/api-client';
+import { getPspSandboxBaseUrl } from './lib/runtime-env';
 
 type HealthResponse = {
   service: string;
@@ -127,7 +128,7 @@ type StatementOverviewData = {
   latestPeriod: StatementPeriod | null;
 };
 
-type AdminSimulationRequest = {
+type SandboxFundingRequest = {
   amountMinor: number;
   currency: string;
   description?: string;
@@ -143,12 +144,12 @@ type AdminSimulationRequest = {
   };
 };
 
-type AdminSimulationResponse = {
+type SandboxFundingResponse = {
   deliveryTarget: string;
   delivered: true;
   externalEventId: string;
   payload: {
-    data: AdminSimulationRequest;
+    data: SandboxFundingRequest;
     eventType: 'funding.completed';
     externalEventId: string;
     occurredAt: string;
@@ -388,14 +389,15 @@ export async function fetchStatementOverview(): Promise<StatementOverviewData> {
   }
 }
 
-export async function triggerAdminFundingSimulation(
-  request: AdminSimulationRequest,
-): Promise<AdminSimulationResponse> {
-  return await postJson<AdminSimulationResponse, AdminSimulationRequest>(
-    '/admin/simulator/funding',
+export async function triggerSandboxFundingSimulation(
+  request: SandboxFundingRequest,
+): Promise<SandboxFundingResponse> {
+  return await postJsonToBase<SandboxFundingResponse, SandboxFundingRequest>(
+    getPspSandboxBaseUrl(),
+    '/simulate/funding',
     request,
     {
-      errorLabel: 'Admin simulator request',
+      errorLabel: 'PSP sandbox request',
       includeCustomerContext: false,
     },
   );
@@ -479,7 +481,6 @@ export type {
   AdminLedgerDetailItem,
   AdminLedgerItem,
   AdminLedgerListResponse,
-  AdminSimulationResponse,
   AdminTransactionDetailItem,
   AdminTransactionItem,
   AdminTransactionListResponse,
@@ -488,6 +489,8 @@ export type {
   MoneyDto,
   RecipientListResponse,
   RecipientSummary,
+  SandboxFundingRequest,
+  SandboxFundingResponse,
   StatementDetailResponse,
   StatementOverviewData,
   StatementPeriod,
@@ -500,4 +503,4 @@ export type {
   WalletFundingDetailsResponse,
 };
 
-export { getApiBaseUrl, getCustomerExternalRef } from './lib/runtime-env';
+export { getApiBaseUrl, getCustomerExternalRef, getPspSandboxBaseUrl } from './lib/runtime-env';

@@ -12,6 +12,14 @@ const apiClient: AxiosInstance = axios.create({
   baseURL: getApiBaseUrl(),
 });
 
+function buildRequestConfig(options?: RequestOptions): AxiosRequestConfig {
+  return options?.includeCustomerContext === false
+    ? {}
+    : {
+        headers: { 'x-customer-external-ref': getCustomerExternalRef() },
+      };
+}
+
 function getRequestErrorMessage(caughtError: unknown, fallbackLabel: string): string {
   if (axios.isAxiosError(caughtError)) {
     const status = caughtError.response?.status;
@@ -30,14 +38,7 @@ function getRequestErrorMessage(caughtError: unknown, fallbackLabel: string): st
 
 export async function getJson<T>(path: string, options?: RequestOptions): Promise<T> {
   try {
-    const requestConfig: AxiosRequestConfig =
-      options?.includeCustomerContext === false
-        ? {}
-        : {
-            headers: { 'x-customer-external-ref': getCustomerExternalRef() },
-          };
-
-    const response = await apiClient.get<T, { data: T }>(path, requestConfig);
+    const response = await apiClient.get<T, { data: T }>(path, buildRequestConfig(options));
 
     return response.data;
   } catch (caughtError) {
@@ -51,18 +52,29 @@ export async function postJson<TResponse, TBody>(
   options?: RequestOptions,
 ): Promise<TResponse> {
   try {
-    const requestConfig: AxiosRequestConfig =
-      options?.includeCustomerContext === false
-        ? {}
-        : {
-            headers: { 'x-customer-external-ref': getCustomerExternalRef() },
-          };
-
     const response = await apiClient.post<TResponse, { data: TResponse }>(
       path,
       body,
-      requestConfig,
+      buildRequestConfig(options),
     );
+
+    return response.data;
+  } catch (caughtError) {
+    throw new Error(getRequestErrorMessage(caughtError, options?.errorLabel ?? 'Request'));
+  }
+}
+
+export async function postJsonToBase<TResponse, TBody>(
+  baseUrl: string,
+  path: string,
+  body: TBody,
+  options?: RequestOptions,
+): Promise<TResponse> {
+  try {
+    const response = await axios.post<TResponse, { data: TResponse }>(path, body, {
+      ...buildRequestConfig(options),
+      baseURL: baseUrl,
+    });
 
     return response.data;
   } catch (caughtError) {
