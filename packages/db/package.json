@@ -2,7 +2,7 @@
   "name": "@payment-platform-mini/db",
   "private": true,
   "scripts": {
-    "migrate": "node scripts/apply-sql-file.mjs migrations/0001_financial_foundation.sql",
+    "migrate": "node scripts/apply-sql-file.mjs migrations",
     "seed": "node scripts/apply-sql-file.mjs seeds/001_financial_scenarios.sql",
     "setup": "pnpm run migrate && pnpm run seed",
     "build": "node -e \"const fs=require('node:fs'); fs.mkdirSync('dist',{recursive:true}); fs.writeFileSync('dist/.build-stamp','financial-schema-foundation\\n'); console.log('Prepared db build artifacts')\"",

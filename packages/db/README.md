@@ -6,6 +6,8 @@ This package contains the financial schema foundation for the payment platform m
 
 - `migrations/0001_financial_foundation.sql`
   Initial PostgreSQL schema for wallets, balances, user transactions, payouts, recipients, webhooks, idempotency, and ledger posting.
+- `migrations/0002_recipient_onboarding_foundation.sql`
+  Recipient-rail lifecycle and provider-registration foundation for pre-payout recipient onboarding.
 - `seeds/001_financial_scenarios.sql`
   Deterministic seed scenarios covering wallet lifecycle, inbound funding recognition, and payout attempts.
 - `scripts/apply-sql-file.mjs`

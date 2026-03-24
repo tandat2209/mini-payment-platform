@@ -29,5 +29,9 @@ export function maskRecipientRailDetails(details: Record<string, unknown>): Reco
     masked.iban = maskValue(details.iban);
   }
 
+  if (typeof details.swiftCode === 'string') {
+    masked.swiftCode = maskValue(details.swiftCode);
+  }
+
   return masked;
 }

@@ -1,10 +1,11 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { readdir } from 'node:fs/promises';
 
 import { PGlite } from '@electric-sql/pglite';
 
 const packageRoot = process.cwd();
-const migrationPath = path.join(packageRoot, 'migrations', '0001_financial_foundation.sql');
+const migrationsPath = path.join(packageRoot, 'migrations');
 const seedPath = path.join(packageRoot, 'seeds', '001_financial_scenarios.sql');
 
 async function loadSql(filePath) {
@@ -32,10 +33,18 @@ async function main() {
   const db = new PGlite();
 
   try {
-    const migrationSql = await loadSql(migrationPath);
     const seedSql = await loadSql(seedPath);
 
-    await db.exec(migrationSql);
+    const migrationFiles = await readdir(migrationsPath, { withFileTypes: true });
+
+    for (const file of migrationFiles
+      .filter((entry) => entry.isFile() && entry.name.endsWith('.sql'))
+      .sort((left, right) => left.name.localeCompare(right.name))) {
+      const migrationSql = await loadSql(path.join(migrationsPath, file.name));
+
+      await db.exec(migrationSql);
+    }
+
     await db.exec(seedSql);
 
     await assertRejects('one active wallet per user', async () => {
@@ -116,6 +125,29 @@ async function main() {
 
     if (reconciliationRows < 1) {
       throw new Error('Expected reconciliation query to resolve provider and ledger linkage');
+    }
+
+    const recipientRailRows = await db.query(`
+      SELECT rail, country_code, readiness_status, provider_registration_strategy, provider_reference
+      FROM recipient_rails
+      WHERE recipient_id = 'cccccccc-cccc-cccc-cccc-ccccccccccc1'
+      ORDER BY created_at ASC
+    `);
+
+    if (recipientRailRows.rows.length !== 2) {
+      throw new Error(
+        'Expected seeded recipient rails to remain queryable after onboarding migration',
+      );
+    }
+
+    const swiftRail = recipientRailRows.rows.find((row) => row.rail === 'swift');
+
+    if (
+      !swiftRail ||
+      swiftRail.provider_registration_strategy !== 'provider_managed' ||
+      swiftRail.readiness_status !== 'active'
+    ) {
+      throw new Error('Expected seeded SWIFT rail to preserve provider-managed readiness state');
     }
 
     console.log('Financial schema verification passed.');

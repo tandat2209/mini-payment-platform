@@ -1,0 +1,180 @@
+import { randomUUID } from 'node:crypto';
+
+import { Inject, Injectable } from '@nestjs/common';
+
+import {
+  TRANSACTION_MANAGER,
+  type TransactionManager,
+} from '../../shared/application/transaction-manager';
+import {
+  type RecipientIdentity,
+  RecipientNotFoundError,
+  type RecipientRailRecord,
+  type RecipientRailRequirementSet,
+  RecipientRailValidationError,
+} from '../domain/recipient-onboarding.types';
+import {
+  RECIPIENT_WRITE_REPOSITORY,
+  type RecipientWriteRepository,
+} from '../domain/recipient-write.repository';
+import { RecipientRailRequirementResolver } from './recipient-rail-requirement-resolver.service';
+
+type RecipientRailInput = {
+  countryCode: string;
+  currency: string;
+  details: Record<string, unknown>;
+  isDefault?: boolean;
+  rail: string;
+};
+
+type CreateRecipientWithRailInput = RecipientRailInput & {
+  customerId: string;
+  recipientName: string;
+};
+
+type AddRecipientRailInput = RecipientRailInput & {
+  customerId: string;
+  recipientId: string;
+};
+
+type RecipientOnboardingResult = {
+  recipient: RecipientIdentity;
+  rail: RecipientRailRecord;
+};
+
+@Injectable()
+export class RecipientOnboardingService {
+  constructor(
+    @Inject(TRANSACTION_MANAGER)
+    private readonly transactionManager: TransactionManager,
+    @Inject(RECIPIENT_WRITE_REPOSITORY)
+    private readonly recipientWriteRepository: RecipientWriteRepository,
+    private readonly requirementResolver: RecipientRailRequirementResolver,
+  ) {}
+
+  getRequirements(input: RecipientRailInput): RecipientRailRequirementSet {
+    return this.requirementResolver.resolve(input);
+  }
+
+  async createRecipientWithRail(
+    input: CreateRecipientWithRailInput,
+  ): Promise<RecipientOnboardingResult> {
+    const requirements = this.requirementResolver.resolve(input);
+    const now = new Date().toISOString();
+    const recipientId = randomUUID();
+    const railId = randomUUID();
+    const normalizedDetails = normalizeRailDetails(requirements.fields, input.details);
+
+    return await this.transactionManager.runInTransaction(async (context) => {
+      const recipient = await this.recipientWriteRepository.createRecipient(context, {
+        createdAt: now,
+        id: recipientId,
+        name: input.recipientName.trim(),
+        updatedAt: now,
+        userId: input.customerId,
+      });
+      const rail = await this.recipientWriteRepository.createRecipientRail(context, {
+        countryCode: requirements.countryCode,
+        createdAt: now,
+        currency: requirements.currency,
+        details: normalizedDetails,
+        id: railId,
+        isActive: true,
+        isDefault: input.isDefault ?? true,
+        providerReference: null,
+        providerRegisteredAt: null,
+        providerRegistrationError: null,
+        providerRegistrationStrategy: requirements.providerRegistrationStrategy,
+        rail: requirements.rail,
+        readinessStatus: requirements.initialReadinessStatus,
+        recipientId: recipient.id,
+        updatedAt: now,
+      });
+
+      return { rail, recipient };
+    });
+  }
+
+  async addRailToRecipient(input: AddRecipientRailInput): Promise<RecipientRailRecord> {
+    const requirements = this.requirementResolver.resolve(input);
+    const now = new Date().toISOString();
+    const railId = randomUUID();
+    const normalizedDetails = normalizeRailDetails(requirements.fields, input.details);
+
+    return await this.transactionManager.runInTransaction(async (context) => {
+      const recipient = await this.recipientWriteRepository.findRecipientOwnedByUser(
+        context,
+        input.customerId,
+        input.recipientId,
+      );
+
+      if (!recipient) {
+        throw new RecipientNotFoundError(input.recipientId);
+      }
+
+      return await this.recipientWriteRepository.createRecipientRail(context, {
+        countryCode: requirements.countryCode,
+        createdAt: now,
+        currency: requirements.currency,
+        details: normalizedDetails,
+        id: railId,
+        isActive: true,
+        isDefault: input.isDefault ?? false,
+        providerReference: null,
+        providerRegisteredAt: null,
+        providerRegistrationError: null,
+        providerRegistrationStrategy: requirements.providerRegistrationStrategy,
+        rail: requirements.rail,
+        readinessStatus: requirements.initialReadinessStatus,
+        recipientId: recipient.id,
+        updatedAt: now,
+      });
+    });
+  }
+}
+
+function normalizeRailDetails(
+  fields: Array<{ key: string; kind: string; required: boolean }>,
+  details: Record<string, unknown>,
+): Record<string, string> {
+  const normalized: Record<string, string> = {};
+  const missingFields: string[] = [];
+
+  for (const field of fields) {
+    const rawValue = details[field.key];
+    const value = typeof rawValue === 'string' ? normalizeDetailValue(field.kind, rawValue) : '';
+
+    if (!value) {
+      if (field.required) {
+        missingFields.push(field.key);
+      }
+
+      continue;
+    }
+
+    normalized[field.key] = value;
+  }
+
+  if (missingFields.length > 0) {
+    throw new RecipientRailValidationError(missingFields);
+  }
+
+  return normalized;
+}
+
+function normalizeDetailValue(kind: string, value: string): string {
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    return '';
+  }
+
+  switch (kind) {
+    case 'iban':
+      return trimmed.replace(/\s+/g, '').toUpperCase();
+    case 'swift_code':
+      return trimmed.replace(/\s+/g, '').toUpperCase();
+    default:
+      return trimmed;
+  }
+}

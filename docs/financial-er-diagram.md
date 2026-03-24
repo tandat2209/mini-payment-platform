@@ -80,8 +80,6 @@ erDiagram
         uuid id PK
         uuid user_id FK
         uuid wallet_id FK
-        uuid payout_id FK
-        uuid ledger_transaction_id FK
         uuid webhook_event_id FK
         string type
         string direction
@@ -102,6 +100,7 @@ erDiagram
         string name
         string status
         datetime created_at
+        datetime updated_at
     }
 
     RECIPIENT_RAILS {
@@ -109,9 +108,17 @@ erDiagram
         uuid recipient_id FK
         string rail
         string currency
+        string country_code
         jsonb details
+        string readiness_status
+        string provider_registration_strategy
+        string provider_reference
+        string provider_registration_error
+        datetime provider_registered_at
         boolean is_default
         boolean is_active
+        datetime created_at
+        datetime updated_at
     }
 
     PAYOUTS {
@@ -120,7 +127,9 @@ erDiagram
         uuid wallet_id FK
         uuid recipient_id FK
         uuid recipient_rail_id FK
+        uuid user_transaction_id FK
         uuid idempotency_key_id FK
+        string rail
         string status
         string currency
         bigint gross_amount_minor
@@ -128,6 +137,10 @@ erDiagram
         bigint net_amount_minor
         string reference
         datetime created_at
+        datetime updated_at
+        datetime submitted_at
+        datetime completed_at
+        datetime failed_at
     }
 
     PAYOUT_ATTEMPTS {
@@ -150,9 +163,11 @@ erDiagram
         string external_event_id
         string event_type
         string processing_status
+        boolean signature_verified
         jsonb payload
         datetime received_at
         datetime processed_at
+        datetime created_at
     }
 
     IDEMPOTENCY_KEYS {
@@ -160,28 +175,38 @@ erDiagram
         string scope
         string key
         string status
+        string request_fingerprint
+        jsonb response_payload
         datetime created_at
+        datetime updated_at
     }
 
     LEDGER_ACCOUNTS {
         uuid id PK
         string code
+        string name
         string account_type
         string owner_type
         uuid owner_id
         string currency
         string status
+        jsonb metadata
+        datetime created_at
+        datetime updated_at
     }
 
     LEDGER_TRANSACTIONS {
         uuid id PK
+        uuid user_transaction_id FK
         string transaction_type
         string status
         string currency
         string reference
         uuid webhook_event_id FK
+        string description
         datetime created_at
         datetime posted_at
+        datetime reversed_at
     }
 
     LEDGER_ENTRIES {
@@ -205,6 +230,10 @@ erDiagram
 - `ledger_accounts` currently uses a generic ownership model with `owner_type` and `owner_id`.
 - In practice, wallet liability accounts point at wallets, recipient payable accounts point at recipients, and platform accounts have no domain owner row.
 - `wallet_balances` is a balance read model and must stay consistent with ledger posting.
+- `recipient_rails` now carries onboarding readiness and provider-registration strategy per rail, so one recipient can have multiple payout methods in different lifecycle states.
+- The current onboarding foundation uses a hybrid recipient strategy:
+  - `platform_managed` rails store validated details and can be embedded later at payout submission time.
+  - `provider_managed` rails are expected to register a beneficiary or transfer instrument with the PSP before they become payout-ready.
 
 ## Status
 

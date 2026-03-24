@@ -19,9 +19,54 @@ INSERT INTO wallet_funding_details (id, wallet_id, rail, currency, details, is_a
 INSERT INTO recipients (id, user_id, name, status, created_at, updated_at) VALUES
   ('cccccccc-cccc-cccc-cccc-ccccccccccc1', '11111111-1111-1111-1111-111111111111', 'Vendor One', 'active', '2026-03-22T01:15:00Z', '2026-03-22T01:15:00Z');
 
-INSERT INTO recipient_rails (id, recipient_id, rail, currency, details, is_default, is_active, created_at, updated_at) VALUES
-  ('dddddddd-dddd-dddd-dddd-ddddddddddd1', 'cccccccc-cccc-cccc-cccc-ccccccccccc1', 'ach', 'USD', '{"accountNumber":"9876543210","routingNumber":"011000015"}'::jsonb, TRUE, TRUE, '2026-03-22T01:15:00Z', '2026-03-22T01:15:00Z'),
-  ('dddddddd-dddd-dddd-dddd-ddddddddddd2', 'cccccccc-cccc-cccc-cccc-ccccccccccc1', 'wire', 'USD', '{"accountNumber":"111122223333","routingNumber":"026009593"}'::jsonb, FALSE, TRUE, '2026-03-22T01:16:00Z', '2026-03-22T01:16:00Z');
+INSERT INTO recipient_rails (
+  id,
+  recipient_id,
+  rail,
+  currency,
+  country_code,
+  details,
+  readiness_status,
+  provider_registration_strategy,
+  provider_reference,
+  provider_registered_at,
+  is_default,
+  is_active,
+  created_at,
+  updated_at
+) VALUES
+  (
+    'dddddddd-dddd-dddd-dddd-ddddddddddd1',
+    'cccccccc-cccc-cccc-cccc-ccccccccccc1',
+    'ach',
+    'USD',
+    'US',
+    '{"accountNumber":"9876543210","routingNumber":"011000015"}'::jsonb,
+    'active',
+    'platform_managed',
+    NULL,
+    NULL,
+    TRUE,
+    TRUE,
+    '2026-03-22T01:15:00Z',
+    '2026-03-22T01:15:00Z'
+  ),
+  (
+    'dddddddd-dddd-dddd-dddd-ddddddddddd2',
+    'cccccccc-cccc-cccc-cccc-ccccccccccc1',
+    'swift',
+    'USD',
+    'GB',
+    '{"accountNumber":"111122223333","swiftCode":"BARCGB22"}'::jsonb,
+    'active',
+    'provider_managed',
+    'bene_swift_vendor_one',
+    '2026-03-22T01:16:15Z',
+    FALSE,
+    TRUE,
+    '2026-03-22T01:16:00Z',
+    '2026-03-22T01:16:15Z'
+  );
 
 INSERT INTO webhook_events (id, provider, external_event_id, event_type, processing_status, signature_verified, payload, received_at, processed_at, created_at) VALUES
   ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee1', 'demo_psp', 'evt_funding_001', 'funding.completed', 'processed', TRUE, '{"walletExternalRef":"user_demo_alice","amountMinor":10000,"currency":"USD"}'::jsonb, '2026-03-22T01:10:00Z', '2026-03-22T01:10:30Z', '2026-03-22T01:10:00Z'),
@@ -59,4 +104,3 @@ INSERT INTO ledger_entries (id, ledger_transaction_id, ledger_account_id, direct
   ('17171717-1717-1717-1717-171717171715', '16161616-1616-1616-1616-161616161612', '15151515-1515-1515-1515-151515151514', 'credit', 'USD', 200, 'Recipient payable booked', '2026-03-22T01:20:00Z'),
   ('17171717-1717-1717-1717-171717171716', '16161616-1616-1616-1616-161616161613', '15151515-1515-1515-1515-151515151514', 'debit', 'USD', 200, 'Recipient payable settled', '2026-03-22T01:21:20Z'),
   ('17171717-1717-1717-1717-171717171717', '16161616-1616-1616-1616-161616161613', '15151515-1515-1515-1515-151515151512', 'credit', 'USD', 200, 'Platform cash reduced on settlement', '2026-03-22T01:21:20Z');
-
