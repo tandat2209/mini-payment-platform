@@ -4,10 +4,10 @@ import test from 'node:test';
 import { AppService } from './app.service';
 
 test('simulateFundingWebhook reuses an explicit external event id', async () => {
-  const originalBaseUrl = process.env.SIMULATOR_TARGET_API_BASE_URL;
+  const originalBaseUrl = process.env.PSP_SANDBOX_TARGET_API_BASE_URL;
   const originalFetch = globalThis.fetch;
 
-  process.env.SIMULATOR_TARGET_API_BASE_URL = 'http://api.test';
+  process.env.PSP_SANDBOX_TARGET_API_BASE_URL = 'http://api.test';
 
   try {
     let requestUrl = '';
@@ -26,7 +26,7 @@ test('simulateFundingWebhook reuses an explicit external event id', async () => 
             externalEventId: 'evt_funding_replay',
             id: 'webhook-1',
             processingStatus: 'received',
-            provider: 'simulator_psp',
+            provider: 'psp_sandbox',
             receivedAt: '2026-03-23T06:00:00.000Z',
           },
         }),
@@ -62,7 +62,7 @@ test('simulateFundingWebhook reuses an explicit external event id', async () => 
       (requestBody as { externalEventId: string }).externalEventId,
       'evt_funding_replay',
     );
-    assert.equal((requestBody as { provider: string }).provider, 'simulator_psp');
+    assert.equal((requestBody as { provider: string }).provider, 'psp_sandbox');
     assert.equal(
       (requestBody as { data: { description: string } }).data.description,
       'March top up',
@@ -79,18 +79,18 @@ test('simulateFundingWebhook reuses an explicit external event id', async () => 
     globalThis.fetch = originalFetch;
 
     if (originalBaseUrl === undefined) {
-      delete process.env.SIMULATOR_TARGET_API_BASE_URL;
+      delete process.env.PSP_SANDBOX_TARGET_API_BASE_URL;
     } else {
-      process.env.SIMULATOR_TARGET_API_BASE_URL = originalBaseUrl;
+      process.env.PSP_SANDBOX_TARGET_API_BASE_URL = originalBaseUrl;
     }
   }
 });
 
 test('simulateFundingWebhook generates an external event id when omitted', async () => {
-  const originalBaseUrl = process.env.SIMULATOR_TARGET_API_BASE_URL;
+  const originalBaseUrl = process.env.PSP_SANDBOX_TARGET_API_BASE_URL;
   const originalFetch = globalThis.fetch;
 
-  process.env.SIMULATOR_TARGET_API_BASE_URL = 'http://api.test';
+  process.env.PSP_SANDBOX_TARGET_API_BASE_URL = 'http://api.test';
 
   try {
     let requestBody: unknown;
@@ -107,7 +107,7 @@ test('simulateFundingWebhook generates an external event id when omitted', async
             externalEventId: (requestBody as { externalEventId: string }).externalEventId,
             id: 'webhook-2',
             processingStatus: 'received',
-            provider: 'simulator_psp',
+            provider: 'psp_sandbox',
             receivedAt: '2026-03-23T06:05:00.000Z',
           },
         }),
@@ -134,9 +134,9 @@ test('simulateFundingWebhook generates an external event id when omitted', async
     globalThis.fetch = originalFetch;
 
     if (originalBaseUrl === undefined) {
-      delete process.env.SIMULATOR_TARGET_API_BASE_URL;
+      delete process.env.PSP_SANDBOX_TARGET_API_BASE_URL;
     } else {
-      process.env.SIMULATOR_TARGET_API_BASE_URL = originalBaseUrl;
+      process.env.PSP_SANDBOX_TARGET_API_BASE_URL = originalBaseUrl;
     }
   }
 });

@@ -3,8 +3,8 @@ import { Body, Controller, Get, HttpCode, HttpStatus, Post, ValidationPipe } fro
 import { AppService } from './app.service';
 import { SimulateFundingRequestDto } from './simulate-funding.dto';
 
-type SimulatorHealthResponse = ReturnType<AppService['getHealth']>;
-type SimulatorFundingResponse = Awaited<ReturnType<AppService['simulateFundingWebhook']>>;
+type PspSandboxHealthResponse = ReturnType<AppService['getHealth']>;
+type PspSandboxFundingResponse = Awaited<ReturnType<AppService['simulateFundingWebhook']>>;
 
 const simulateFundingValidationPipe = new ValidationPipe({
   forbidNonWhitelisted: true,
@@ -17,7 +17,7 @@ export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Get('health')
-  getHealth(): SimulatorHealthResponse {
+  getHealth(): PspSandboxHealthResponse {
     return this.appService.getHealth();
   }
 
@@ -25,7 +25,7 @@ export class AppController {
   @HttpCode(HttpStatus.ACCEPTED)
   async simulateFunding(
     @Body(simulateFundingValidationPipe) body: SimulateFundingRequestDto,
-  ): Promise<SimulatorFundingResponse> {
+  ): Promise<PspSandboxFundingResponse> {
     return await this.appService.simulateFundingWebhook(body);
   }
 }

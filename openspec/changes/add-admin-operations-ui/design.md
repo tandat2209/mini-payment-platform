@@ -5,8 +5,8 @@ The repository currently has a customer-oriented web experience, a simulator ser
 This change spans three applications:
 
 - `apps/web` needs an admin section with routes, navigation, and data views separate from the customer dashboard.
-- `apps/api` needs admin-oriented read endpoints for user transactions and ledger data, plus an admin-triggered simulator action surface.
-- `apps/simulator` remains the execution target for simulated funding, but it should be invoked through a stable application boundary rather than directly from browser code.
+- `apps/api` needs admin-oriented read endpoints for user transactions and ledger data.
+- `apps/psp-sandbox` remains the execution target for simulated funding, and the web sandbox workspace can call it directly for provider-style event dispatch.
 
 Because the change crosses UI, query surfaces, and service-to-service orchestration, it benefits from an explicit design before implementation.
 
@@ -40,16 +40,16 @@ Alternatives considered:
 - Reuse the existing dashboard and hide admin features behind a toggle: faster initially, but it mixes operator workflows into a customer-facing information architecture.
 - Build a separate admin app: cleaner long term, but too much overhead for the current project size.
 
-### Decision: The web app will call admin APIs, and the API will invoke the simulator
+### Decision: The web app can call the PSP sandbox directly for sandbox-only tooling
 
-The browser-facing admin simulator action will go through `apps/api`, which will expose an admin trigger endpoint and then call the simulator service over HTTP. The web app will not call the simulator directly.
+The browser-facing PSP sandbox tooling can call `apps/psp-sandbox` directly over HTTP for sandbox-only flows like funding webhooks. The API remains the receiving system for provider callbacks, but it does not need to proxy sandbox dispatch requests.
 
-This avoids browser-to-simulator coupling, reduces local CORS/configuration issues, and gives the API one stable place to validate admin inputs, shape the request contract, and surface simulator delivery results.
+This preserves the realistic provider boundary more directly: the browser exercises the fake PSP surface, and the PSP sandbox delivers webhooks into the API just like an external provider would. The sandbox base URL remains explicit in web runtime configuration.
 
 Alternatives considered:
 
-- Call the simulator directly from the web app: simpler on paper, but it couples browser code to simulator base URLs and cross-origin behavior.
-- Move the simulation logic fully into the API: possible, but it weakens the boundary between the API and the simulator service that the project is intentionally exercising.
+- Proxy sandbox requests through the API: workable, but it adds an unnecessary hop and weakens the system boundary the sandbox is meant to exercise.
+- Move the simulation logic fully into the API: possible, but it blurs the distinction between the platform and the fake PSP surface.
 
 ### Decision: Introduce admin read APIs that are platform-scoped, not customer-scoped
 
@@ -91,16 +91,16 @@ Alternatives considered:
 ## Risks / Trade-offs
 
 - [Risk] Admin routes may duplicate query logic that already exists for customer views. -> Mitigation: reuse repository/query patterns where the data shape overlaps, but keep admin contracts separate.
-- [Risk] Invoking the simulator through the API adds one more hop and another failure point. -> Mitigation: keep the trigger endpoint explicit about downstream delivery results and failures.
+- [Risk] Direct browser-to-sandbox calls require CORS and an explicit sandbox base URL. -> Mitigation: enable CORS in `apps/psp-sandbox` and keep the sandbox base URL explicit in web runtime configuration.
 - [Risk] Platform-wide transaction and ledger views may become large quickly. -> Mitigation: require pagination and filtering from the start, even in the initial admin UI.
 - [Risk] Demo-safe admin access could be mistaken for a production access model. -> Mitigation: document clearly that this change is structurally admin-ready, not production-auth complete.
 
 ## Migration Plan
 
 1. Add the new admin capability specs and implementation tasks.
-2. Implement admin API endpoints for simulator trigger, transaction browsing, and ledger browsing.
-3. Implement the admin web routes and pages using those APIs.
-4. Verify the local flow end to end by triggering funding from the admin UI and inspecting resulting transaction and ledger records.
+2. Implement admin API endpoints for transaction browsing and ledger browsing.
+3. Implement the admin and PSP sandbox web routes and pages using those APIs and the sandbox HTTP surface.
+4. Verify the local flow end to end by triggering funding from the PSP sandbox UI and inspecting resulting transaction and ledger records.
 5. Layer in stricter admin authentication later without changing the route and API structure.
 
 ## Open Questions

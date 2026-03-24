@@ -8,7 +8,7 @@
     "dev": "turbo run dev --parallel",
     "dev:api": "pnpm --filter api dev",
     "dev:web": "pnpm --filter web dev",
-    "dev:simulator": "pnpm --filter simulator dev",
+    "dev:psp-sandbox": "pnpm --filter psp-sandbox dev",
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",
     "db:logs": "docker compose logs -f postgres",

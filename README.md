@@ -26,7 +26,7 @@ Optional local environment files:
 ```bash
 cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env
-cp apps/simulator/.env.example apps/simulator/.env
+cp apps/psp-sandbox/.env.example apps/psp-sandbox/.env
 ```
 
 The default API database URL already matches the local Docker Compose database:
@@ -58,7 +58,7 @@ Default local ports:
 
 - API: `http://localhost:3001`
 - Web: `http://localhost:5173`
-- Simulator: `http://localhost:3002`
+- PSP Sandbox: `http://localhost:3002`
 
 ## Overview
 
@@ -68,7 +68,7 @@ This system allows:
 - Internal money movement using a double-entry ledger
 - Creating payment events (user-visible transactions)
 - Splitting payments into fee plus principal
-- Sending money externally via a payout system backed by a bank simulator
+- Sending money externally via a payout system backed by a PSP sandbox
 
 ## Current Milestone
 
@@ -76,7 +76,7 @@ The current implementation foundation now includes:
 
 - `apps/api` with a single health endpoint
 - `apps/web` that can connect to the API
-- `apps/simulator` as the future fake PSP/bank simulator scaffold
+- `apps/psp-sandbox` as the fake PSP/bank sandbox scaffold
 - `packages/db` with the initial financial schema migration, deterministic seed scenarios, and executable schema verification
 
 Wallet services, payout orchestration, ledger posting logic, and reconciliation workers will be added in later changes.
@@ -169,7 +169,7 @@ payment-platform-mini/
   apps/
     api/        # backend (wallet, ledger, payments)
     web/        # simple UI
-    simulator/  # fake bank / payout system
+    psp-sandbox/  # fake PSP / bank sandbox
   packages/
     db/         # schema + seed data
     shared/     # types/constants
@@ -224,7 +224,7 @@ Payout → Fake Bank → Recipient
 - Store money as integers
 - `32.00 USD` -> `3200`
 
-## Fake Bank Simulator
+## PSP Sandbox
 
 A simple service that simulates:
 
@@ -246,7 +246,7 @@ The inbound funding demo now models a provider-style webhook rather than an inte
 2. Copy one of the active funding identifiers shown on the page:
    - `accountNumber` for `destinationType: "account_number"`
    - `iban` for `destinationType: "iban"`
-3. Trigger the simulator webhook:
+3. Trigger the PSP sandbox webhook:
 
 ```bash
 curl -X POST http://localhost:3002/simulate/funding \

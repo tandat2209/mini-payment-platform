@@ -9,14 +9,14 @@ The web app SHALL provide an admin section with dedicated navigation and pages s
 - **WHEN** an operator navigates to the admin section in the web app
 - **THEN** the application shows admin-focused navigation and content without replacing the customer dashboard routes
 
-### Requirement: Admin can operate simulator funding from the web app
+### Requirement: Operators can operate PSP sandbox funding from the web app
 
-The admin area SHALL provide a simulator form that captures structured funding inputs and submits them to the application for simulator execution.
+The PSP sandbox area SHALL provide a funding form that captures structured inputs and submits them directly to the PSP sandbox for execution.
 
-#### Scenario: Admin triggers a simulator funding event
+#### Scenario: Operator triggers a PSP sandbox funding event
 
-- **WHEN** an operator submits a valid simulator funding request from the admin UI
-- **THEN** the web app sends the request to the admin simulator endpoint and shows the resulting delivery status and event identifier
+- **WHEN** an operator submits a valid funding request from the PSP sandbox UI
+- **THEN** the web app sends the request to the PSP sandbox endpoint and shows the resulting delivery status and event identifier
 
 ### Requirement: Admin can browse transactions and ledger activity from the web app
 

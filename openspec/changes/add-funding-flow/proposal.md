@@ -27,7 +27,7 @@ The web app now exposes an `Add money` action, but there is no customer funding 
 
 ## Impact
 
-- Affected code: `apps/web`, `apps/api`, `apps/simulator`, and database-backed repositories/services that read funding details and process funding events.
+- Affected code: `apps/web`, `apps/api`, `apps/psp-sandbox`, and database-backed repositories/services that read funding details and process funding events.
 - Affected APIs: new customer funding details read endpoint, new simulator trigger endpoint, and new or expanded webhook ingestion endpoint in the API application.
 - Affected systems: wallet balances, `webhook_events`, `user_transactions`, and ledger posting flows.
 - Dependencies: existing Postgres schema and seeded wallet funding details; no new external providers are required because the simulator will drive the demo flow.

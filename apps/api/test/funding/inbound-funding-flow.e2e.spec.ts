@@ -559,7 +559,7 @@ function buildFundingPayload(overrides?: Partial<Record<string, unknown>>) {
     eventType: 'funding.completed',
     externalEventId: 'evt_funding_test_001',
     occurredAt: '2026-03-23T06:00:00.000Z',
-    provider: 'simulator_psp',
+    provider: 'psp_sandbox',
     ...overrides,
   };
 }

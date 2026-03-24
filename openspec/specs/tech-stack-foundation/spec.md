@@ -8,12 +8,12 @@ Define the baseline repository structure and development stack for the payment p
 
 ### Requirement: Monorepo foundation
 
-The repository SHALL provide a monorepo layout with `apps/api`, `apps/web`, and `apps/simulator`, along with root-level workspace configuration that allows contributors to install, build, lint, test, and run the applications from the repository root.
+The repository SHALL provide a monorepo layout with `apps/api`, `apps/web`, and `apps/psp-sandbox`, along with root-level workspace configuration that allows contributors to install, build, lint, test, and run the applications from the repository root.
 
 #### Scenario: Contributor starts the workspace
 
 - **WHEN** a contributor installs dependencies and runs the documented root development command
-- **THEN** the API, web app, and simulator are started through a consistent workspace workflow
+- **THEN** the API, web app, and PSP sandbox are started through a consistent workspace workflow
 
 ### Requirement: Shared local configuration
 
@@ -42,11 +42,11 @@ The web application SHALL run as a React and TypeScript application, support env
 - **WHEN** a user loads the web application in a local development environment with the API running
 - **THEN** the application renders successfully and shows the API health status
 
-### Requirement: Simulator application baseline
+### Requirement: PSP sandbox application baseline
 
-The repository SHALL include a separate simulator application that runs as part of the monorepo development workflow so future payout simulation behavior can be added without restructuring the project.
+The repository SHALL include a separate PSP sandbox application that runs as part of the monorepo development workflow so future payout simulation behavior can be added without restructuring the project.
 
-#### Scenario: Contributor runs the simulator
+#### Scenario: Contributor runs the PSP sandbox
 
-- **WHEN** a contributor starts the workspace or runs the simulator directly
-- **THEN** the simulator boots successfully as an independent application
+- **WHEN** a contributor starts the workspace or runs the PSP sandbox directly
+- **THEN** the PSP sandbox boots successfully as an independent application

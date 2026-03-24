@@ -2,8 +2,8 @@ import { randomUUID } from 'node:crypto';
 
 import { Injectable } from '@nestjs/common';
 
-interface SimulatorHealthResponse {
-  service: 'simulator';
+interface PspSandboxHealthResponse {
+  service: 'psp-sandbox';
   status: 'ok';
   timestamp: string;
 }
@@ -40,10 +40,10 @@ type FundingSimulationResponse = {
 
 @Injectable()
 export class AppService {
-  getHealth(): SimulatorHealthResponse {
+  getHealth(): PspSandboxHealthResponse {
     return {
       status: 'ok',
-      service: 'simulator',
+      service: 'psp-sandbox',
       timestamp: new Date().toISOString(),
     };
   }
@@ -93,7 +93,7 @@ export class AppService {
       eventType: 'funding.completed' as const,
       externalEventId,
       occurredAt,
-      provider: 'simulator_psp',
+      provider: 'psp_sandbox',
     };
     const response = await fetch(deliveryTarget, {
       body: JSON.stringify(payload),
@@ -110,7 +110,7 @@ export class AppService {
           receiverResponse.error !== null &&
           'message' in receiverResponse.error
           ? String(receiverResponse.error.message)
-          : `Simulator delivery failed with status ${response.status}`,
+          : `PSP sandbox delivery failed with status ${response.status}`,
       );
     }
 
@@ -124,11 +124,11 @@ export class AppService {
   }
 
   private getTargetApiBaseUrl(): string {
-    return (process.env.SIMULATOR_TARGET_API_BASE_URL ?? 'http://127.0.0.1:3001').replace(
+    return (process.env.PSP_SANDBOX_TARGET_API_BASE_URL ?? 'http://127.0.0.1:3001').replace(
       /\/$/,
       '',
     );
   }
 }
 
-export type { FundingSimulationRequest, FundingSimulationResponse, SimulatorHealthResponse };
+export type { FundingSimulationRequest, FundingSimulationResponse, PspSandboxHealthResponse };
