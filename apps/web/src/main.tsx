@@ -5,8 +5,9 @@ import { RouterProvider } from '@tanstack/react-router';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 
+import { router } from '@/app/router';
+
 import { queryClient } from './lib/query-client';
-import { router } from './router';
 
 const rootElement = document.getElementById('root');
 

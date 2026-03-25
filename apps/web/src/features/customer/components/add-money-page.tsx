@@ -1,0 +1,101 @@
+import type { UseQueryResult } from '@tanstack/react-query';
+import { ArrowLeft } from 'lucide-react';
+import type { JSX } from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import type { WalletFundingDetailsResponse } from '@/features/customer/api';
+import { toTitleCase } from '@/features/customer/lib/utils';
+
+import { FundingDetailCard } from './funding-detail-card';
+import { EmptyState, LoadingBlock } from './shared';
+
+export function AddMoneyPage({
+  fundingDetailsQuery,
+  onBack,
+}: {
+  fundingDetailsQuery: UseQueryResult<WalletFundingDetailsResponse, Error>;
+  onBack: () => void;
+}): JSX.Element {
+  const fundingDetails = fundingDetailsQuery.data?.fundingDetails ?? [];
+
+  return (
+    <section className="space-y-5" id="section-add-money">
+      <Card className="rounded-[30px] border border-[#e7e1d8] bg-[#fffdf9] shadow-[0_10px_40px_rgba(15,23,42,0.03)]">
+        <CardContent className="space-y-6 p-4 sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <Button className="rounded-xl px-3.5" onClick={onBack} variant="ghost">
+              <ArrowLeft className="h-4 w-4" />
+              Back to overview
+            </Button>
+            {fundingDetailsQuery.data?.wallet ? (
+              <Badge tone="default">{toTitleCase(fundingDetailsQuery.data.wallet.status)}</Badge>
+            ) : null}
+          </div>
+
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,1.4fr)_320px] lg:items-start">
+            <div className="space-y-3">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                Add money
+              </p>
+              <h1 className="text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
+                Funding details
+              </h1>
+              <p className="max-w-2xl text-sm text-slate-500">
+                Share these account details to receive inbound funds into your active wallet. Each
+                funding method below is scoped to this account and currency.
+              </p>
+            </div>
+
+            <div className="rounded-[26px] border border-[#e7e1d8] bg-[#fcfaf6] p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                Wallet
+              </p>
+              <p className="mt-3 text-lg font-semibold text-slate-950">
+                {fundingDetailsQuery.data?.wallet.id ?? 'Loading wallet'}
+              </p>
+              <p className="mt-1 text-sm text-slate-500">
+                Active funding instructions for the current customer account.
+              </p>
+            </div>
+          </div>
+
+          {fundingDetailsQuery.isLoading ? (
+            <div className="grid gap-4 lg:grid-cols-2">
+              <LoadingBlock className="h-56" />
+              <LoadingBlock className="h-56" />
+            </div>
+          ) : null}
+
+          {fundingDetailsQuery.isError ? (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+              {fundingDetailsQuery.error instanceof Error
+                ? fundingDetailsQuery.error.message
+                : 'Funding details unavailable'}
+            </div>
+          ) : null}
+
+          {!fundingDetailsQuery.isLoading &&
+          !fundingDetailsQuery.isError &&
+          fundingDetails.length > 0 ? (
+            <div className="grid gap-4 lg:grid-cols-2">
+              {fundingDetails.map((fundingDetail) => (
+                <FundingDetailCard fundingDetail={fundingDetail} key={fundingDetail.id} />
+              ))}
+            </div>
+          ) : null}
+
+          {!fundingDetailsQuery.isLoading &&
+          !fundingDetailsQuery.isError &&
+          fundingDetails.length === 0 ? (
+            <EmptyState
+              message="This wallet does not have any active funding instructions yet."
+              title="No funding details available"
+            />
+          ) : null}
+        </CardContent>
+      </Card>
+    </section>
+  );
+}

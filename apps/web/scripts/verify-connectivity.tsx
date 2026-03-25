@@ -1,8 +1,9 @@
 import { QueryClientProvider } from '@tanstack/react-query';
+import { RouterProvider } from '@tanstack/react-router';
 import { JSDOM } from 'jsdom';
 import { createRoot } from 'react-dom/client';
 
-import App from '../src/App';
+import { router } from '../src/app/router';
 import { queryClient } from '../src/lib/query-client';
 
 async function waitForStatus(container: HTMLDivElement): Promise<string> {
@@ -61,7 +62,7 @@ async function main(): Promise<void> {
   const root = createRoot(container);
   root.render(
     <QueryClientProvider client={queryClient}>
-      <App />
+      <RouterProvider router={router} />
     </QueryClientProvider>,
   );
 
