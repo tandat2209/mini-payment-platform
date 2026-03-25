@@ -69,7 +69,7 @@ export function CustomerRecipientsPage({
   successMessage: string | null;
 }): JSX.Element {
   return (
-    <section className="grid gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(360px,0.9fr)]">
+    <section className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(360px,0.9fr)]">
       <RecipientDirectory
         isLoading={isRecipientsLoading}
         onCreateNew={onCreateNew}

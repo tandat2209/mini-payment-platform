@@ -8,18 +8,8 @@ import {
   useTransactionsQuery,
 } from '@/features/customer/api/use-customer-queries';
 import { DashboardHomePage } from '@/features/customer/components/dashboard-home-page';
-import {
-  formatUsdAmount,
-  getAvailableCurrencies,
-  includesSearchMatch,
-  sumBalanceUsdEquivalent,
-  type SummaryMetric,
-  sumTransactionsUsdEquivalent,
-} from '@/features/customer/lib/utils';
+import { getAvailableCurrencies, includesSearchMatch } from '@/features/customer/lib/utils';
 import { type CurrencyFilter, useDashboardStore } from '@/features/customer/store/dashboard-store';
-
-const thirtyDaysInMilliseconds = 30 * 24 * 60 * 60 * 1000;
-const dashboardRenderTimestamp = Date.now();
 
 export function DashboardRoutePage(): JSX.Element {
   const navigate = useNavigate();
@@ -49,7 +39,6 @@ export function DashboardRoutePage(): JSX.Element {
       ? currencyFilter
       : 'all';
   const visibleBalances = balanceItems ?? [];
-  const last30DaysStartTimestamp = dashboardRenderTimestamp - thirtyDaysInMilliseconds;
 
   const filteredTransactions = useMemo(
     () =>
@@ -86,31 +75,6 @@ export function DashboardRoutePage(): JSX.Element {
     );
   }
 
-  const metrics: SummaryMetric[] = [
-    {
-      label: 'Inflow (30d)',
-      note: 'USD equivalent · placeholder FX',
-      tone: 'blue',
-      value: formatUsdAmount(
-        sumTransactionsUsdEquivalent(transactionItems ?? [], 'credit', last30DaysStartTimestamp),
-      ),
-    },
-    {
-      label: 'Outflow (30d)',
-      note: 'USD equivalent · placeholder FX',
-      tone: 'amber',
-      value: formatUsdAmount(
-        sumTransactionsUsdEquivalent(transactionItems ?? [], 'debit', last30DaysStartTimestamp),
-      ),
-    },
-    {
-      label: 'Pending',
-      note: 'USD equivalent · placeholder FX',
-      tone: 'slate',
-      value: formatUsdAmount(sumBalanceUsdEquivalent(balanceItems ?? [], 'pending')),
-    },
-  ];
-
   function handleCurrencyFilterChange(nextCurrency: CurrencyFilter): void {
     setCurrencyFilter(nextCurrency);
   }
@@ -119,7 +83,6 @@ export function DashboardRoutePage(): JSX.Element {
     <DashboardHomePage
       availableCurrencies={availableCurrencies}
       filteredTransactions={filteredTransactions}
-      metrics={metrics}
       onAddMoney={() => {
         void navigate({ to: '/funding-details' });
       }}
@@ -135,9 +98,6 @@ export function DashboardRoutePage(): JSX.Element {
       onTransactionSearchQueryChange={setTransactionSearchQuery}
       resolvedCurrencyFilter={resolvedCurrencyFilter}
       selectedTransactionId={resolvedSelectedTransactionId}
-      totalBalanceUsdEquivalent={formatUsdAmount(
-        sumBalanceUsdEquivalent(balanceItems ?? [], 'available'),
-      )}
       transactionDetailQuery={transactionDetailQuery}
       transactionFilter={transactionFilter}
       transactionSearchQuery={transactionSearchQuery}

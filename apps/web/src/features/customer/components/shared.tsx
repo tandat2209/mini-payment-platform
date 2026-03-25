@@ -37,7 +37,9 @@ export function SectionHeader({ action, title }: { action?: string; title: strin
   return (
     <div className="flex items-center justify-between gap-4">
       <h2 className="text-lg font-semibold text-slate-950">{title}</h2>
-      {action ? <span className="text-sm font-medium text-slate-500">{action}</span> : null}
+      {action ? (
+        <span className="hidden text-sm font-medium text-slate-500 sm:inline">{action}</span>
+      ) : null}
     </div>
   );
 }

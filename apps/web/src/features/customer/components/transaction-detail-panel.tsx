@@ -35,11 +35,11 @@ export function TransactionDetailPanel({
       onOpenChange={(open: boolean) => !open && onClose()}
       open={selectedTransactionId !== null}
     >
-      <DialogContent className="max-h-[92vh] overflow-y-auto p-5 sm:p-6">
+      <DialogContent className="max-h-[92vh] overflow-y-auto p-4 sm:p-5">
         <DialogHeader className="pr-12">
           <SectionHeader
             {...(transaction ? { action: toTitleCase(transaction.type) } : {})}
-            title="Transaction detail"
+            title="Transaction"
           />
           <DialogTitle className="sr-only">Transaction detail</DialogTitle>
         </DialogHeader>
@@ -66,14 +66,14 @@ export function TransactionDetailPanel({
 
         {transaction ? (
           <>
-            <div className="rounded-[28px] border border-[#e7e1d8] bg-[#fcfaf6] p-5">
+            <div className="rounded-[24px] border border-[#e7e1d8] bg-[#fcfaf6] p-4">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   <div
                     className={
                       transaction.direction === 'credit'
-                        ? 'flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700'
-                        : 'flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-100 text-rose-600'
+                        ? 'flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700'
+                        : 'flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-100 text-rose-600'
                     }
                   >
                     {transaction.direction === 'credit' ? (
@@ -84,12 +84,12 @@ export function TransactionDetailPanel({
                   </div>
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                      Net movement
+                      Net
                     </p>
-                    <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
+                    <p className="mt-1.5 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">
                       {formatSignedTransactionMoney(transaction)}
                     </p>
-                    <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">
+                    <p className="mt-1.5 max-w-xl text-sm leading-5 text-slate-500">
                       {transaction.description}
                     </p>
                   </div>
@@ -110,8 +110,8 @@ export function TransactionDetailPanel({
               <DetailMetric label="Net" value={formatMoney(transaction.amounts.net)} />
             </div>
 
-            <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
-              <div className="rounded-[24px] border border-slate-200 bg-white p-4">
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+              <div className="rounded-[20px] border border-slate-200 bg-white p-4">
                 <div className="flex items-center gap-2">
                   <ReceiptText className="h-4 w-4 text-slate-500" />
                   <p className="text-sm font-semibold text-slate-950">Overview</p>
@@ -147,7 +147,7 @@ export function TransactionDetailPanel({
                 </dl>
               </div>
 
-              <div className="rounded-[24px] border border-slate-200 bg-white p-4">
+              <div className="rounded-[20px] border border-slate-200 bg-white p-4">
                 {payout ? (
                   <>
                     <p className="text-sm font-semibold text-slate-950">Payout context</p>
@@ -182,11 +182,11 @@ export function TransactionDetailPanel({
 
 function DetailMetric({ label, value }: { label: string; value: string }): JSX.Element {
   return (
-    <div className="rounded-[20px] border border-slate-200 bg-white px-4 py-3">
+    <div className="rounded-[18px] border border-slate-200 bg-white px-3.5 py-3">
       <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
         {label}
       </p>
-      <p className="mt-2 text-lg font-semibold text-slate-950">{value}</p>
+      <p className="mt-1.5 text-base font-semibold text-slate-950 sm:text-lg">{value}</p>
     </div>
   );
 }
