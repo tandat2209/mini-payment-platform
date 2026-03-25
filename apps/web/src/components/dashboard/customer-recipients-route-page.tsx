@@ -4,32 +4,49 @@ import { useMemo, useState } from 'react';
 
 import { addRecipientRail, createRecipient } from '../../api';
 import {
+  useRecipientCapabilitiesQuery,
   useRecipientRequirementsQuery,
   useRecipientsQuery,
 } from '../../hooks/use-dashboard-queries';
 import { CustomerRecipientsPage } from './customer-recipients-page';
 
-const defaultRail: 'ach' | 'sepa' | 'swift' = 'ach';
-const defaultCountryCode = 'US';
-const defaultCurrency = 'USD';
-
 export function CustomerRecipientsRoutePage(): JSX.Element {
   const queryClient = useQueryClient();
   const recipientsQuery = useRecipientsQuery();
+  const capabilitiesQuery = useRecipientCapabilitiesQuery();
   const [selectedRecipientId, setSelectedRecipientId] = useState<string | null>(null);
   const [recipientName, setRecipientName] = useState('');
-  const [rail, setRail] = useState<'ach' | 'sepa' | 'swift'>(defaultRail);
-  const [countryCode, setCountryCode] = useState(defaultCountryCode);
-  const [currency, setCurrency] = useState(defaultCurrency);
+  const [rail, setRail] = useState<'ach' | 'sepa' | 'swift' | null>(null);
+  const [countryCode, setCountryCode] = useState<string | null>(null);
+  const [currency, setCurrency] = useState<string | null>(null);
   const [detailValues, setDetailValues] = useState<Record<string, string>>({});
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const mode: 'create' | 'add-rail' = selectedRecipientId ? 'add-rail' : 'create';
+  const capabilityCountries = capabilitiesQuery.data?.items ?? [];
+  const selectedCountry =
+    capabilityCountries.find((country) => country.countryCode === countryCode) ??
+    capabilityCountries[0] ??
+    null;
+  const selectedCountryCode = selectedCountry?.countryCode ?? '';
+  const availableRails = selectedCountry?.rails ?? [];
+  const selectedRail =
+    availableRails.find((railOption) => railOption.rail === rail) ?? availableRails[0] ?? null;
+  const selectedRailValue = selectedRail?.rail ?? '';
+  const availableCurrencies = selectedRail?.currencies ?? [];
+  const selectedCurrency =
+    availableCurrencies.find((currencyOption) => currencyOption.currency === currency) ??
+    availableCurrencies[0] ??
+    null;
+  const selectedCurrencyValue = selectedCurrency?.currency ?? '';
 
   const requirementsQuery = useRecipientRequirementsQuery({
-    countryCode,
-    currency,
-    enabled: countryCode.length === 2 && currency.length === 3,
-    rail,
+    countryCode: selectedCountryCode,
+    currency: selectedCurrencyValue,
+    enabled:
+      selectedCountryCode.length === 2 &&
+      selectedCurrencyValue.length === 3 &&
+      selectedRailValue.length > 0,
+    rail: (selectedRailValue || 'ach') as 'ach' | 'sepa' | 'swift',
   });
 
   const createRecipientMutation = useMutation({
@@ -55,10 +72,10 @@ export function CustomerRecipientsRoutePage(): JSX.Element {
   const addRecipientRailMutation = useMutation({
     mutationFn: async (input: { recipientId: string }) =>
       await addRecipientRail(input.recipientId, {
-        countryCode,
-        currency,
+        countryCode: selectedCountryCode,
+        currency: selectedCurrencyValue,
         details: pickRequirementDetails(detailValues, requirementsQuery.data?.fields ?? []),
-        rail,
+        rail: selectedRailValue as 'ach' | 'sepa' | 'swift',
       }),
     onSuccess: async (result) => {
       setSuccessMessage(
@@ -90,9 +107,9 @@ export function CustomerRecipientsRoutePage(): JSX.Element {
   function handleCreateNew(): void {
     setSelectedRecipientId(null);
     setRecipientName('');
-    setRail(defaultRail);
-    setCountryCode(defaultCountryCode);
-    setCurrency(defaultCurrency);
+    setRail(null);
+    setCountryCode(null);
+    setCurrency(null);
     setDetailValues({});
     resetMutationMessages();
   }
@@ -110,16 +127,20 @@ export function CustomerRecipientsRoutePage(): JSX.Element {
       return;
     }
 
+    if (!selectedCountryCode || !selectedCurrencyValue || !selectedRailValue) {
+      return;
+    }
+
     const details = pickRequirementDetails(detailValues, requirementsQuery.data.fields);
 
     if (mode === 'create') {
       await createRecipientMutation.mutateAsync({
         name: recipientName,
         rail: {
-          countryCode,
-          currency,
+          countryCode: selectedCountryCode,
+          currency: selectedCurrencyValue,
           details,
-          rail,
+          rail: selectedRailValue as 'ach' | 'sepa' | 'swift',
         },
       });
 
@@ -138,25 +159,36 @@ export function CustomerRecipientsRoutePage(): JSX.Element {
   return (
     <CustomerRecipientsPage
       activeRecipient={activeRecipient}
-      countryCode={countryCode}
+      capabilitiesQuery={{
+        data: capabilitiesQuery.data,
+        error: capabilitiesQuery.error,
+        isError: capabilitiesQuery.isError,
+        isLoading: capabilitiesQuery.isLoading,
+      }}
+      countryCode={selectedCountryCode}
       currentError={
+        capabilitiesQuery.error?.message ??
         createRecipientMutation.error?.message ??
         addRecipientRailMutation.error?.message ??
         recipientsQuery.error?.message ??
         null
       }
-      currency={currency}
+      currency={selectedCurrencyValue}
       detailValues={detailValues}
       isMutating={createRecipientMutation.isPending || addRecipientRailMutation.isPending}
       isRecipientsLoading={recipientsQuery.isLoading}
       mode={mode}
       onCountryCodeChange={(value) => {
         setCountryCode(value);
+        setRail(null);
+        setCurrency(null);
+        setDetailValues({});
         resetMutationMessages();
       }}
       onCreateNew={handleCreateNew}
       onCurrencyChange={(value) => {
         setCurrency(value);
+        setDetailValues({});
         resetMutationMessages();
       }}
       onDetailValueChange={(key, value) => {
@@ -167,6 +199,8 @@ export function CustomerRecipientsRoutePage(): JSX.Element {
       }}
       onRailChange={(value) => {
         setRail(value);
+        setCurrency(null);
+        setDetailValues({});
         resetMutationMessages();
       }}
       onRecipientNameChange={(value) => {
@@ -177,7 +211,7 @@ export function CustomerRecipientsRoutePage(): JSX.Element {
       onSubmit={() => {
         void handleSubmit();
       }}
-      rail={rail}
+      rail={(selectedRailValue || 'ach') as 'ach' | 'sepa' | 'swift'}
       recipientName={recipientName}
       recipients={recipientsQuery.data?.items ?? []}
       requirementsQuery={{

@@ -603,10 +603,57 @@ test('recipient requirements API returns SEPA requirements for supported country
 
     assert.equal(response.status, 200);
     assert.equal(response.body.providerRegistrationStrategy, 'provider_managed');
-    assert.deepEqual(
-      (response.body.fields as Array<{ key: string }>).map((field) => field.key),
-      ['iban'],
+    assert.deepEqual(response.body.fields, [
+      {
+        helpText: 'Provide the beneficiary IBAN without spaces if possible.',
+        key: 'iban',
+        kind: 'iban',
+        label: 'IBAN',
+        maxLength: 34,
+        minLength: 15,
+        pattern: '^[A-Z]{2}[A-Z0-9]{13,32}$',
+        placeholder: 'DE89370400440532013000',
+        required: true,
+      },
+    ]);
+  } finally {
+    await app.close();
+  }
+});
+
+test('recipient capabilities API returns backend-owned onboarding options', async () => {
+  const app = await createTestApp();
+
+  try {
+    const response = await fetchJson(
+      app,
+      '/customers/me/recipients/capabilities?countryCode=US',
+      'user_demo_alice',
     );
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(response.body, {
+      items: [
+        {
+          countryCode: 'US',
+          countryName: 'United States',
+          rails: [
+            {
+              currencies: [{ currency: 'USD' }],
+              description: 'US domestic bank rails',
+              providerRegistrationStrategy: 'platform_managed',
+              rail: 'ach',
+            },
+            {
+              currencies: [{ currency: 'USD' }, { currency: 'EUR' }],
+              description: 'Cross-border bank transfer',
+              providerRegistrationStrategy: 'provider_managed',
+              rail: 'swift',
+            },
+          ],
+        },
+      ],
+    });
   } finally {
     await app.close();
   }

@@ -28,6 +28,24 @@ export class RecipientRequirementsQueryDto {
   currency!: string;
 }
 
+export class RecipientCapabilitiesQueryDto {
+  @IsOptional()
+  @IsString()
+  @Length(2, 2)
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim().length > 0 ? value.trim().toUpperCase() : undefined,
+  )
+  countryCode?: string;
+
+  @IsOptional()
+  @IsString()
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim().length > 0 ? value.trim().toLowerCase() : undefined,
+  )
+  @IsIn(['ach', 'sepa', 'swift'])
+  rail?: string;
+}
+
 export class CreateRecipientRailDto {
   @IsString()
   @IsNotEmpty()

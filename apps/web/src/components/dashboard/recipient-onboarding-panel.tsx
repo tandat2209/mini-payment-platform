@@ -2,6 +2,7 @@ import { LoaderCircle, WandSparkles } from 'lucide-react';
 import type { JSX } from 'react';
 
 import type {
+  RecipientCapabilitiesResponse,
   RecipientRequirementField,
   RecipientRequirementsResponse,
   RecipientSummary,
@@ -14,27 +15,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { EmptyState, LoadingBlock } from './shared';
 import { getCountryFlag, toTitleCase } from './utils';
 
-const railOptions = [
-  { description: 'US domestic bank rails', label: 'ACH', value: 'ach' },
-  { description: 'Single euro payments area', label: 'SEPA', value: 'sepa' },
-  { description: 'Cross-border bank transfer', label: 'SWIFT', value: 'swift' },
-] as const;
-
-const countryOptions = [
-  { label: 'United States', value: 'US' },
-  { label: 'Germany', value: 'DE' },
-  { label: 'France', value: 'FR' },
-  { label: 'United Kingdom', value: 'GB' },
-  { label: 'Netherlands', value: 'NL' },
-] as const;
-
-const currencyOptions = [
-  { label: 'USD', value: 'USD' },
-  { label: 'EUR', value: 'EUR' },
-] as const;
-
 export function RecipientOnboardingPanel({
   activeRecipient,
+  capabilitiesQuery,
   currentError,
   detailValues,
   isMutating,
@@ -53,6 +36,12 @@ export function RecipientOnboardingPanel({
   successMessage,
 }: {
   activeRecipient: RecipientSummary | null;
+  capabilitiesQuery: {
+    data: RecipientCapabilitiesResponse | undefined;
+    error: Error | null;
+    isError: boolean;
+    isLoading: boolean;
+  };
   countryCode: string;
   currentError: string | null;
   currency: string;
@@ -76,6 +65,15 @@ export function RecipientOnboardingPanel({
   successMessage: string | null;
 }): JSX.Element {
   const requirementFields = requirementsQuery.data?.fields ?? [];
+  const countryOptions = capabilitiesQuery.data?.items ?? [];
+  const selectedCountry =
+    countryOptions.find((option) => option.countryCode === countryCode) ??
+    countryOptions[0] ??
+    null;
+  const railOptions = selectedCountry?.rails ?? [];
+  const selectedRail = railOptions.find((option) => option.rail === rail) ?? railOptions[0] ?? null;
+  const currencyOptions = selectedRail?.currencies ?? [];
+  const selectedRailDescription = selectedRail?.description ?? null;
 
   return (
     <Card className="rounded-[30px] border border-[#e7e1d8] bg-[#fcfaf6] shadow-[0_10px_40px_rgba(15,23,42,0.03)]">
@@ -142,8 +140,8 @@ export function RecipientOnboardingPanel({
               </SelectTrigger>
               <SelectContent>
                 {railOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
+                  <SelectItem key={option.rail} value={option.rail}>
+                    {toTitleCase(option.rail)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -155,8 +153,8 @@ export function RecipientOnboardingPanel({
               </SelectTrigger>
               <SelectContent>
                 {countryOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {getCountryFlag(option.value)} {option.label}
+                  <SelectItem key={option.countryCode} value={option.countryCode}>
+                    {getCountryFlag(option.countryCode)} {option.countryName}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -168,13 +166,26 @@ export function RecipientOnboardingPanel({
               </SelectTrigger>
               <SelectContent>
                 {currencyOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
+                  <SelectItem key={option.currency} value={option.currency}>
+                    {option.currency}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
+
+          {!capabilitiesQuery.isLoading &&
+          !capabilitiesQuery.isError &&
+          countryOptions.length === 0 ? (
+            <EmptyState
+              message="No recipient onboarding combinations are currently enabled."
+              title="Onboarding unavailable"
+            />
+          ) : null}
+
+          {selectedRailDescription ? (
+            <p className="text-sm text-slate-500">{selectedRailDescription}</p>
+          ) : null}
         </div>
 
         <div className="rounded-[24px] border border-white bg-white p-4">
@@ -187,6 +198,19 @@ export function RecipientOnboardingPanel({
             <div className="mt-4 space-y-3">
               <LoadingBlock className="h-11" />
               <LoadingBlock className="h-11" />
+            </div>
+          ) : null}
+
+          {capabilitiesQuery.isLoading ? (
+            <div className="mt-4 space-y-3">
+              <LoadingBlock className="h-11" />
+              <LoadingBlock className="h-11" />
+            </div>
+          ) : null}
+
+          {capabilitiesQuery.isError ? (
+            <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+              {capabilitiesQuery.error?.message ?? 'Recipient capabilities unavailable'}
             </div>
           ) : null}
 
@@ -252,6 +276,8 @@ export function RecipientOnboardingPanel({
           <Button
             disabled={
               isMutating ||
+              capabilitiesQuery.isLoading ||
+              capabilitiesQuery.isError ||
               requirementsQuery.isLoading ||
               !requirementsQuery.data ||
               (mode === 'create' && recipientName.trim().length === 0)
@@ -297,12 +323,16 @@ function RecipientFieldInput({
           field.kind === 'swift_code' || field.kind === 'iban' ? 'characters' : 'none'
         }
         id={`field-${field.key}`}
+        maxLength={field.maxLength}
+        minLength={field.minLength}
         onChange={(event) => {
           onChange(field.key, event.target.value);
         }}
-        placeholder={field.label}
+        pattern={field.pattern}
+        placeholder={field.placeholder ?? field.label}
         value={value}
       />
+      {field.helpText ? <p className="text-xs text-slate-500">{field.helpText}</p> : null}
     </div>
   );
 }

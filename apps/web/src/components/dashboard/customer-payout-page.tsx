@@ -210,8 +210,9 @@ export function CustomerPayoutPage({
             </div>
           </div>
           <p className="text-sm leading-6 text-slate-500">
-            The customer-facing payout flow will stay recipient-first: saved rail selection first,
-            provider-specific submission strategy second.
+            The customer-facing payout flow stays recipient-first: it only uses saved rail metadata
+            returned by the API, with backend-governed onboarding capability rules and
+            provider-specific submission strategy layered underneath.
           </p>
         </CardContent>
       </Card>

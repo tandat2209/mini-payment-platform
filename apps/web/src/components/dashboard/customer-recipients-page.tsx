@@ -1,11 +1,16 @@
 import type { JSX } from 'react';
 
-import type { RecipientRequirementsResponse, RecipientSummary } from '../../api';
+import type {
+  RecipientCapabilitiesResponse,
+  RecipientRequirementsResponse,
+  RecipientSummary,
+} from '../../api';
 import { RecipientDirectory } from './recipient-directory';
 import { RecipientOnboardingPanel } from './recipient-onboarding-panel';
 
 export function CustomerRecipientsPage({
   activeRecipient,
+  capabilitiesQuery,
   countryCode,
   currentError,
   currency,
@@ -29,6 +34,12 @@ export function CustomerRecipientsPage({
   successMessage,
 }: {
   activeRecipient: RecipientSummary | null;
+  capabilitiesQuery: {
+    data: RecipientCapabilitiesResponse | undefined;
+    error: Error | null;
+    isError: boolean;
+    isLoading: boolean;
+  };
   countryCode: string;
   currentError: string | null;
   currency: string;
@@ -67,6 +78,7 @@ export function CustomerRecipientsPage({
       />
       <RecipientOnboardingPanel
         activeRecipient={activeRecipient}
+        capabilitiesQuery={capabilitiesQuery}
         countryCode={countryCode}
         currentError={currentError}
         currency={currency}

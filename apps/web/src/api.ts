@@ -102,9 +102,14 @@ type RecipientListResponse = {
 };
 
 type RecipientRequirementField = {
+  helpText?: string;
   key: string;
   kind: string;
   label: string;
+  maxLength?: number;
+  minLength?: number;
+  pattern?: string;
+  placeholder?: string;
   required: boolean;
 };
 
@@ -115,6 +120,21 @@ type RecipientRequirementsResponse = {
   initialReadinessStatus: string;
   providerRegistrationStrategy: string;
   rail: string;
+};
+
+type RecipientCapabilitiesResponse = {
+  items: Array<{
+    countryCode: string;
+    countryName: string;
+    rails: Array<{
+      currencies: Array<{
+        currency: string;
+      }>;
+      description: string;
+      providerRegistrationStrategy: string;
+      rail: 'ach' | 'sepa' | 'swift';
+    }>;
+  }>;
 };
 
 type RecipientRailCreateRequest = {
@@ -402,6 +422,30 @@ export async function fetchRecipientRequirements(input: {
   );
 }
 
+export async function fetchRecipientCapabilities(input?: {
+  countryCode?: string;
+  rail?: 'ach' | 'sepa' | 'swift';
+}): Promise<RecipientCapabilitiesResponse> {
+  const params = new URLSearchParams();
+
+  if (input?.countryCode) {
+    params.set('countryCode', input.countryCode);
+  }
+
+  if (input?.rail) {
+    params.set('rail', input.rail);
+  }
+
+  const query = params.toString();
+
+  return await getJson<RecipientCapabilitiesResponse>(
+    `/customers/me/recipients/capabilities${query ? `?${query}` : ''}`,
+    {
+      errorLabel: 'Recipient capabilities request',
+    },
+  );
+}
+
 export async function createRecipient(
   request: CreateRecipientRequest,
 ): Promise<RecipientCreateResponse> {
@@ -575,6 +619,7 @@ export type {
   FundingDetailValue,
   HealthResponse,
   MoneyDto,
+  RecipientCapabilitiesResponse,
   RecipientCreateResponse,
   RecipientListResponse,
   RecipientRequirementField,

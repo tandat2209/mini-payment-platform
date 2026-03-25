@@ -31,6 +31,7 @@ import {
 import {
   CreateRecipientDto,
   CreateRecipientRailDto,
+  RecipientCapabilitiesQueryDto,
   RecipientRequirementsQueryDto,
 } from './recipient-onboarding.dto';
 
@@ -73,14 +74,34 @@ type RecipientRequirementResponse = {
   countryCode: string;
   currency: string;
   fields: Array<{
+    helpText?: string;
     key: string;
     kind: string;
     label: string;
+    maxLength?: number;
+    minLength?: number;
+    pattern?: string;
+    placeholder?: string;
     required: boolean;
   }>;
   initialReadinessStatus: string;
   providerRegistrationStrategy: string;
   rail: string;
+};
+
+type RecipientCapabilitiesResponse = {
+  items: Array<{
+    countryCode: string;
+    countryName: string;
+    rails: Array<{
+      currencies: Array<{
+        currency: string;
+      }>;
+      description: string;
+      providerRegistrationStrategy: string;
+      rail: string;
+    }>;
+  }>;
 };
 
 @UseGuards(CurrentCustomerGuard)
@@ -107,6 +128,22 @@ export class RecipientsController {
     } catch (error) {
       throw this.mapOnboardingError(error);
     }
+  }
+
+  @Get('capabilities')
+  @UsePipes(
+    new ValidationPipe({
+      forbidNonWhitelisted: true,
+      transform: true,
+      whitelist: true,
+    }),
+  )
+  getRecipientCapabilities(
+    @Query() query: RecipientCapabilitiesQueryDto,
+  ): RecipientCapabilitiesResponse {
+    return {
+      items: this.recipientOnboardingService.listCapabilities(query),
+    };
   }
 
   @Get()

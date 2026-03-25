@@ -7,6 +7,7 @@ import {
   type TransactionManager,
 } from '../../shared/application/transaction-manager';
 import {
+  type RecipientCapabilityCountryOption,
   type RecipientIdentity,
   RecipientNotFoundError,
   type RecipientRailRecord,
@@ -65,6 +66,21 @@ export class RecipientOnboardingService {
 
   getRequirements(input: RecipientRequirementLookupInput): RecipientRailRequirementSet {
     return this.requirementResolver.resolve(input);
+  }
+
+  listCapabilities(input?: {
+    countryCode?: string;
+    rail?: string;
+  }): RecipientCapabilityCountryOption[] {
+    const capabilities = this.requirementResolver.listCapabilities();
+
+    return capabilities
+      .filter((country) => (input?.countryCode ? country.countryCode === input.countryCode : true))
+      .map((country) => ({
+        ...country,
+        rails: country.rails.filter((rail) => (input?.rail ? rail.rail === input.rail : true)),
+      }))
+      .filter((country) => country.rails.length > 0);
   }
 
   async createRecipientWithRail(

@@ -15,10 +15,32 @@ export type RecipientRequirementFieldKind =
   | 'routing_number'
   | 'swift_code';
 
+export type RecipientCapabilityCurrencyOption = {
+  currency: string;
+};
+
+export type RecipientCapabilityRailOption = {
+  currencies: RecipientCapabilityCurrencyOption[];
+  description: string;
+  providerRegistrationStrategy: RecipientProviderRegistrationStrategy;
+  rail: RecipientRail;
+};
+
+export type RecipientCapabilityCountryOption = {
+  countryCode: string;
+  countryName: string;
+  rails: RecipientCapabilityRailOption[];
+};
+
 export type RecipientRequirementFieldDefinition = {
+  helpText?: string;
   key: string;
   kind: RecipientRequirementFieldKind;
   label: string;
+  maxLength?: number;
+  minLength?: number;
+  pattern?: string;
+  placeholder?: string;
   required: boolean;
 };
 

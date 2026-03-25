@@ -304,6 +304,45 @@ where ledger_transaction_id in (
 );
 ```
 
+## Recipient Capability Discovery
+
+Recipient onboarding is now backend-driven.
+
+The web app does not hardcode which country, rail, or currency combinations are allowed. Instead
+it first calls:
+
+- `GET /customers/me/recipients/capabilities`
+- `GET /customers/me/recipients/requirements`
+
+The capability endpoint tells the client which onboarding combinations are currently enabled. The
+requirements endpoint returns a normalized field schema for the selected combination, including
+labels, input kinds, placeholders, help text, and validation hints.
+
+This keeps rollout and validation policy in the API while letting the web app render the form
+dynamically.
+
+Example capability discovery call:
+
+```bash
+curl "http://localhost:3001/customers/me/recipients/capabilities?countryCode=US"
+```
+
+Example schema discovery call:
+
+```bash
+curl "http://localhost:3001/customers/me/recipients/requirements?countryCode=DE&rail=sepa&currency=EUR"
+```
+
+The payout side remains stable:
+
+- onboarding discovers what rails can be created
+- recipient rails are saved on the platform
+- payout preparation later references saved `recipientRailId` records
+
+More detail:
+
+- [Recipient Capability Discovery](/Users/datnguyen/Projects/mini-payment-platform/docs/recipient-capability-discovery.md)
+
 ## Goals
 
 This project demonstrates:
