@@ -17,7 +17,7 @@ import {
   type TransactionListResponse,
   type WalletBalancesResponse,
   type WalletFundingDetailsResponse,
-} from '../api';
+} from '@/api';
 
 export function useBalancesQuery(): UseQueryResult<WalletBalancesResponse, Error> {
   return useQuery({

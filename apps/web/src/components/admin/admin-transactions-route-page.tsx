@@ -5,7 +5,8 @@ import { startTransition, useDeferredValue, useMemo, useState } from 'react';
 import {
   useAdminTransactionDetailQuery,
   useAdminTransactionsQuery,
-} from '../../hooks/use-admin-queries';
+} from '@/hooks/use-admin-queries';
+
 import { AdminTransactionsPanel } from './admin-transactions-panel';
 
 const PAGE_SIZE = 20;

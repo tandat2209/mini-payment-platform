@@ -1,7 +1,8 @@
 import { FlaskConical, Radar, ReceiptText } from 'lucide-react';
 import type { JSX } from 'react';
 
-import { useSandboxStore } from '../../store/sandbox-store';
+import { useSandboxStore } from '@/store/sandbox-store';
+
 import { FundingSimulatorCard } from './funding-simulator-card';
 import { SandboxPageShell } from './sandbox-page-shell';
 

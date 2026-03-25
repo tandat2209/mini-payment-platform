@@ -1,12 +1,12 @@
 import { create } from 'zustand';
 
-import { type SandboxFundingResponse, triggerSandboxFundingSimulation } from '../api';
+import { type SandboxFundingResponse, triggerSandboxFundingSimulation } from '@/api';
 import {
   initialSandboxFundingSimulationFormState,
   type SandboxFundingSimulationFormState,
   type SandboxFundingSimulationResult,
-} from '../components/sandbox/sandbox-data';
-import { queryClient } from '../lib/query-client';
+} from '@/components/sandbox/sandbox-data';
+import { queryClient } from '@/lib/query-client';
 
 type SandboxStore = {
   formState: SandboxFundingSimulationFormState;

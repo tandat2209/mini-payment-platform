@@ -4,7 +4,8 @@ import type {
   RecipientCapabilitiesResponse,
   RecipientRequirementsResponse,
   RecipientSummary,
-} from '../../api';
+} from '@/api';
+
 import { RecipientDirectory } from './recipient-directory';
 import { RecipientOnboardingPanel } from './recipient-onboarding-panel';
 

@@ -1,11 +1,12 @@
 import { Plus, Radio } from 'lucide-react';
 import type { JSX } from 'react';
 
-import type { RecipientSummary } from '../../api';
-import { cn } from '../../lib/utils';
-import { Badge } from '../ui/badge';
-import { Button } from '../ui/button';
-import { Card, CardContent } from '../ui/card';
+import type { RecipientSummary } from '@/api';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+
 import { EmptyState, LoadingBlock } from './shared';
 import { getCountryFlag, toTitleCase } from './utils';
 

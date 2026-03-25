@@ -1,7 +1,8 @@
 import type { JSX } from 'react';
 
-import type { WalletFundingDetail } from '../../api';
-import { Badge } from '../ui/badge';
+import type { WalletFundingDetail } from '@/api';
+import { Badge } from '@/components/ui/badge';
+
 import { formatDate, formatFundingDetailFieldLabel, formatFundingDetailFieldValue } from './utils';
 
 export function FundingDetailCard({

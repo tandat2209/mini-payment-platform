@@ -2,9 +2,10 @@ import type { UseQueryResult } from '@tanstack/react-query';
 import { ArrowDownLeft, ArrowUpRight, ReceiptText } from 'lucide-react';
 import type { JSX } from 'react';
 
-import type { TransactionDetailItem, TransactionItem } from '../../api';
-import { Badge } from '../ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import type { TransactionDetailItem, TransactionItem } from '@/api';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+
 import { LoadingBlock, SectionHeader } from './shared';
 import {
   formatDate,

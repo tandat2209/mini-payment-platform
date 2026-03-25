@@ -1,8 +1,9 @@
 import type { JSX } from 'react';
 
-import { formatDate, formatMoney, toTitleCase } from '../dashboard/utils';
-import { Badge } from '../ui/badge';
-import { Card, CardContent } from '../ui/card';
+import { formatDate, formatMoney, toTitleCase } from '@/components/dashboard/utils';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+
 import { adminWalletSnapshots } from './admin-data';
 
 export function AdminWalletPage(): JSX.Element {

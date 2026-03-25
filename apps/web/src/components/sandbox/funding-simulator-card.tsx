@@ -1,8 +1,9 @@
 import { LoaderCircle, Radar, Sparkles } from 'lucide-react';
 import type { ChangeEvent, FormEvent, JSX } from 'react';
 
-import { Button } from '../ui/button';
-import { Card, CardContent } from '../ui/card';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+
 import type {
   SandboxFundingSimulationFormState,
   SandboxFundingSimulationResult,

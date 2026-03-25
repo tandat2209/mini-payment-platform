@@ -1,9 +1,10 @@
 import { ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 import type { JSX } from 'react';
 
-import type { TransactionItem } from '../../api';
-import { cn } from '../../lib/utils';
-import { Badge } from '../ui/badge';
+import type { TransactionItem } from '@/api';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+
 import {
   formatDate,
   formatSignedTransactionMoney,

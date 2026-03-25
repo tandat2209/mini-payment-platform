@@ -1,12 +1,16 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "baseUrl": ".",
     "module": "ESNext",
     "target": "ES2022",
     "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "jsx": "react-jsx",
+    "paths": {
+      "@/*": ["src/*"]
+    },
     "types": ["vite/client", "node"]
   },
   "include": ["src", "scripts", "vite.config.ts"]

@@ -1,6 +1,7 @@
 import type { JSX } from 'react';
 
-import { useBalancesQuery, useRecipientsQuery } from '../../hooks/use-dashboard-queries';
+import { useBalancesQuery, useRecipientsQuery } from '@/hooks/use-dashboard-queries';
+
 import { CustomerPayoutPage } from './customer-payout-page';
 
 export function CustomerPayoutRoutePage(): JSX.Element {

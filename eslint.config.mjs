@@ -89,6 +89,23 @@ export default tseslint.config(
     },
   },
   {
+    files: ['apps/web/src/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['../*', '../../*', '../../../*', '../../../../*', '../../../../../*'],
+              message:
+                'Use the @/ alias or a same-folder ./ import instead of parent-relative paths.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ['**/*.spec.ts', '**/*.test.ts'],
     rules: {
       '@typescript-eslint/explicit-function-return-type': 'off',

@@ -2,7 +2,8 @@ import { useNavigate, useSearch } from '@tanstack/react-router';
 import type { JSX } from 'react';
 import { startTransition, useDeferredValue, useMemo, useState } from 'react';
 
-import { useAdminLedgerDetailQuery, useAdminLedgersQuery } from '../../hooks/use-admin-queries';
+import { useAdminLedgerDetailQuery, useAdminLedgersQuery } from '@/hooks/use-admin-queries';
+
 import { AdminLedgerPanel } from './admin-ledger-panel';
 
 const PAGE_SIZE = 20;

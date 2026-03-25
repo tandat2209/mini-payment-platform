@@ -1,8 +1,8 @@
 import type { LucideIcon } from 'lucide-react';
 import { DollarSign, Euro, PoundSterling, Wallet } from 'lucide-react';
 
-import type { FundingDetailValue, MoneyDto, TransactionItem, WalletBalance } from '../../api';
-import type { TransactionFilter } from '../../store/dashboard-store';
+import type { FundingDetailValue, MoneyDto, TransactionItem, WalletBalance } from '@/api';
+import type { TransactionFilter } from '@/store/dashboard-store';
 
 export type SummaryMetric = {
   label: string;

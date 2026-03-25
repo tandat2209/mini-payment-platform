@@ -2,12 +2,13 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
 
-import { addRecipientRail, createRecipient } from '../../api';
+import { addRecipientRail, createRecipient } from '@/api';
 import {
   useRecipientCapabilitiesQuery,
   useRecipientRequirementsQuery,
   useRecipientsQuery,
-} from '../../hooks/use-dashboard-queries';
+} from '@/hooks/use-dashboard-queries';
+
 import { CustomerRecipientsPage } from './customer-recipients-page';
 
 export function CustomerRecipientsRoutePage(): JSX.Element {

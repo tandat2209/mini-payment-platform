@@ -1,13 +1,13 @@
 import { Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
 import type { JSX } from 'react';
 
-import { AppShell } from './components/shell/app-shell';
+import { AppShell } from '@/components/shell/app-shell';
 import {
   getActiveNavigationId,
   getWorkspaceFromPath,
   getWorkspaceNavigationItems,
   workspaceItems,
-} from './components/shell/navigation-config';
+} from '@/components/shell/navigation-config';
 
 function App(): JSX.Element {
   const navigate = useNavigate();

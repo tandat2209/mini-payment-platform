@@ -3,19 +3,19 @@ import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import type { JSX } from 'react';
 import { useMemo } from 'react';
 
-import type { AdminTransactionDetailItem, AdminTransactionItem } from '../../api';
-import { cn } from '../../lib/utils';
+import type { AdminTransactionDetailItem, AdminTransactionItem } from '@/api';
 import {
   formatDate,
   formatMoney,
   getToneFromStatus,
   shortenIdentifier,
   toTitleCase,
-} from '../dashboard/utils';
-import { Badge } from '../ui/badge';
-import { Button } from '../ui/button';
-import { Card, CardContent } from '../ui/card';
-import { Sheet, SheetContent } from '../ui/sheet';
+} from '@/components/dashboard/utils';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { cn } from '@/lib/utils';
 
 export function AdminTransactionsPanel({
   canNextPage,

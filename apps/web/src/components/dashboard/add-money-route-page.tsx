@@ -1,7 +1,8 @@
 import { useNavigate } from '@tanstack/react-router';
 import type { JSX } from 'react';
 
-import { useFundingDetailsQuery } from '../../hooks/use-dashboard-queries';
+import { useFundingDetailsQuery } from '@/hooks/use-dashboard-queries';
+
 import { AddMoneyPage } from './add-money-page';
 
 export function AddMoneyRoutePage(): JSX.Element {

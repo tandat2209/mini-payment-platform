@@ -6,8 +6,9 @@ import {
   useBalancesQuery,
   useTransactionDetailQuery,
   useTransactionsQuery,
-} from '../../hooks/use-dashboard-queries';
-import { type CurrencyFilter, useDashboardStore } from '../../store/dashboard-store';
+} from '@/hooks/use-dashboard-queries';
+import { type CurrencyFilter, useDashboardStore } from '@/store/dashboard-store';
+
 import { DashboardHomePage } from './dashboard-home-page';
 import {
   formatUsdAmount,

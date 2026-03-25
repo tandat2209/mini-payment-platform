@@ -1,7 +1,8 @@
 import { Clock3, type LucideIcon } from 'lucide-react';
 import type { JSX } from 'react';
 
-import { Card, CardContent } from '../ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+
 import { SandboxPageShell } from './sandbox-page-shell';
 
 export function SandboxPlaceholderPage({

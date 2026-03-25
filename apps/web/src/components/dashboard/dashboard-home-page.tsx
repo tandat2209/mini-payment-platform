@@ -7,11 +7,12 @@ import type {
   TransactionItem,
   TransactionListResponse,
   WalletBalance,
-} from '../../api';
-import { cn } from '../../lib/utils';
-import type { CurrencyFilter, TransactionFilter } from '../../store/dashboard-store';
-import { Button } from '../ui/button';
-import { Card, CardContent } from '../ui/card';
+} from '@/api';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+import type { CurrencyFilter, TransactionFilter } from '@/store/dashboard-store';
+
 import { EmptyState, LoadingBlock, SectionHeader, SummaryFigure } from './shared';
 import { TransactionDetailPanel } from './transaction-detail-panel';
 import { TransactionRow } from './transaction-row';

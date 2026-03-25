@@ -3,12 +3,17 @@ import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import type { JSX } from 'react';
 import { useMemo } from 'react';
 
-import type { AdminLedgerDetailItem, AdminLedgerItem, AdminLedgerListResponse } from '../../api';
-import { formatDate, formatMoney, getToneFromStatus, toTitleCase } from '../dashboard/utils';
-import { Badge } from '../ui/badge';
-import { Button } from '../ui/button';
-import { Card, CardContent } from '../ui/card';
-import { Sheet, SheetContent } from '../ui/sheet';
+import type { AdminLedgerDetailItem, AdminLedgerItem, AdminLedgerListResponse } from '@/api';
+import {
+  formatDate,
+  formatMoney,
+  getToneFromStatus,
+  toTitleCase,
+} from '@/components/dashboard/utils';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 
 export function AdminLedgerPanel({
   canNextPage,

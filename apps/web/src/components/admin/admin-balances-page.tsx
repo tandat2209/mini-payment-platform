@@ -1,7 +1,8 @@
 import type { JSX } from 'react';
 
-import { formatMoney } from '../dashboard/utils';
-import { Card, CardContent } from '../ui/card';
+import { formatMoney } from '@/components/dashboard/utils';
+import { Card, CardContent } from '@/components/ui/card';
+
 import { adminBalanceSnapshots } from './admin-data';
 
 export function AdminBalancesPage(): JSX.Element {

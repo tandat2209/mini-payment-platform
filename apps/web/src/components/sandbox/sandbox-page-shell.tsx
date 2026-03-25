@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import type { JSX, ReactNode } from 'react';
 
-import { Card, CardContent } from '../ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 
 export function SandboxPageShell({
   badge,

@@ -9,7 +9,7 @@ import {
   fetchAdminLedgers,
   fetchAdminTransactionDetail,
   fetchAdminTransactions,
-} from '../api';
+} from '@/api';
 
 export function useAdminTransactionsQuery(input: {
   cursor?: string | null;

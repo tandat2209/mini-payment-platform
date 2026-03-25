@@ -1,6 +1,7 @@
 import type { JSX } from 'react';
 
-import { cn } from '../../lib/utils';
+import { cn } from '@/lib/utils';
+
 import type { SummaryMetric } from './utils';
 
 export function SummaryFigure({ label, note, tone, value }: SummaryMetric): JSX.Element {

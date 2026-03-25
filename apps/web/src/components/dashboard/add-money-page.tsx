@@ -2,10 +2,11 @@ import type { UseQueryResult } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
 import type { JSX } from 'react';
 
-import type { WalletFundingDetailsResponse } from '../../api';
-import { Badge } from '../ui/badge';
-import { Button } from '../ui/button';
-import { Card, CardContent } from '../ui/card';
+import type { WalletFundingDetailsResponse } from '@/api';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+
 import { FundingDetailCard } from './funding-detail-card';
 import { EmptyState, LoadingBlock } from './shared';
 import { toTitleCase } from './utils';

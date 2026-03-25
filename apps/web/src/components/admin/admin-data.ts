@@ -1,4 +1,4 @@
-import type { MoneyDto } from '../../api';
+import type { MoneyDto } from '@/api';
 
 export type AdminWalletSnapshot = {
   available: MoneyDto;
