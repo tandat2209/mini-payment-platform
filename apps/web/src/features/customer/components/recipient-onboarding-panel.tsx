@@ -4,6 +4,7 @@ import type { JSX } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { CountryFlag } from '@/components/ui/country-flag';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -18,7 +19,7 @@ import type {
   RecipientRequirementsResponse,
   RecipientSummary,
 } from '@/features/customer/api';
-import { getCountryFlag, toTitleCase } from '@/features/customer/lib/utils';
+import { toTitleCase } from '@/features/customer/lib/utils';
 
 import { EmptyState, LoadingBlock } from './shared';
 
@@ -161,7 +162,10 @@ export function RecipientOnboardingPanel({
               <SelectContent>
                 {countryOptions.map((option) => (
                   <SelectItem key={option.countryCode} value={option.countryCode}>
-                    {getCountryFlag(option.countryCode)} {option.countryName}
+                    <span className="inline-flex items-center gap-2">
+                      <CountryFlag countryCode={option.countryCode} />
+                      <span>{option.countryName}</span>
+                    </span>
                   </SelectItem>
                 ))}
               </SelectContent>

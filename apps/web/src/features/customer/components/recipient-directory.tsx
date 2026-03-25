@@ -4,8 +4,9 @@ import type { JSX } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { CountryFlag } from '@/components/ui/country-flag';
 import type { RecipientSummary } from '@/features/customer/api';
-import { getCountryFlag, toTitleCase } from '@/features/customer/lib/utils';
+import { toTitleCase } from '@/features/customer/lib/utils';
 import { cn } from '@/lib/utils';
 
 import { EmptyState, LoadingBlock } from './shared';
@@ -106,7 +107,7 @@ export function RecipientDirectory({
                           {formatReadinessStatus(rail.readinessStatus)}
                         </Badge>
                         <span className="text-xs text-slate-500">
-                          {getCountryFlag(rail.countryCode)} {rail.countryCode} ·{' '}
+                          <CountryFlag countryCode={rail.countryCode} /> {rail.countryCode} ·{' '}
                           {rail.currency ?? 'No currency'}
                         </span>
                         <span className="text-xs text-slate-500">
