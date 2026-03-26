@@ -1,0 +1,149 @@
+import { Injectable } from '@nestjs/common';
+
+import { getDatabaseQueryable } from '../../database/database-transaction-manager';
+import { type TransactionContext } from '../../shared/application/transaction-manager';
+import { type PayoutWriteRepository } from '../domain/payout-write.repositories';
+
+@Injectable()
+export class SqlPayoutWriteRepository implements PayoutWriteRepository {
+  async createPayoutBooking(
+    context: TransactionContext,
+    input: {
+      createdAt: string;
+      currency: string;
+      description: string;
+      feeAmountMinor: number;
+      grossAmountMinor: number;
+      netAmountMinor: number;
+      occurredAt: string;
+      payoutId: string;
+      rail: string;
+      recipientId: string;
+      recipientRailId: string;
+      reference: string;
+      userId: string;
+      userTransactionId: string;
+      walletId: string;
+    },
+  ): Promise<void> {
+    const database = getDatabaseQueryable(context);
+
+    await database.query(
+      `
+        INSERT INTO user_transactions (
+          id,
+          user_id,
+          wallet_id,
+          webhook_event_id,
+          type,
+          direction,
+          status,
+          currency,
+          gross_amount_minor,
+          fee_amount_minor,
+          net_amount_minor,
+          description,
+          reference,
+          occurred_at,
+          posted_at,
+          created_at,
+          updated_at
+        )
+        VALUES (
+          $1::uuid,
+          $2::uuid,
+          $3::uuid,
+          NULL,
+          'payout',
+          'debit',
+          'pending',
+          $4,
+          $5,
+          $6,
+          $7,
+          $8,
+          $9,
+          $10::timestamptz,
+          $11::timestamptz,
+          $11::timestamptz,
+          $11::timestamptz
+        )
+      `,
+      [
+        input.userTransactionId,
+        input.userId,
+        input.walletId,
+        input.currency,
+        input.grossAmountMinor,
+        input.feeAmountMinor,
+        input.netAmountMinor,
+        input.description,
+        input.reference,
+        input.occurredAt,
+        input.createdAt,
+      ],
+    );
+
+    await database.query(
+      `
+        INSERT INTO payouts (
+          id,
+          user_id,
+          wallet_id,
+          recipient_id,
+          recipient_rail_id,
+          user_transaction_id,
+          idempotency_key_id,
+          rail,
+          status,
+          currency,
+          gross_amount_minor,
+          fee_amount_minor,
+          net_amount_minor,
+          reference,
+          created_at,
+          updated_at,
+          submitted_at,
+          completed_at,
+          failed_at
+        )
+        VALUES (
+          $1::uuid,
+          $2::uuid,
+          $3::uuid,
+          $4::uuid,
+          $5::uuid,
+          $6::uuid,
+          NULL,
+          $7,
+          'pending_submission',
+          $8,
+          $9,
+          $10,
+          $11,
+          $12,
+          $13::timestamptz,
+          $13::timestamptz,
+          NULL,
+          NULL,
+          NULL
+        )
+      `,
+      [
+        input.payoutId,
+        input.userId,
+        input.walletId,
+        input.recipientId,
+        input.recipientRailId,
+        input.userTransactionId,
+        input.rail,
+        input.currency,
+        input.grossAmountMinor,
+        input.feeAmountMinor,
+        input.netAmountMinor,
+        input.reference,
+        input.createdAt,
+      ],
+    );
+  }
+}

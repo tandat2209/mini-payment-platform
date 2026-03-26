@@ -1,6 +1,15 @@
-import { useQuery, type UseQueryResult } from '@tanstack/react-query';
+import {
+  useMutation,
+  type UseMutationResult,
+  useQuery,
+  useQueryClient,
+  type UseQueryResult,
+} from '@tanstack/react-query';
 
 import {
+  createPayout,
+  type CreatePayoutRequest,
+  type CreatePayoutResponse,
   fetchBalances,
   fetchFundingDetails,
   fetchRecipientCapabilities,
@@ -94,5 +103,24 @@ export function useStatementsQuery(): UseQueryResult<StatementOverviewData, Erro
   return useQuery({
     queryFn: fetchStatementOverview,
     queryKey: ['statements'],
+  });
+}
+
+export function useCreatePayoutMutation(): UseMutationResult<
+  CreatePayoutResponse,
+  Error,
+  CreatePayoutRequest
+> {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: createPayout,
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['balances'] }),
+        queryClient.invalidateQueries({ queryKey: ['transactions'] }),
+        queryClient.invalidateQueries({ queryKey: ['statements'] }),
+      ]);
+    },
   });
 }

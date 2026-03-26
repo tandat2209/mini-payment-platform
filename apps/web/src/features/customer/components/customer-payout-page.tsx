@@ -1,4 +1,12 @@
-import { ArrowLeft, ArrowRight, CircleAlert, Landmark, ShieldCheck, Sparkles } from 'lucide-react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle2,
+  CircleAlert,
+  Landmark,
+  ShieldCheck,
+  Sparkles,
+} from 'lucide-react';
 import { type JSX, useMemo, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +21,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { RecipientSummary, WalletBalance } from '@/features/customer/api';
+import type {
+  CreatePayoutRequest,
+  CreatePayoutResponse,
+  RecipientSummary,
+  WalletBalance,
+} from '@/features/customer/api';
 import { EmptyState, LoadingBlock } from '@/features/customer/components/shared';
 import { formatMoney, formatMoneyFromMinor, toTitleCase } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
@@ -27,19 +40,26 @@ const STEPS = [
   { id: 'recipient', label: 'Recipient' },
   { id: 'details', label: 'Details' },
   { id: 'review', label: 'Review' },
+  { id: 'success', label: 'Success' },
 ] as const;
 
 export function CustomerPayoutPage({
   isRecipientsLoading,
   onBack,
   onManageRecipients,
+  onSubmitPayout,
+  onViewOverview,
   recipients,
+  walletId,
   visibleBalances,
 }: {
   isRecipientsLoading: boolean;
   onBack: () => void;
   onManageRecipients: () => void;
+  onSubmitPayout: (input: CreatePayoutRequest) => Promise<CreatePayoutResponse>;
+  onViewOverview: () => void;
   recipients: RecipientSummary[];
+  walletId: string | null;
   visibleBalances: WalletBalance[];
 }): JSX.Element {
   const [step, setStep] = useState(0);
@@ -47,6 +67,9 @@ export function CustomerPayoutPage({
   const [selectedSourceCurrency, setSelectedSourceCurrency] = useState<string | null>(null);
   const [amount, setAmount] = useState('');
   const [reference, setReference] = useState('');
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const [submittedPayout, setSubmittedPayout] = useState<CreatePayoutResponse | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const readyRails = useMemo<ReadyRail[]>(() => {
     return recipients.flatMap((recipient) =>
@@ -91,29 +114,81 @@ export function CustomerPayoutPage({
     sourceBalances.find((balance) => balance.currency === effectiveSourceCurrency) ?? null;
 
   const amountMinor = parseAmountToMinor(amount);
+  const feeAmountMinor = amountMinor > 0n ? calculatePayoutFeeAmountMinor(amountMinor) : 0n;
+  const grossAmountMinor = amountMinor + feeAmountMinor;
   const amountCurrency = selectedRail?.currency ?? selectedSourceBalance?.currency ?? 'USD';
   const amountPreview =
     amountMinor > 0 ? formatMoneyFromMinor(amountMinor, amountCurrency) : 'Enter amount';
+  const feePreview =
+    feeAmountMinor > 0 ? formatMoneyFromMinor(feeAmountMinor, amountCurrency) : '0';
+  const grossPreview =
+    grossAmountMinor > 0 ? formatMoneyFromMinor(grossAmountMinor, amountCurrency) : 'Enter amount';
+  const selectedSourceAvailableMinor = selectedSourceBalance
+    ? BigInt(selectedSourceBalance.available.amountMinor)
+    : null;
+  const hasSufficientBalance =
+    selectedSourceAvailableMinor === null
+      ? false
+      : selectedSourceAvailableMinor >= grossAmountMinor;
 
   const canContinueFromRecipient = selectedRail !== null;
-  const canContinueFromDetails = selectedSourceBalance !== null && amountMinor > 0n;
+  const canContinueFromDetails =
+    walletId !== null && selectedSourceBalance !== null && amountMinor > 0n && hasSufficientBalance;
   const primaryActionDisabled =
-    (step === 0 && !canContinueFromRecipient) || (step === 1 && !canContinueFromDetails);
-  const primaryActionLabel = step < 2 ? 'Continue' : 'Execution API coming next';
+    (step === 0 && !canContinueFromRecipient) ||
+    (step === 1 && !canContinueFromDetails) ||
+    (step === 2 && (!canContinueFromDetails || isSubmitting));
+  const primaryActionLabel =
+    step === 2 ? (isSubmitting ? 'Creating...' : 'Create payout') : 'Continue';
 
-  function handleAdvance(): void {
+  async function handleAdvance(): Promise<void> {
     if (step === 0 && canContinueFromRecipient) {
+      setSubmissionError(null);
       setStep(1);
       return;
     }
 
     if (step === 1 && canContinueFromDetails) {
+      setSubmissionError(null);
       setStep(2);
       return;
+    }
+
+    if (
+      step === 2 &&
+      canContinueFromDetails &&
+      walletId !== null &&
+      selectedRail !== null &&
+      selectedSourceBalance !== null
+    ) {
+      setIsSubmitting(true);
+      setSubmissionError(null);
+
+      try {
+        const result = await onSubmitPayout({
+          amountMinor: Number(amountMinor),
+          recipientRailId: selectedRail.id,
+          ...(reference.trim() ? { reference: reference.trim() } : {}),
+          sourceCurrency: selectedSourceBalance.currency,
+          sourceWalletId: walletId,
+        });
+
+        setSubmittedPayout(result);
+        setStep(3);
+      } catch (error) {
+        setSubmissionError(getErrorMessage(error));
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   }
 
   function handleBackStep(): void {
+    if (step === 3) {
+      onViewOverview();
+      return;
+    }
+
     if (step === 0) {
       onBack();
       return;
@@ -130,7 +205,7 @@ export function CustomerPayoutPage({
       <Card className="overflow-hidden rounded-[26px] border border-[#e7e1d8] bg-[#fffdf9] shadow-[0_16px_55px_rgba(15,23,42,0.06)]">
         <CardContent className="space-y-6 p-4 sm:p-5 lg:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <Button className="rounded-xl px-3.5" onClick={onBack} variant="ghost">
+            <Button className="rounded-xl px-3.5" onClick={handleBackStep} variant="ghost">
               <ArrowLeft className="h-4 w-4" />
               Back
             </Button>
@@ -146,11 +221,11 @@ export function CustomerPayoutPage({
                 Send payout
               </h1>
               <p className="max-w-xl text-sm text-slate-500">
-                Choose a saved recipient, enter details, then review.
+                Pick a saved destination, then confirm the debit.
               </p>
             </div>
 
-            <div className="grid grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-4 gap-2.5">
               {STEPS.map((stepItem, index) => {
                 const isActive = step === index;
                 const isComplete = step > index;
@@ -333,7 +408,7 @@ export function CustomerPayoutPage({
 
                       <label className="space-y-2">
                         <span className="text-sm font-semibold text-slate-700">
-                          Reference
+                          Note
                           <span className="ml-2 text-xs font-medium text-slate-400">Optional</span>
                         </span>
                         <Input
@@ -345,6 +420,18 @@ export function CustomerPayoutPage({
                           value={reference}
                         />
                       </label>
+
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <ReviewRow label="Recipient gets" value={amountPreview} />
+                        <ReviewRow label="Fee" value={feePreview} />
+                        <ReviewRow label="Total debit" value={grossPreview} />
+                      </div>
+
+                      {selectedSourceBalance && !hasSufficientBalance ? (
+                        <div className="rounded-[20px] border border-rose-200 bg-rose-50 px-3.5 py-3 text-sm text-rose-700">
+                          Available balance is too low for the payout plus fee.
+                        </div>
+                      ) : null}
                     </div>
                   ) : null}
 
@@ -375,15 +462,77 @@ export function CustomerPayoutPage({
                               : 'No source selected'
                           }
                         />
-                        <ReviewRow label="Amount" value={amountPreview} />
+                        <ReviewRow label="Recipient gets" value={amountPreview} />
+                        <ReviewRow label="Fee" value={feePreview} />
+                        <ReviewRow label="Total debit" value={grossPreview} />
+                        <ReviewRow label="Note" value={reference.trim() || 'No note added'} />
+                      </div>
+
+                      {submissionError ? (
+                        <div className="rounded-[20px] border border-rose-200 bg-rose-50 px-3.5 py-3 text-sm text-rose-700">
+                          {submissionError}
+                        </div>
+                      ) : null}
+
+                      <div className="rounded-[20px] border border-slate-200 bg-[#fcfaf7] p-3.5 text-sm text-slate-600">
+                        This creates a real payout request and books the wallet debit immediately.
+                        Provider submission comes next.
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {step === 3 && submittedPayout ? (
+                    <div className="space-y-5">
+                      <div className="space-y-3">
+                        <Badge tone="positive" className="w-fit">
+                          Pending submission
+                        </Badge>
+                        <div className="flex items-center gap-3">
+                          <span className="rounded-full bg-emerald-100 p-2 text-emerald-700">
+                            <CheckCircle2 className="h-5 w-5" />
+                          </span>
+                          <div>
+                            <h2 className="text-xl font-semibold text-slate-950">Payout created</h2>
+                            <p className="text-sm text-slate-500">
+                              The payout is booked and waiting for provider submission.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid gap-3">
+                        <ReviewRow label="Reference" value={submittedPayout.payout.reference} />
+                        <ReviewRow label="Recipient" value={submittedPayout.recipient.name} />
                         <ReviewRow
-                          label="Reference"
-                          value={reference.trim() || 'No reference added'}
+                          label="Recipient gets"
+                          value={formatMoney(submittedPayout.amounts.net)}
+                        />
+                        <ReviewRow label="Fee" value={formatMoney(submittedPayout.amounts.fee)} />
+                        <ReviewRow
+                          label="Total debit"
+                          value={formatMoney(submittedPayout.amounts.gross)}
                         />
                       </div>
 
-                      <div className="rounded-[20px] border border-slate-200 bg-[#fcfaf7] p-3.5 text-sm text-slate-600">
-                        Final execution is not live yet.
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <Button className="rounded-xl px-4" onClick={onViewOverview}>
+                          View overview
+                        </Button>
+                        <Button
+                          className="rounded-xl px-4"
+                          onClick={() => {
+                            setAmount('');
+                            setReference('');
+                            setSelectedRailId(null);
+                            setSelectedSourceCurrency(null);
+                            setSubmissionError(null);
+                            setSubmittedPayout(null);
+                            setStep(0);
+                          }}
+                          variant="outline"
+                        >
+                          New payout
+                        </Button>
                       </div>
                     </div>
                   ) : null}
@@ -401,13 +550,26 @@ export function CustomerPayoutPage({
 
                   <SummaryMetric
                     label="Destination"
-                    value={selectedRail?.recipientName ?? 'Choose a recipient'}
+                    value={
+                      submittedPayout?.recipient.name ?? selectedRail?.recipientName ?? 'Choose'
+                    }
                   />
                   <SummaryMetric
                     label="Source"
-                    value={selectedSourceBalance?.currency ?? 'Select balance'}
+                    value={selectedSourceBalance?.currency ?? amountCurrency ?? 'Select'}
                   />
-                  <SummaryMetric label="Amount" value={amountPreview} />
+                  <SummaryMetric
+                    label="Recipient gets"
+                    value={
+                      submittedPayout ? formatMoney(submittedPayout.amounts.net) : amountPreview
+                    }
+                  />
+                  <SummaryMetric
+                    label="Total debit"
+                    value={
+                      submittedPayout ? formatMoney(submittedPayout.amounts.gross) : grossPreview
+                    }
+                  />
                 </CardContent>
               </Card>
 
@@ -425,7 +587,7 @@ export function CustomerPayoutPage({
                     />
                     <StatusLine
                       icon={<ShieldCheck className="h-4 w-4" />}
-                      text="Recipient details stay locked to the saved rail."
+                      text="Destination details stay locked to the saved rail."
                     />
                     <StatusLine
                       icon={<CircleAlert className="h-4 w-4" />}
@@ -460,54 +622,54 @@ export function CustomerPayoutPage({
             </div>
           </div>
 
-          <div className="hidden items-center justify-between gap-3 border-t border-[#ece6dd] pt-6 lg:flex">
-            <Button className="rounded-xl px-4" onClick={handleBackStep} variant="ghost">
-              <ArrowLeft className="h-4 w-4" />
-              {step === 0 ? 'Back to overview' : 'Previous'}
-            </Button>
+          {step < 3 ? (
+            <div className="hidden items-center justify-between gap-3 border-t border-[#ece6dd] pt-6 lg:flex">
+              <Button className="rounded-xl px-4" onClick={handleBackStep} variant="ghost">
+                <ArrowLeft className="h-4 w-4" />
+                {step === 0 ? 'Back to overview' : 'Previous'}
+              </Button>
 
-            {step < 2 ? (
               <Button
                 className="rounded-xl px-5"
                 disabled={primaryActionDisabled}
-                onClick={handleAdvance}
+                onClick={() => {
+                  void handleAdvance();
+                }}
               >
                 {primaryActionLabel}
-                <ArrowRight className="h-4 w-4" />
+                {step < 2 ? <ArrowRight className="h-4 w-4" /> : null}
               </Button>
-            ) : (
-              <Button className="rounded-xl px-5" disabled>
-                {primaryActionLabel}
-              </Button>
-            )}
-          </div>
+            </div>
+          ) : null}
         </CardContent>
       </Card>
 
-      <div className="fixed inset-x-0 bottom-[var(--customer-mobile-payout-action-offset)] z-30 px-4 lg:hidden">
-        <div className="mx-auto max-w-[680px] rounded-[22px] border border-slate-200/90 bg-white/96 p-2 shadow-[0_18px_45px_rgba(15,23,42,0.12)] backdrop-blur-xl">
-          <div className="grid grid-cols-[auto_1fr] gap-2">
-            <Button className="min-h-11 rounded-xl px-3.5" onClick={handleBackStep} variant="ghost">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
+      {step < 3 ? (
+        <div className="fixed inset-x-0 bottom-[var(--customer-mobile-payout-action-offset)] z-30 px-4 lg:hidden">
+          <div className="mx-auto max-w-[680px] rounded-[22px] border border-slate-200/90 bg-white/96 p-2 shadow-[0_18px_45px_rgba(15,23,42,0.12)] backdrop-blur-xl">
+            <div className="grid grid-cols-[auto_1fr] gap-2">
+              <Button
+                className="min-h-11 rounded-xl px-3.5"
+                onClick={handleBackStep}
+                variant="ghost"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
 
-            {step < 2 ? (
               <Button
                 className="min-h-11 rounded-xl px-4"
                 disabled={primaryActionDisabled}
-                onClick={handleAdvance}
+                onClick={() => {
+                  void handleAdvance();
+                }}
               >
                 {primaryActionLabel}
-                <ArrowRight className="h-4 w-4" />
+                {step < 2 ? <ArrowRight className="h-4 w-4" /> : null}
               </Button>
-            ) : (
-              <Button className="min-h-11 rounded-xl px-4" disabled>
-                {primaryActionLabel}
-              </Button>
-            )}
+            </div>
           </div>
         </div>
-      </div>
+      ) : null}
     </section>
   );
 }
@@ -551,6 +713,14 @@ function parseAmountToMinor(value: string): bigint {
   const [wholeValue = '0', fractionalPart = ''] = trimmedValue.split('.');
   const wholePart = wholeValue;
   return BigInt(wholePart) * 100n + BigInt((fractionalPart + '00').slice(0, 2));
+}
+
+function calculatePayoutFeeAmountMinor(amountMinor: bigint): bigint {
+  return (amountMinor * 10n + 9_999n) / 10_000n;
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'Payout could not be created';
 }
 
 function formatReadinessStatus(value: string | null | undefined): string {

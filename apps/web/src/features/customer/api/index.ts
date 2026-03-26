@@ -1,4 +1,6 @@
 export type {
+  CreatePayoutRequest,
+  CreatePayoutResponse,
   FundingDetailValue,
   MoneyDto,
   RecipientCapabilitiesResponse,
@@ -18,6 +20,7 @@ export type {
 } from '@/api';
 export {
   addRecipientRail,
+  createPayout,
   createRecipient,
   fetchBalances,
   fetchFundingDetails,

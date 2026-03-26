@@ -11,6 +11,25 @@ export interface LedgerAccountRepository {
       now: string;
     },
   ): Promise<void>;
+  createPlatformRevenueAccount(
+    context: TransactionContext,
+    input: {
+      code: string;
+      currency: string;
+      name: string;
+      now: string;
+    },
+  ): Promise<void>;
+  createRecipientPayableAccount(
+    context: TransactionContext,
+    input: {
+      code: string;
+      currency: string;
+      name: string;
+      now: string;
+      recipientId: string;
+    },
+  ): Promise<void>;
   createWalletLiabilityAccount(
     context: TransactionContext,
     input: {
@@ -23,6 +42,15 @@ export interface LedgerAccountRepository {
   ): Promise<void>;
   findOpenPlatformCashAccount(
     context: TransactionContext,
+    currency: string,
+  ): Promise<string | null>;
+  findOpenPlatformRevenueAccount(
+    context: TransactionContext,
+    currency: string,
+  ): Promise<string | null>;
+  findOpenRecipientPayableAccount(
+    context: TransactionContext,
+    recipientId: string,
     currency: string,
   ): Promise<string | null>;
   findOpenWalletLiabilityAccount(

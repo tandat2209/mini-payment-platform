@@ -160,6 +160,40 @@ type RecipientCreateResponse = {
   status: string;
 };
 
+type CreatePayoutRequest = {
+  amountMinor: number;
+  recipientRailId: string;
+  reference?: string;
+  sourceCurrency: string;
+  sourceWalletId: string;
+};
+
+type CreatePayoutResponse = {
+  amounts: {
+    fee: MoneyDto;
+    gross: MoneyDto;
+    net: MoneyDto;
+  };
+  createdAt: string;
+  payout: {
+    id: string;
+    reference: string;
+    status: string;
+  };
+  recipient: {
+    id: string;
+    name: string;
+    rail: string;
+    railId: string;
+  };
+  transaction: {
+    id: string;
+  };
+  wallet: {
+    id: string;
+  };
+};
+
 type StatementPeriod = {
   currency: string;
   month: number;
@@ -471,6 +505,16 @@ export async function addRecipientRail(
   );
 }
 
+export async function createPayout(request: CreatePayoutRequest): Promise<CreatePayoutResponse> {
+  return await postJson<CreatePayoutResponse, CreatePayoutRequest>(
+    '/customers/me/payouts',
+    request,
+    {
+      errorLabel: 'Create payout request',
+    },
+  );
+}
+
 export async function fetchStatementPeriods(): Promise<StatementPeriodListResponse> {
   return await getJson<StatementPeriodListResponse>('/customers/me/statements', {
     errorLabel: 'Statement period request',
@@ -616,6 +660,8 @@ export type {
   AdminTransactionDetailItem,
   AdminTransactionItem,
   AdminTransactionListResponse,
+  CreatePayoutRequest,
+  CreatePayoutResponse,
   FundingDetailValue,
   HealthResponse,
   MoneyDto,

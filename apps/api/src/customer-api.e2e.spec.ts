@@ -11,8 +11,12 @@ import { RECIPIENT_PROVIDER_REGISTRATION_GATEWAY } from './recipients/domain/rec
 
 type QueryResponseRow = Record<string, unknown>;
 
+const PAYOUT_TEST_RECIPIENT_RAIL_ID = 'dddddddd-dddd-4ddd-8ddd-ddddddddddd1';
+const PAYOUT_TEST_WALLET_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2';
+
 class ApiFakeDatabaseService {
   private readonly webhookEvents = new Map<string, QueryResponseRow>();
+  private readonly ledgerAccounts: QueryResponseRow[] = [];
   private readonly recipients: QueryResponseRow[] = [
     {
       created_at: '2026-03-22T01:15:00.000Z',
@@ -45,6 +49,20 @@ class ApiFakeDatabaseService {
       updated_at: '2026-03-22T01:15:00.000Z',
     },
   ];
+  private readonly walletBalances: QueryResponseRow[] = [
+    {
+      available_amount_minor: '9800',
+      currency: 'USD',
+      updated_at: '2026-03-22T01:20:00.000Z',
+      wallet_id: 'wallet-alice',
+    },
+    {
+      available_amount_minor: '0',
+      currency: 'USD',
+      updated_at: '2026-03-22T00:10:00.000Z',
+      wallet_id: 'wallet-bob',
+    },
+  ];
 
   async getHealth() {
     return {
@@ -59,6 +77,7 @@ class ApiFakeDatabaseService {
     parameters: readonly unknown[] = [],
   ) {
     const withRows = (rows: QueryResponseRow[]) => ({
+      rowCount: rows.length,
       rows: rows as unknown as T[],
     });
 
@@ -80,13 +99,43 @@ class ApiFakeDatabaseService {
       return withRows([]);
     }
 
+    if (
+      sql.includes('SELECT') &&
+      sql.includes('FROM wallets w') &&
+      sql.includes('wallet_balances') &&
+      sql.includes('wb.currency = $3')
+    ) {
+      const [customerId, walletId, currency] = parameters;
+
+      if (
+        customerId === 'alice-id' &&
+        (walletId === 'wallet-alice' || walletId === PAYOUT_TEST_WALLET_ID) &&
+        currency === 'USD'
+      ) {
+        return withRows([
+          {
+            available_amount_minor:
+              this.walletBalances.find(
+                (balance) => balance.wallet_id === 'wallet-alice' && balance.currency === 'USD',
+              )?.available_amount_minor ?? '0',
+            wallet_id: 'wallet-alice',
+          },
+        ]);
+      }
+
+      return withRows([]);
+    }
+
     if (sql.includes('FROM wallets w') && sql.includes('wallet_balances')) {
       const customerId = parameters[0];
 
       if (customerId === 'alice-id') {
         return withRows([
           {
-            available_amount_minor: '9800',
+            available_amount_minor:
+              this.walletBalances.find(
+                (balance) => balance.wallet_id === 'wallet-alice' && balance.currency === 'USD',
+              )?.available_amount_minor ?? '0',
             currency: 'USD',
             pending_amount_minor: '0',
             updated_at: '2026-03-22T01:20:00.000Z',
@@ -110,6 +159,34 @@ class ApiFakeDatabaseService {
       }
 
       return withRows([]);
+    }
+
+    if (
+      sql.includes('UPDATE wallet_balances') &&
+      sql.includes('available_amount_minor = available_amount_minor - $3')
+    ) {
+      const [walletId, currency, amountMinor, updatedAt] = parameters;
+      const balance = this.walletBalances.find(
+        (item) =>
+          (item.wallet_id === walletId ||
+            (walletId === PAYOUT_TEST_WALLET_ID && item.wallet_id === 'wallet-alice')) &&
+          item.currency === currency,
+      );
+
+      if (!balance) {
+        return withRows([]);
+      }
+
+      const currentAmount = Number(balance.available_amount_minor);
+
+      if (currentAmount < Number(amountMinor)) {
+        return withRows([]);
+      }
+
+      balance.available_amount_minor = String(currentAmount - Number(amountMinor));
+      balance.updated_at = String(updatedAt);
+
+      return withRows([balance]);
     }
 
     if (sql.includes('INSERT INTO webhook_events')) {
@@ -219,6 +296,40 @@ class ApiFakeDatabaseService {
       return withRows([]);
     }
 
+    if (
+      sql.includes('FROM recipient_rails rr') &&
+      sql.includes('INNER JOIN recipients r') &&
+      sql.includes('rr.id = $1::uuid')
+    ) {
+      const [recipientRailId, customerId] = parameters;
+      const rail = this.recipientRails.find(
+        (item) =>
+          item.id === recipientRailId ||
+          (recipientRailId === PAYOUT_TEST_RECIPIENT_RAIL_ID && item.id === 'rail-1'),
+      );
+      const recipient = this.recipients.find((item) => item.id === rail?.recipient_id);
+
+      if (!rail || !recipient || recipient.user_id !== customerId) {
+        return withRows([]);
+      }
+
+      return withRows([
+        {
+          currency: rail.currency,
+          details: rail.details,
+          is_active: rail.is_active,
+          provider_reference: rail.provider_reference,
+          provider_registration_strategy: rail.provider_registration_strategy,
+          rail: rail.rail,
+          readiness_status: rail.readiness_status,
+          recipient_id: recipient.id,
+          recipient_name: recipient.name,
+          recipient_rail_id: rail.id,
+          recipient_status: recipient.status,
+        },
+      ]);
+    }
+
     if (sql.includes('FROM recipients') && sql.includes('AND id = $2')) {
       const [customerId, recipientId] = parameters;
 
@@ -247,6 +358,90 @@ class ApiFakeDatabaseService {
           (rail) => rail.recipient_id === recipientId && rail.is_active === true,
         ),
       );
+    }
+
+    if (sql.includes('FROM ledger_accounts') && sql.includes("owner_type = 'wallet'")) {
+      const [walletId, currency] = parameters;
+
+      return withRows(
+        this.ledgerAccounts.filter(
+          (account) =>
+            account.owner_type === 'wallet' &&
+            account.owner_id === walletId &&
+            account.currency === currency &&
+            account.account_type === 'liability' &&
+            account.status === 'open',
+        ),
+      );
+    }
+
+    if (sql.includes('FROM ledger_accounts') && sql.includes("owner_type = 'recipient'")) {
+      const [recipientId, currency] = parameters;
+
+      return withRows(
+        this.ledgerAccounts.filter(
+          (account) =>
+            account.owner_type === 'recipient' &&
+            account.owner_id === recipientId &&
+            account.currency === currency &&
+            account.account_type === 'liability' &&
+            account.status === 'open',
+        ),
+      );
+    }
+
+    if (sql.includes('FROM ledger_accounts') && sql.includes("account_type = 'asset'")) {
+      const [currency] = parameters;
+
+      return withRows(
+        this.ledgerAccounts.filter(
+          (account) =>
+            account.owner_type === 'platform' &&
+            account.owner_id === null &&
+            account.currency === currency &&
+            account.account_type === 'asset' &&
+            account.status === 'open',
+        ),
+      );
+    }
+
+    if (sql.includes('FROM ledger_accounts') && sql.includes("account_type = 'revenue'")) {
+      const [currency] = parameters;
+
+      return withRows(
+        this.ledgerAccounts.filter(
+          (account) =>
+            account.owner_type === 'platform' &&
+            account.owner_id === null &&
+            account.currency === currency &&
+            account.account_type === 'revenue' &&
+            account.status === 'open',
+        ),
+      );
+    }
+
+    if (sql.includes('INSERT INTO ledger_accounts')) {
+      const [id, code, name, ownerIdOrCurrency, maybeCurrency, maybeNow] = parameters;
+      const isWalletAccount = sql.includes("'wallet'");
+      const isRecipientAccount = sql.includes("'recipient'");
+      const isAssetAccount = sql.includes("'asset'");
+      const isRevenueAccount = sql.includes("'revenue'");
+      const row = {
+        account_type: isAssetAccount ? 'asset' : isRevenueAccount ? 'revenue' : 'liability',
+        code: String(code),
+        created_at: String(isWalletAccount || isRecipientAccount ? maybeNow : maybeCurrency),
+        currency: String(isWalletAccount || isRecipientAccount ? maybeCurrency : ownerIdOrCurrency),
+        id: String(id),
+        name: String(name),
+        owner_id: isWalletAccount || isRecipientAccount ? String(ownerIdOrCurrency) : null,
+        owner_type: isWalletAccount ? 'wallet' : isRecipientAccount ? 'recipient' : 'platform',
+        status: 'open',
+        updated_at: String(isWalletAccount || isRecipientAccount ? maybeNow : maybeCurrency),
+      };
+
+      this.ledgerAccounts.push(row);
+
+      return withRows([]);
     }
 
     if (sql.includes('FROM wallets') && sql.includes("status = 'active'")) {
@@ -405,6 +600,22 @@ class ApiFakeDatabaseService {
       rail.updated_at = String(updatedAt);
 
       return withRows([rail]);
+    }
+
+    if (sql.includes('INSERT INTO user_transactions') && sql.includes("'payout'")) {
+      return withRows([]);
+    }
+
+    if (sql.includes('INSERT INTO payouts')) {
+      return withRows([]);
+    }
+
+    if (sql.includes('INSERT INTO ledger_transactions')) {
+      return withRows([]);
+    }
+
+    if (sql.includes('INSERT INTO ledger_entries')) {
+      return withRows([]);
     }
 
     throw new Error(`Unhandled SQL in API fake database: ${sql}`);
@@ -685,6 +896,47 @@ test('recipient create API creates a provider-managed SWIFT rail', async () => {
     assert.equal(
       (response.body.rails as Array<Record<string, unknown>>)[0]?.readinessStatus,
       'active',
+    );
+  } finally {
+    await app.close();
+  }
+});
+
+test('payout create API books a payout request and reduces the visible wallet balance', async () => {
+  const app = await createTestApp();
+
+  try {
+    const payoutResponse = await postJson(app, '/customers/me/payouts', 'user_demo_alice', {
+      amountMinor: 2500,
+      recipientRailId: PAYOUT_TEST_RECIPIENT_RAIL_ID,
+      reference: 'Invoice 204',
+      sourceCurrency: 'USD',
+      sourceWalletId: PAYOUT_TEST_WALLET_ID,
+    });
+
+    assert.equal(payoutResponse.status, 201);
+    assert.equal((payoutResponse.body.payout as { status: string }).status, 'pending_submission');
+    assert.match((payoutResponse.body.payout as { reference: string }).reference, /^payout-/u);
+    assert.equal(
+      (payoutResponse.body.amounts as { fee: { amountMinor: string } }).fee.amountMinor,
+      '3',
+    );
+    assert.equal(
+      (payoutResponse.body.amounts as { gross: { amountMinor: string } }).gross.amountMinor,
+      '2503',
+    );
+    assert.equal(
+      (payoutResponse.body.amounts as { net: { amountMinor: string } }).net.amountMinor,
+      '2500',
+    );
+
+    const balancesResponse = await fetchJson(app, '/customers/me/balances', 'user_demo_alice');
+
+    assert.equal(balancesResponse.status, 200);
+    assert.equal(
+      (balancesResponse.body.balances as Array<{ available: { amountMinor: string } }>)[0]
+        ?.available.amountMinor,
+      '7297',
     );
   } finally {
     await app.close();

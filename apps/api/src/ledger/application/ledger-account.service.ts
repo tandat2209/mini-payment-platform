@@ -82,4 +82,74 @@ export class LedgerAccountService {
 
     return created;
   }
+
+  async ensurePlatformRevenueAccount(
+    context: TransactionContext,
+    currency: string,
+    now: string,
+  ): Promise<string> {
+    const existing = await this.ledgerAccountRepository.findOpenPlatformRevenueAccount(
+      context,
+      currency,
+    );
+
+    if (existing) {
+      return existing;
+    }
+
+    await this.ledgerAccountRepository.createPlatformRevenueAccount(context, {
+      code: `platform_revenue_${currency.toLowerCase()}`,
+      currency,
+      name: `Platform Revenue ${currency}`,
+      now,
+    });
+
+    const created = await this.ledgerAccountRepository.findOpenPlatformRevenueAccount(
+      context,
+      currency,
+    );
+
+    if (!created) {
+      throw new Error('Platform revenue ledger account could not be provisioned');
+    }
+
+    return created;
+  }
+
+  async ensureRecipientPayableAccount(
+    context: TransactionContext,
+    recipientId: string,
+    currency: string,
+    now: string,
+  ): Promise<string> {
+    const existing = await this.ledgerAccountRepository.findOpenRecipientPayableAccount(
+      context,
+      recipientId,
+      currency,
+    );
+
+    if (existing) {
+      return existing;
+    }
+
+    await this.ledgerAccountRepository.createRecipientPayableAccount(context, {
+      code: `recipient_payable_${recipientId.replace(/-/g, '').toLowerCase()}_${currency.toLowerCase()}`,
+      currency,
+      name: `Recipient Payable ${currency}`,
+      now,
+      recipientId,
+    });
+
+    const created = await this.ledgerAccountRepository.findOpenRecipientPayableAccount(
+      context,
+      recipientId,
+      currency,
+    );
+
+    if (!created) {
+      throw new Error('Recipient payable ledger account could not be provisioned');
+    }
+
+    return created;
+  }
 }
