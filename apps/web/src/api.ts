@@ -162,6 +162,7 @@ type RecipientCreateResponse = {
 
 type CreatePayoutRequest = {
   amountMinor: number;
+  idempotencyKey?: string;
   recipientRailId: string;
   reference?: string;
   sourceCurrency: string;
@@ -506,11 +507,14 @@ export async function addRecipientRail(
 }
 
 export async function createPayout(request: CreatePayoutRequest): Promise<CreatePayoutResponse> {
-  return await postJson<CreatePayoutResponse, CreatePayoutRequest>(
+  const { idempotencyKey, ...body } = request;
+
+  return await postJson<CreatePayoutResponse, Omit<CreatePayoutRequest, 'idempotencyKey'>>(
     '/customers/me/payouts',
-    request,
+    body,
     {
       errorLabel: 'Create payout request',
+      ...(idempotencyKey ? { headers: { 'Idempotency-Key': idempotencyKey } } : {}),
     },
   );
 }

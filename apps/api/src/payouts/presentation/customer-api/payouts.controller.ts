@@ -1,7 +1,9 @@
 import {
   BadRequestException,
   Body,
+  ConflictException,
   Controller,
+  Headers,
   NotFoundException,
   Post,
   UseGuards,
@@ -22,6 +24,7 @@ import {
 } from '../../domain/payout-preparation.types';
 import {
   InsufficientWalletBalanceError,
+  PayoutIdempotencyConflictError,
   PayoutSourceWalletNotFoundError,
 } from '../../domain/payout-write.types';
 import { CreatePayoutDto } from './create-payout.dto';
@@ -67,12 +70,20 @@ export class PayoutsController {
   )
   async createPayout(
     @CurrentCustomer() customer: CurrentCustomerView,
+    @Headers('idempotency-key') idempotencyKey: string | undefined,
     @Body() body: CreatePayoutDto,
   ): Promise<CreatePayoutResponse> {
+    const normalizedIdempotencyKey = idempotencyKey?.trim();
+
+    if (!normalizedIdempotencyKey) {
+      throw new BadRequestException('Idempotency-Key header is required');
+    }
+
     try {
       const result = await this.executePayoutService.execute({
         amountMinor: body.amountMinor,
         customerId: customer.id,
+        idempotencyKey: normalizedIdempotencyKey,
         recipientRailId: body.recipientRailId,
         ...(body.reference === undefined ? {} : { reference: body.reference }),
         sourceCurrency: body.sourceCurrency,
@@ -105,7 +116,9 @@ export class PayoutsController {
   }
 }
 
-function mapPayoutError(error: unknown): BadRequestException | NotFoundException | Error {
+function mapPayoutError(
+  error: unknown,
+): BadRequestException | ConflictException | NotFoundException | Error {
   if (
     error instanceof PayoutRecipientRailNotFoundError ||
     error instanceof PayoutSourceWalletNotFoundError
@@ -120,6 +133,10 @@ function mapPayoutError(error: unknown): BadRequestException | NotFoundException
     error instanceof InsufficientWalletBalanceError
   ) {
     return new BadRequestException(error.message);
+  }
+
+  if (error instanceof PayoutIdempotencyConflictError) {
+    return new ConflictException(error.message);
   }
 
   if (error instanceof Error) {

@@ -14,6 +14,7 @@ export class SqlPayoutWriteRepository implements PayoutWriteRepository {
       description: string;
       feeAmountMinor: number;
       grossAmountMinor: number;
+      idempotencyKeyId?: string | null;
       netAmountMinor: number;
       occurredAt: string;
       payoutId: string;
@@ -114,16 +115,16 @@ export class SqlPayoutWriteRepository implements PayoutWriteRepository {
           $4::uuid,
           $5::uuid,
           $6::uuid,
-          NULL,
-          $7,
-          'pending_submission',
+          $7::uuid,
           $8,
+          'pending_submission',
           $9,
           $10,
           $11,
           $12,
-          $13::timestamptz,
-          $13::timestamptz,
+          $13,
+          $14::timestamptz,
+          $14::timestamptz,
           NULL,
           NULL,
           NULL
@@ -136,6 +137,7 @@ export class SqlPayoutWriteRepository implements PayoutWriteRepository {
         input.recipientId,
         input.recipientRailId,
         input.userTransactionId,
+        input.idempotencyKeyId ?? null,
         input.rail,
         input.currency,
         input.grossAmountMinor,

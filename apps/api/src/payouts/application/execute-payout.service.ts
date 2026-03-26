@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
 import { Inject, Injectable, Logger } from '@nestjs/common';
 
@@ -10,6 +10,10 @@ import {
 } from '../../shared/application/transaction-manager';
 import { toStructuredLog } from '../../shared/logging/structured-log';
 import {
+  PAYOUT_IDEMPOTENCY_REPOSITORY,
+  type PayoutIdempotencyRepository,
+} from '../domain/payout-idempotency.repository';
+import {
   PAYOUT_WALLET_REPOSITORY,
   PAYOUT_WRITE_REPOSITORY,
   type PayoutWalletRepository,
@@ -19,6 +23,7 @@ import {
   type CreatedPayout,
   type CreatePayoutInput,
   InsufficientWalletBalanceError,
+  PayoutIdempotencyConflictError,
   PayoutSourceWalletNotFoundError,
 } from '../domain/payout-write.types';
 import { PreparePayoutIntentService } from './prepare-payout-intent.service';
@@ -33,6 +38,8 @@ export class ExecutePayoutService {
     @Inject(TRANSACTION_MANAGER)
     private readonly transactionManager: TransactionManager,
     private readonly preparePayoutIntentService: PreparePayoutIntentService,
+    @Inject(PAYOUT_IDEMPOTENCY_REPOSITORY)
+    private readonly payoutIdempotencyRepository: PayoutIdempotencyRepository,
     @Inject(PAYOUT_WALLET_REPOSITORY)
     private readonly payoutWalletRepository: PayoutWalletRepository,
     @Inject(PAYOUT_WRITE_REPOSITORY)
@@ -68,6 +75,52 @@ export class ExecutePayoutService {
     );
 
     return await this.transactionManager.runInTransaction(async (context) => {
+      const now = new Date().toISOString();
+      const requestFingerprint = buildIdempotencyRequestFingerprint(
+        input,
+        payoutIntent.amountMinor,
+      );
+      let idempotencyKeyId: string | null = null;
+
+      const idempotencyKey = input.idempotencyKey.trim();
+      const idempotencyRecord = await this.payoutIdempotencyRepository.claimKey(context, {
+        createdAt: now,
+        key: idempotencyKey,
+        requestFingerprint,
+        scope: 'payout:create',
+      });
+
+      if (idempotencyRecord.result === 'existing') {
+        if (
+          idempotencyRecord.requestFingerprint !== null &&
+          idempotencyRecord.requestFingerprint !== requestFingerprint
+        ) {
+          throw new PayoutIdempotencyConflictError(
+            'Idempotency key was already used with a different payout request',
+          );
+        }
+
+        if (idempotencyRecord.status === 'completed' && idempotencyRecord.responsePayload) {
+          this.logger.log(
+            toStructuredLog({
+              event: 'payout_idempotent_replay',
+              idempotencyKey,
+              payoutId: idempotencyRecord.responsePayload.payoutId,
+              transactionId: idempotencyRecord.responsePayload.transactionId,
+              userId: payoutIntent.customerId,
+            }),
+          );
+
+          return idempotencyRecord.responsePayload;
+        }
+
+        throw new PayoutIdempotencyConflictError(
+          `Idempotency key is already reserved with status ${idempotencyRecord.status}`,
+        );
+      }
+
+      idempotencyKeyId = idempotencyRecord.id;
+
       const walletBalance = await this.payoutWalletRepository.findOwnedActiveWalletBalance(
         context,
         {
@@ -92,7 +145,6 @@ export class ExecutePayoutService {
         );
       }
 
-      const now = new Date().toISOString();
       const payoutId = randomUUID();
       const userTransactionId = randomUUID();
       const reference = buildPayoutReference();
@@ -148,6 +200,7 @@ export class ExecutePayoutService {
         recipientId: payoutIntent.recipientId,
         recipientRailId: payoutIntent.recipientRailId,
         reference,
+        ...(idempotencyKeyId === null ? {} : { idempotencyKeyId }),
         userId: payoutIntent.customerId,
         userTransactionId,
         walletId: payoutIntent.sourceWalletId,
@@ -202,7 +255,7 @@ export class ExecutePayoutService {
         }),
       );
 
-      return {
+      const result: CreatedPayout = {
         amounts: {
           feeAmountMinor: String(feeAmountMinor),
           grossAmountMinor: String(grossAmountMinor),
@@ -222,6 +275,16 @@ export class ExecutePayoutService {
         transactionId: userTransactionId,
         walletId: payoutIntent.sourceWalletId,
       };
+
+      if (idempotencyKeyId !== null) {
+        await this.payoutIdempotencyRepository.markCompleted(context, {
+          id: idempotencyKeyId,
+          responsePayload: result,
+          updatedAt: now,
+        });
+      }
+
+      return result;
     });
   }
 }
@@ -232,6 +295,22 @@ function calculatePayoutFeeAmountMinor(netAmountMinor: number): number {
 
 function buildPayoutReference(): string {
   return `payout-${randomUUID().replace(/-/g, '').slice(0, 12)}`;
+}
+
+function buildIdempotencyRequestFingerprint(
+  input: CreatePayoutInput,
+  netAmountMinor: number,
+): string {
+  const normalizedRequest = {
+    amountMinor: netAmountMinor,
+    customerId: input.customerId,
+    recipientRailId: input.recipientRailId,
+    reference: input.reference?.trim() || null,
+    sourceCurrency: input.sourceCurrency.trim().toUpperCase(),
+    sourceWalletId: input.sourceWalletId,
+  };
+
+  return `sha256:${createHash('sha256').update(JSON.stringify(normalizedRequest)).digest('hex')}`;
 }
 
 function buildPayoutTransactionDescription(

@@ -8,7 +8,7 @@ Define the customer-facing recipient read API for browsing saved recipients and 
 
 ### Requirement: Customer can browse recipients
 
-The system SHALL allow the current customer to retrieve saved recipients that belong to that customer. Each recipient item SHALL include the recipient identifier, display name, status, created timestamp, and customer-safe rail summaries for active rails.
+The system SHALL allow the current customer to retrieve saved recipients that belong to that customer. Each recipient item SHALL include the recipient identifier, display name, recipient status, created timestamp, and customer-safe rail summaries for active or pending rails, including rail readiness state.
 
 #### Scenario: Customer retrieves recipient list
 
@@ -17,7 +17,7 @@ The system SHALL allow the current customer to retrieve saved recipients that be
 
 ### Requirement: Customer can view recipient detail
 
-The system SHALL allow the current customer to retrieve a saved recipient by identifier. The detail response SHALL include the recipient's active rails, default-rail indicator, and customer-safe rail detail fields needed for display.
+The system SHALL allow the current customer to retrieve a saved recipient by identifier. The detail response SHALL include the recipient's active or pending rails, default-rail indicator, customer-safe rail detail fields needed for display, and each rail's onboarding or payout-readiness status.
 
 #### Scenario: Customer retrieves recipient detail
 
@@ -41,3 +41,21 @@ The system SHALL scope recipient list and detail queries to the current customer
 
 - **WHEN** the current customer requests a recipient identifier that is not owned by that customer
 - **THEN** the system returns a not-found response for that recipient resource
+
+### Requirement: Customer can discover recipient onboarding capabilities
+
+The system SHALL allow the current customer to retrieve backend-defined recipient onboarding capabilities before creating or extending a recipient.
+
+#### Scenario: Customer opens recipient onboarding
+
+- **WHEN** the current customer requests recipient onboarding capabilities
+- **THEN** the system returns supported country, rail, and currency combinations without requiring the client to hardcode them
+
+### Requirement: Customer can retrieve dynamic recipient onboarding schema
+
+The system SHALL allow the current customer to retrieve recipient onboarding schema metadata for a selected supported combination so the client can render the form dynamically.
+
+#### Scenario: Customer selects a supported onboarding combination
+
+- **WHEN** the current customer requests onboarding schema for a supported country, rail, and currency combination
+- **THEN** the system returns the normalized field schema for that combination

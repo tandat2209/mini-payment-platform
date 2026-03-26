@@ -19,5 +19,5 @@
 ## 4. Payout Boundary Alignment And Documentation
 
 - [x] 4.1 Ensure payout-preparation and recipient selection surfaces consume backend-governed recipient rail metadata rather than frontend capability assumptions.
-- [ ] 4.2 Verify locally that onboarding availability changes are reflected in the web UI without frontend code changes.
+- [x] 4.2 Verify locally that onboarding availability changes are reflected in the web UI without frontend code changes.
 - [x] 4.3 Document the capability-discovery model, normalized schema contract, and how it can later map to richer provider-style schemas similar to established payment platforms.

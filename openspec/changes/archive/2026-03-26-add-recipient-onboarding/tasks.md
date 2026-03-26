@@ -18,6 +18,6 @@
 
 ## 4. Integration Verification And Documentation
 
-- [ ] 4.1 Verify that recipient creation works for at least one inline-detail rail and one provider-managed rail in the local environment.
-- [ ] 4.2 Verify that a failed provider registration keeps the recipient rail unavailable for payout while preserving the failure reason for retry or correction.
-- [ ] 4.3 Document the recommended recipient onboarding model, the rail requirement matrix, and when the platform pre-registers a beneficiary with the PSP versus embedding details at payout time.
+- [x] 4.1 Verify that recipient creation works for at least one inline-detail rail and one provider-managed rail in the local environment.
+- [x] 4.2 Verify that a failed provider registration keeps the recipient rail unavailable for payout while preserving the failure reason for retry or correction.
+- [x] 4.3 Document the recommended recipient onboarding model, the rail requirement matrix, and when the platform pre-registers a beneficiary with the PSP versus embedding details at payout time.

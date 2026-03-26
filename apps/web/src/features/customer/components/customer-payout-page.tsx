@@ -67,6 +67,7 @@ export function CustomerPayoutPage({
   const [selectedSourceCurrency, setSelectedSourceCurrency] = useState<string | null>(null);
   const [amount, setAmount] = useState('');
   const [reference, setReference] = useState('');
+  const [submissionKey, setSubmissionKey] = useState(createIdempotencyKey);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [submittedPayout, setSubmittedPayout] = useState<CreatePayoutResponse | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -167,6 +168,7 @@ export function CustomerPayoutPage({
       try {
         const result = await onSubmitPayout({
           amountMinor: Number(amountMinor),
+          idempotencyKey: submissionKey,
           recipientRailId: selectedRail.id,
           ...(reference.trim() ? { reference: reference.trim() } : {}),
           sourceCurrency: selectedSourceBalance.currency,
@@ -300,6 +302,7 @@ export function CustomerPayoutPage({
                               onClick={() => {
                                 setSelectedRailId(rail.id);
                                 setSelectedSourceCurrency(null);
+                                setSubmissionKey(createIdempotencyKey());
                               }}
                               type="button"
                             >
@@ -377,6 +380,7 @@ export function CustomerPayoutPage({
                           <Select
                             onValueChange={(value) => {
                               setSelectedSourceCurrency(value);
+                              setSubmissionKey(createIdempotencyKey());
                             }}
                             {...(effectiveSourceCurrency ? { value: effectiveSourceCurrency } : {})}
                           >
@@ -399,6 +403,7 @@ export function CustomerPayoutPage({
                             inputMode="decimal"
                             onChange={(event) => {
                               setAmount(event.target.value);
+                              setSubmissionKey(createIdempotencyKey());
                             }}
                             placeholder="0.00"
                             value={amount}
@@ -415,6 +420,7 @@ export function CustomerPayoutPage({
                           maxLength={80}
                           onChange={(event) => {
                             setReference(event.target.value);
+                            setSubmissionKey(createIdempotencyKey());
                           }}
                           placeholder="Invoice, purpose, or internal note"
                           value={reference}
@@ -525,6 +531,7 @@ export function CustomerPayoutPage({
                             setReference('');
                             setSelectedRailId(null);
                             setSelectedSourceCurrency(null);
+                            setSubmissionKey(createIdempotencyKey());
                             setSubmissionError(null);
                             setSubmittedPayout(null);
                             setStep(0);
@@ -721,6 +728,10 @@ function calculatePayoutFeeAmountMinor(amountMinor: bigint): bigint {
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Payout could not be created';
+}
+
+function createIdempotencyKey(): string {
+  return globalThis.crypto?.randomUUID?.() ?? `payout-${Date.now()}-${Math.random()}`;
 }
 
 function formatReadinessStatus(value: string | null | undefined): string {

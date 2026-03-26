@@ -1,6 +1,7 @@
 export type CreatePayoutInput = {
   amountMinor: number;
   customerId: string;
+  idempotencyKey: string;
   recipientRailId: string;
   reference?: string | null;
   sourceCurrency: string;
@@ -41,5 +42,12 @@ export class InsufficientWalletBalanceError extends Error {
       `Wallet ${walletId} does not have enough available ${currency} for payout amount ${requiredAmountMinor}`,
     );
     this.name = 'InsufficientWalletBalanceError';
+  }
+}
+
+export class PayoutIdempotencyConflictError extends Error {
+  constructor(reason: string) {
+    super(reason);
+    this.name = 'PayoutIdempotencyConflictError';
   }
 }

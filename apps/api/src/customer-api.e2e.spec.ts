@@ -15,6 +15,7 @@ const PAYOUT_TEST_RECIPIENT_RAIL_ID = 'dddddddd-dddd-4ddd-8ddd-ddddddddddd1';
 const PAYOUT_TEST_WALLET_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2';
 
 class ApiFakeDatabaseService {
+  private readonly idempotencyKeys = new Map<string, QueryResponseRow>();
   private readonly webhookEvents = new Map<string, QueryResponseRow>();
   private readonly ledgerAccounts: QueryResponseRow[] = [];
   private readonly recipients: QueryResponseRow[] = [
@@ -210,6 +211,52 @@ class ApiFakeDatabaseService {
       this.webhookEvents.set(lookupKey, row);
 
       return withRows([row]);
+    }
+
+    if (
+      sql.includes('INSERT INTO idempotency_keys') &&
+      sql.includes('ON CONFLICT (scope, key) DO NOTHING')
+    ) {
+      const [id, scope, key, requestFingerprint, createdAt] = parameters;
+      const lookupKey = `${String(scope)}:${String(key)}`;
+
+      if (this.idempotencyKeys.has(lookupKey)) {
+        return withRows([]);
+      }
+
+      const row = {
+        id: String(id),
+        request_fingerprint: String(requestFingerprint),
+        response_payload: null,
+        status: 'created',
+        updated_at: String(createdAt),
+      };
+
+      this.idempotencyKeys.set(lookupKey, row);
+
+      return withRows([row]);
+    }
+
+    if (sql.includes('FROM idempotency_keys') && sql.includes('WHERE scope = $1')) {
+      const [scope, key] = parameters;
+      const row = this.idempotencyKeys.get(`${String(scope)}:${String(key)}`);
+
+      return withRows(row ? [row] : []);
+    }
+
+    if (sql.includes('UPDATE idempotency_keys') && sql.includes("status = 'completed'")) {
+      const [id, responsePayload, updatedAt] = parameters;
+      const entry = [...this.idempotencyKeys.entries()].find(([, value]) => value.id === id);
+
+      if (!entry) {
+        return withRows([]);
+      }
+
+      entry[1].response_payload = JSON.parse(String(responsePayload));
+      entry[1].status = 'completed';
+      entry[1].updated_at = String(updatedAt);
+
+      return withRows([entry[1]]);
     }
 
     if (sql.includes('FROM webhook_events') && sql.includes('external_event_id = $2')) {
@@ -670,6 +717,9 @@ async function postJson(
   path: string,
   customerExternalRef: string,
   body: Record<string, unknown>,
+  options?: {
+    headers?: Record<string, string>;
+  },
 ) {
   const port = await ensureListening(app);
   const response = await fetch(`http://127.0.0.1:${port}${path}`, {
@@ -677,6 +727,7 @@ async function postJson(
     headers: {
       'content-type': 'application/json',
       'x-customer-external-ref': customerExternalRef,
+      ...(options?.headers ?? {}),
     },
     method: 'POST',
   });
@@ -906,13 +957,23 @@ test('payout create API books a payout request and reduces the visible wallet ba
   const app = await createTestApp();
 
   try {
-    const payoutResponse = await postJson(app, '/customers/me/payouts', 'user_demo_alice', {
-      amountMinor: 2500,
-      recipientRailId: PAYOUT_TEST_RECIPIENT_RAIL_ID,
-      reference: 'Invoice 204',
-      sourceCurrency: 'USD',
-      sourceWalletId: PAYOUT_TEST_WALLET_ID,
-    });
+    const payoutResponse = await postJson(
+      app,
+      '/customers/me/payouts',
+      'user_demo_alice',
+      {
+        amountMinor: 2500,
+        recipientRailId: PAYOUT_TEST_RECIPIENT_RAIL_ID,
+        reference: 'Invoice 204',
+        sourceCurrency: 'USD',
+        sourceWalletId: PAYOUT_TEST_WALLET_ID,
+      },
+      {
+        headers: {
+          'idempotency-key': 'idem-payout-create-001',
+        },
+      },
+    );
 
     assert.equal(payoutResponse.status, 201);
     assert.equal((payoutResponse.body.payout as { status: string }).status, 'pending_submission');
@@ -929,6 +990,81 @@ test('payout create API books a payout request and reduces the visible wallet ba
       (payoutResponse.body.amounts as { net: { amountMinor: string } }).net.amountMinor,
       '2500',
     );
+
+    const balancesResponse = await fetchJson(app, '/customers/me/balances', 'user_demo_alice');
+
+    assert.equal(balancesResponse.status, 200);
+    assert.equal(
+      (balancesResponse.body.balances as Array<{ available: { amountMinor: string } }>)[0]
+        ?.available.amountMinor,
+      '7297',
+    );
+  } finally {
+    await app.close();
+  }
+});
+
+test('payout create API rejects requests without idempotency key', async () => {
+  const app = await createTestApp();
+
+  try {
+    const payoutResponse = await postJson(app, '/customers/me/payouts', 'user_demo_alice', {
+      amountMinor: 2500,
+      recipientRailId: PAYOUT_TEST_RECIPIENT_RAIL_ID,
+      reference: 'Invoice 204',
+      sourceCurrency: 'USD',
+      sourceWalletId: PAYOUT_TEST_WALLET_ID,
+    });
+
+    assert.equal(payoutResponse.status, 400);
+    assert.equal(
+      (payoutResponse.body.error as { message: string }).message,
+      'Idempotency-Key header is required',
+    );
+  } finally {
+    await app.close();
+  }
+});
+
+test('payout create API returns the stored response for duplicate idempotency key reuse', async () => {
+  const app = await createTestApp();
+
+  try {
+    const idempotencyKey = 'idem-payout-001';
+    const requestBody = {
+      amountMinor: 2500,
+      recipientRailId: PAYOUT_TEST_RECIPIENT_RAIL_ID,
+      reference: 'Invoice 205',
+      sourceCurrency: 'USD',
+      sourceWalletId: PAYOUT_TEST_WALLET_ID,
+    } satisfies Record<string, unknown>;
+
+    const firstResponse = await postJson(
+      app,
+      '/customers/me/payouts',
+      'user_demo_alice',
+      requestBody,
+      {
+        headers: {
+          'idempotency-key': idempotencyKey,
+        },
+      },
+    );
+    const secondResponse = await postJson(
+      app,
+      '/customers/me/payouts',
+      'user_demo_alice',
+      requestBody,
+      {
+        headers: {
+          'idempotency-key': idempotencyKey,
+        },
+      },
+    );
+
+    assert.equal(firstResponse.status, 201);
+    assert.equal(secondResponse.status, 201);
+    assert.deepEqual(secondResponse.body, firstResponse.body);
 
     const balancesResponse = await fetchJson(app, '/customers/me/balances', 'user_demo_alice');
 

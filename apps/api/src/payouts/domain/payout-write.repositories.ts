@@ -41,6 +41,7 @@ export interface PayoutWriteRepository {
       recipientId: string;
       recipientRailId: string;
       reference: string;
+      idempotencyKeyId?: string | null;
       userId: string;
       userTransactionId: string;
       walletId: string;

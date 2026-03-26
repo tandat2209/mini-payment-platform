@@ -8,6 +8,7 @@ import {
   TransactionContext,
   type TransactionManager,
 } from '../../shared/application/transaction-manager';
+import type { PayoutIdempotencyRepository } from '../domain/payout-idempotency.repository';
 import { type PreparedPayoutIntent } from '../domain/payout-preparation.types';
 import {
   type OwnedWalletBalance,
@@ -16,6 +17,7 @@ import {
 } from '../domain/payout-write.repositories';
 import {
   InsufficientWalletBalanceError,
+  PayoutIdempotencyConflictError,
   PayoutSourceWalletNotFoundError,
 } from '../domain/payout-write.types';
 import { ExecutePayoutService } from './execute-payout.service';
@@ -71,6 +73,7 @@ class InMemoryPayoutWriteRepository implements PayoutWriteRepository {
     description: string;
     feeAmountMinor: number;
     grossAmountMinor: number;
+    idempotencyKeyId?: string | null;
     netAmountMinor: number;
     occurredAt: string;
     payoutId: string;
@@ -91,6 +94,7 @@ class InMemoryPayoutWriteRepository implements PayoutWriteRepository {
       description: string;
       feeAmountMinor: number;
       grossAmountMinor: number;
+      idempotencyKeyId?: string | null;
       netAmountMinor: number;
       occurredAt: string;
       payoutId: string;
@@ -104,6 +108,62 @@ class InMemoryPayoutWriteRepository implements PayoutWriteRepository {
     },
   ): Promise<void> {
     this.createdBooking = input;
+  }
+}
+
+class InMemoryPayoutIdempotencyRepository implements PayoutIdempotencyRepository {
+  claimResult:
+    | {
+        id: string;
+        result: 'claimed';
+      }
+    | {
+        id: string;
+        requestFingerprint: string | null;
+        responsePayload: ReturnType<typeof createCompletedPayoutResponse> | null;
+        result: 'existing';
+        status: 'completed' | 'created' | 'failed';
+      };
+
+  completedRecord: {
+    id: string;
+    responsePayload: ReturnType<typeof createCompletedPayoutResponse>;
+    updatedAt: string;
+  } | null = null;
+
+  constructor(
+    claimResult:
+      | {
+          id: string;
+          result: 'claimed';
+        }
+      | {
+          id: string;
+          requestFingerprint: string | null;
+          responsePayload: ReturnType<typeof createCompletedPayoutResponse> | null;
+          result: 'existing';
+          status: 'completed' | 'created' | 'failed';
+        } = {
+      id: 'idem-1',
+      result: 'claimed',
+    },
+  ) {
+    this.claimResult = claimResult;
+  }
+
+  async claimKey() {
+    return this.claimResult;
+  }
+
+  async markCompleted(
+    _context: TransactionContext,
+    input: {
+      id: string;
+      responsePayload: ReturnType<typeof createCompletedPayoutResponse>;
+      updatedAt: string;
+    },
+  ): Promise<void> {
+    this.completedRecord = input;
   }
 }
 
@@ -156,18 +216,43 @@ function createPreparedIntent(overrides: Partial<PreparedPayoutIntent> = {}): Pr
   };
 }
 
+function createCompletedPayoutResponse() {
+  return {
+    amounts: {
+      feeAmountMinor: '100',
+      grossAmountMinor: '100100',
+      netAmountMinor: '100000',
+    },
+    createdAt: '2026-03-26T07:42:00.000Z',
+    currency: 'USD',
+    payoutId: 'payout-1',
+    recipient: {
+      id: 'recipient-1',
+      name: 'Vendor One',
+      rail: 'ach',
+      railId: 'rail-1',
+    },
+    reference: 'payout-existing',
+    status: 'pending_submission' as const,
+    transactionId: 'txn-1',
+    walletId: 'wallet-1',
+  };
+}
+
 test('execute payout books wallet debit, payout, and ledger entries with fee recognition', async () => {
   const payoutWalletRepository = new InMemoryPayoutWalletRepository({
     availableAmountMinor: 200_000,
     walletId: 'wallet-1',
   });
   const payoutWriteRepository = new InMemoryPayoutWriteRepository();
+  const payoutIdempotencyRepository = new InMemoryPayoutIdempotencyRepository();
   const ledgerPostingService = new StubLedgerPostingService();
   const service = new ExecutePayoutService(
     new ImmediateTransactionManager(),
     new StubPreparePayoutIntentService(
       createPreparedIntent(),
     ) as unknown as PreparePayoutIntentService,
+    payoutIdempotencyRepository,
     payoutWalletRepository,
     payoutWriteRepository,
     new StubLedgerAccountService() as unknown as LedgerAccountService,
@@ -177,6 +262,7 @@ test('execute payout books wallet debit, payout, and ledger entries with fee rec
   const result = await service.execute({
     amountMinor: 100_000,
     customerId: 'customer-1',
+    idempotencyKey: 'idem-key-1',
     recipientRailId: 'rail-1',
     reference: 'Invoice 1042',
     sourceCurrency: 'USD',
@@ -192,8 +278,10 @@ test('execute payout books wallet debit, payout, and ledger entries with fee rec
   assert.equal(payoutWalletRepository.debitCalls[0]?.amountMinor, 100_100);
   assert.equal(payoutWriteRepository.createdBooking?.feeAmountMinor, 100);
   assert.equal(payoutWriteRepository.createdBooking?.grossAmountMinor, 100_100);
+  assert.equal(payoutWriteRepository.createdBooking?.idempotencyKeyId, 'idem-1');
   assert.equal(payoutWriteRepository.createdBooking?.netAmountMinor, 100_000);
   assert.match(payoutWriteRepository.createdBooking?.description ?? '', /^Payout to Vendor One:/u);
+  assert.equal(payoutIdempotencyRepository.completedRecord?.id, 'idem-1');
   assert.equal(ledgerPostingService.createdTransaction?.transactionType, 'payout');
   assert.deepEqual(
     ledgerPostingService.createdTransaction?.entries.map((entry) => ({
@@ -227,6 +315,7 @@ test('execute payout rejects when the source wallet balance is missing', async (
     new StubPreparePayoutIntentService(
       createPreparedIntent(),
     ) as unknown as PreparePayoutIntentService,
+    new InMemoryPayoutIdempotencyRepository(),
     new InMemoryPayoutWalletRepository(null),
     new InMemoryPayoutWriteRepository(),
     new StubLedgerAccountService() as unknown as LedgerAccountService,
@@ -238,6 +327,7 @@ test('execute payout rejects when the source wallet balance is missing', async (
       service.execute({
         amountMinor: 100_000,
         customerId: 'customer-1',
+        idempotencyKey: 'idem-key-2',
         recipientRailId: 'rail-1',
         sourceCurrency: 'USD',
         sourceWalletId: 'wallet-1',
@@ -256,6 +346,7 @@ test('execute payout rejects when available balance cannot cover fee-inclusive a
     new StubPreparePayoutIntentService(
       createPreparedIntent(),
     ) as unknown as PreparePayoutIntentService,
+    new InMemoryPayoutIdempotencyRepository(),
     payoutWalletRepository,
     new InMemoryPayoutWriteRepository(),
     new StubLedgerAccountService() as unknown as LedgerAccountService,
@@ -267,6 +358,7 @@ test('execute payout rejects when available balance cannot cover fee-inclusive a
       service.execute({
         amountMinor: 100_000,
         customerId: 'customer-1',
+        idempotencyKey: 'idem-key-3',
         recipientRailId: 'rail-1',
         sourceCurrency: 'USD',
         sourceWalletId: 'wallet-1',
@@ -274,4 +366,77 @@ test('execute payout rejects when available balance cannot cover fee-inclusive a
     (error: unknown) => error instanceof InsufficientWalletBalanceError,
   );
   assert.equal(payoutWalletRepository.debitCalls.length, 0);
+});
+
+test('execute payout returns the stored response for a completed idempotent replay', async () => {
+  const existingResponse = createCompletedPayoutResponse();
+  const service = new ExecutePayoutService(
+    new ImmediateTransactionManager(),
+    new StubPreparePayoutIntentService(
+      createPreparedIntent(),
+    ) as unknown as PreparePayoutIntentService,
+    new InMemoryPayoutIdempotencyRepository({
+      id: 'idem-1',
+      requestFingerprint: null,
+      responsePayload: existingResponse,
+      result: 'existing',
+      status: 'completed',
+    }),
+    new InMemoryPayoutWalletRepository({
+      availableAmountMinor: 200_000,
+      walletId: 'wallet-1',
+    }),
+    new InMemoryPayoutWriteRepository(),
+    new StubLedgerAccountService() as unknown as LedgerAccountService,
+    new StubLedgerPostingService() as unknown as LedgerPostingService,
+  );
+
+  const result = await service.execute({
+    amountMinor: 100_000,
+    customerId: 'customer-1',
+    idempotencyKey: 'idem-key-1',
+    recipientRailId: 'rail-1',
+    reference: 'Invoice 1042',
+    sourceCurrency: 'USD',
+    sourceWalletId: 'wallet-1',
+  });
+
+  assert.deepEqual(result, existingResponse);
+});
+
+test('execute payout rejects idempotency key reuse with a different request fingerprint', async () => {
+  const service = new ExecutePayoutService(
+    new ImmediateTransactionManager(),
+    new StubPreparePayoutIntentService(
+      createPreparedIntent(),
+    ) as unknown as PreparePayoutIntentService,
+    new InMemoryPayoutIdempotencyRepository({
+      id: 'idem-1',
+      requestFingerprint: 'sha256:different',
+      responsePayload: null,
+      result: 'existing',
+      status: 'completed',
+    }),
+    new InMemoryPayoutWalletRepository({
+      availableAmountMinor: 200_000,
+      walletId: 'wallet-1',
+    }),
+    new InMemoryPayoutWriteRepository(),
+    new StubLedgerAccountService() as unknown as LedgerAccountService,
+    new StubLedgerPostingService() as unknown as LedgerPostingService,
+  );
+
+  await assert.rejects(
+    () =>
+      service.execute({
+        amountMinor: 100_000,
+        customerId: 'customer-1',
+        idempotencyKey: 'idem-key-1',
+        recipientRailId: 'rail-1',
+        reference: 'Invoice 1042',
+        sourceCurrency: 'USD',
+        sourceWalletId: 'wallet-1',
+      }),
+    (error: unknown) => error instanceof PayoutIdempotencyConflictError,
+  );
 });

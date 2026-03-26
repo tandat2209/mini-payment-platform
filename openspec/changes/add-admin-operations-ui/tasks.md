@@ -15,5 +15,5 @@
 ## 3. Integration And Verification
 
 - [x] 3.1 Connect the admin web pages to the new admin APIs with loading, empty, and error states.
-- [ ] 3.2 Verify that a PSP sandbox funding event appears in admin transactions and the ledger view after processing.
+- [x] 3.2 Verify that a PSP sandbox funding event appears in admin transactions and the ledger view after processing.
 - [ ] 3.3 Document the local workflow for opening the PSP sandbox area, triggering funding, and inspecting resulting transaction and ledger records.
