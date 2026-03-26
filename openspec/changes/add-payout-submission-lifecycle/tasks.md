@@ -1,9 +1,9 @@
 ## 1. PSP Sandbox Payout Contracts
 
-- [ ] 1.1 Add PSP sandbox payout submission and payout update contracts, including deterministic success or failure controls for local testing.
-- [ ] 1.2 Add PSP sandbox persistence for submitted payouts and payout activity events so later report simulation can be generated from sandbox-owned records.
-- [ ] 1.3 Implement PSP sandbox endpoints for payout submission and payout status callback delivery.
-- [ ] 1.4 Add automated coverage for accepted payout submissions, persisted sandbox activity, and delayed payout outcome simulation.
+- [x] 1.1 Add PSP sandbox payout submission and payout update contracts, including deterministic success or failure controls for local testing.
+- [x] 1.2 Add PSP sandbox persistence for submitted payouts and payout activity events so later report simulation can be generated from sandbox-owned records.
+- [x] 1.3 Implement PSP sandbox endpoints for payout submission and payout status callback delivery.
+- [x] 1.4 Add automated coverage for accepted payout submissions, persisted sandbox activity, and delayed payout outcome simulation.
 
 ## 2. API Payout Submission And Attempt Tracking
 

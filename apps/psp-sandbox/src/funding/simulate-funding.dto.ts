@@ -10,7 +10,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 
-import { type FundingSimulationRequest } from './app.service';
+import { type FundingSimulationRequest } from './funding.types';
 
 class SimulateFundingSenderDto {
   @Transform(({ value }) => normalizeTrimmedString(value))
@@ -45,7 +45,7 @@ export class SimulateFundingRequestDto {
   @Transform(({ value }) => normalizeTrimmedUppercaseString(value))
   @IsString()
   @IsNotEmpty()
-  @Matches(/^[A-Z]{3}$/)
+  @Matches(/^[A-Z]{3}$/u)
   currency!: string;
 
   @Transform(({ value }) => normalizeTrimmedString(value))
