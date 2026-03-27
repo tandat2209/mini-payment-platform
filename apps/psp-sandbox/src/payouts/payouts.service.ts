@@ -1,12 +1,8 @@
 import { randomUUID } from 'node:crypto';
 
-import { Inject, Injectable, UnprocessableEntityException } from '@nestjs/common';
+import { Injectable, UnprocessableEntityException } from '@nestjs/common';
 
 import { DatabaseService } from '../database/database.service';
-import {
-  PAYOUT_ACTIVITY_REPOSITORY,
-  type PayoutActivityRepository,
-} from './payout-activity.repository';
 import {
   type PayoutSubmissionRequest,
   type PayoutSubmissionResponse,
@@ -14,13 +10,15 @@ import {
   type PayoutUpdateSimulationResponse,
 } from './payouts.types';
 
+type SubmittedPayoutLookupRow = {
+  external_payout_id: string;
+  external_request_id: string;
+  payout_reference: string;
+};
+
 @Injectable()
 export class PayoutsService {
-  constructor(
-    private readonly databaseService: DatabaseService,
-    @Inject(PAYOUT_ACTIVITY_REPOSITORY)
-    private readonly payoutActivityRepository: PayoutActivityRepository,
-  ) {}
+  constructor(private readonly databaseService: DatabaseService) {}
 
   async submitPayout(request: PayoutSubmissionRequest): Promise<PayoutSubmissionResponse> {
     validatePayoutSubmissionRequest(request);
@@ -30,52 +28,6 @@ export class PayoutsService {
     const externalPayoutId = `ppay_${randomUUID().replace(/-/g, '').slice(0, 16)}`;
     const callbackMode = request.simulation?.callbackMode ?? 'manual';
     const simulatedFinalStatus = request.simulation?.finalStatus ?? 'paid';
-    const sandboxPayoutId = randomUUID();
-
-    await this.databaseService.transaction(async (database) => {
-      await this.payoutActivityRepository.createSubmittedPayout(database, {
-        acceptedAt,
-        amountMinor: request.amountMinor,
-        callbackMode,
-        currency: request.currency,
-        destinationDetails:
-          request.submissionTarget.mode === 'inline_details'
-            ? request.submissionTarget.details
-            : null,
-        externalPayoutId,
-        externalRequestId,
-        payoutReference: request.payoutReference,
-        provider: 'psp_sandbox',
-        rail: request.recipient.rail,
-        recipientCountryCode: request.recipient.countryCode,
-        recipientName: request.recipient.name,
-        sandboxPayoutId,
-        simulatedFinalStatus,
-        submissionMode: request.submissionTarget.mode,
-        ...(request.submissionTarget.mode === 'provider_beneficiary'
-          ? { beneficiaryId: request.submissionTarget.beneficiaryId }
-          : {}),
-      });
-
-      await this.payoutActivityRepository.recordPayoutEvent(database, {
-        aggregateExternalId: externalPayoutId,
-        eventId: randomUUID(),
-        eventType: 'payout.submitted',
-        externalEventId: `evt_payout_submission_${randomUUID().replace(/-/g, '').slice(0, 16)}`,
-        occurredAt: acceptedAt,
-        payload: {
-          acceptedAt,
-          amountMinor: request.amountMinor,
-          currency: request.currency,
-          externalPayoutId,
-          externalRequestId,
-          payoutReference: request.payoutReference,
-          recipient: request.recipient,
-          simulation: request.simulation ?? null,
-          submissionTarget: request.submissionTarget,
-        },
-      });
-    });
 
     return {
       acceptedAt,
@@ -93,11 +45,9 @@ export class PayoutsService {
   ): Promise<PayoutUpdateSimulationResponse> {
     validatePayoutUpdateRequest(request);
 
-    const submittedPayout =
-      await this.payoutActivityRepository.findSubmittedPayoutByExternalPayoutId(
-        this.databaseService,
-        request.externalPayoutId,
-      );
+    const submittedPayout = await this.findSubmittedPayoutByExternalPayoutId(
+      request.externalPayoutId,
+    );
 
     if (!submittedPayout) {
       throw new UnprocessableEntityException({
@@ -111,9 +61,9 @@ export class PayoutsService {
     const occurredAt = new Date().toISOString();
     const deliveryTarget = `${this.getTargetApiBaseUrl()}/webhooks/payouts`;
     const data: PayoutUpdateSimulationResponse['payload']['data'] = {
-      externalPayoutId: submittedPayout.externalPayoutId,
-      externalRequestId: submittedPayout.externalRequestId,
-      payoutReference: submittedPayout.payoutReference,
+      externalPayoutId: submittedPayout.external_payout_id,
+      externalRequestId: submittedPayout.external_request_id,
+      payoutReference: submittedPayout.payout_reference,
       status: request.status,
     };
 
@@ -147,26 +97,6 @@ export class PayoutsService {
       );
     }
 
-    const deliveredAt = new Date().toISOString();
-
-    await this.databaseService.transaction(async (database) => {
-      await this.payoutActivityRepository.updatePayoutStatus(database, {
-        externalPayoutId: request.externalPayoutId,
-        nextStatus: request.status,
-        updatedAt: deliveredAt,
-      });
-
-      await this.payoutActivityRepository.recordPayoutEvent(database, {
-        aggregateExternalId: request.externalPayoutId,
-        deliveredAt,
-        eventId: randomUUID(),
-        eventType: 'payout.updated',
-        externalEventId,
-        occurredAt,
-        payload,
-      });
-    });
-
     return {
       delivered: true,
       deliveryTarget,
@@ -181,6 +111,28 @@ export class PayoutsService {
       /\/$/,
       '',
     );
+  }
+
+  private async findSubmittedPayoutByExternalPayoutId(
+    externalPayoutId: string,
+  ): Promise<SubmittedPayoutLookupRow | null> {
+    const result = await this.databaseService.query<SubmittedPayoutLookupRow>(
+      `
+        SELECT
+          pa.external_payout_id,
+          pa.external_request_id,
+          p.reference AS payout_reference
+        FROM payout_attempts pa
+        INNER JOIN payouts p
+          ON p.id = pa.payout_id
+        WHERE pa.external_payout_id = $1
+        ORDER BY pa.created_at DESC
+        LIMIT 1
+      `,
+      [externalPayoutId],
+    );
+
+    return result.rows[0] ?? null;
   }
 }
 

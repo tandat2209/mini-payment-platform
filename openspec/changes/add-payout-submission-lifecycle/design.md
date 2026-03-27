@@ -10,13 +10,13 @@ The current payout implementation books a payout request atomically inside the A
 
 That gives us correct internal booking, but not a complete outbound flow. The PSP sandbox already supports inbound funding simulation and beneficiary registration, so the next bounded step is to let the payout domain submit booked payouts to that sandbox, record each provider attempt, and apply provider outcomes back into payout, transaction, wallet, and ledger state.
 
-Because we also want to simulate later provider outputs such as end-of-day payout reports or reconciliation extracts, the sandbox should stop being purely stateless for payout operations. It should persist provider-side payout activities now so later reporting can be generated from sandbox-owned data rather than reconstructed from API state.
+Because we also want to simulate later provider outputs such as end-of-day payout reports or reconciliation extracts, the sandbox should keep a database seam available. But it does not need its own payout-activity tables now; later report simulation can read from platform payout records such as `payouts` and `payout_attempts`.
 
 This change crosses:
 
 - payout write orchestration
 - PSP sandbox contracts
-- PSP sandbox activity persistence
+- PSP sandbox payout simulation with optional database read seam
 - provider callback ingestion
 - ledger follow-up posting
 - customer-visible payout status handling
@@ -28,7 +28,6 @@ so a short design is useful before implementation.
 **Goals:**
 
 - Submit newly booked payouts to the PSP sandbox using a dedicated payout-attempt flow.
-- Persist PSP sandbox payout activity records so future end-of-day or reconciliation simulations can be derived from provider-side state.
 - Persist `payout_attempts` with provider request and payout references.
 - Support a realistic asynchronous lifecycle:
   - `pending_submission`
@@ -82,20 +81,20 @@ Alternatives considered:
 - Immediate final result only: rejected because it skips the lifecycle work we actually need.
 - Callback only with no submission response data: rejected because it weakens attempt observability and doesn’t feel like a real provider boundary.
 
-### Decision: Persist provider-side payout activity inside the PSP sandbox now
+### Decision: Keep the PSP sandbox lightweight and reuse platform payout data for later report simulation
 
-The PSP sandbox should persist submitted payouts and payout lifecycle events as sandbox-owned records. The sandbox API should read and write those records as the source of truth for later callback simulation and future report generation.
+The PSP sandbox should keep its database connection available, but it should not own separate payout-activity tables in this slice. Callback simulation and future report generation can read from platform-side records such as `payout_attempts` and `payouts`.
 
 Why:
 
-- future end-of-day reports need durable provider-side activity, not transient in-memory state
-- it makes the sandbox behave more like a real PSP and less like a stateless request echo
-- it gives us one clean place to add later settlement-report or reconciliation-file simulation
+- avoids duplicating payout state across the sandbox and the platform
+- keeps the sandbox lightweight while preserving a seam for future report generation
+- reduces migration and storage complexity for a support app that is not the financial source of truth
 
 Alternatives considered:
 
-- Keep payout simulation state in memory only: rejected because it disappears between runs and cannot support realistic report generation.
-- Skip sandbox persistence until report generation is built: rejected because we would likely have to redesign the payout simulation contract later.
+- Add sandbox-owned payout tables now: rejected because it duplicates state and complicates the simulator too early.
+- Remove the DB seam entirely: rejected because later report simulation may reasonably need read access to platform payout history.
 
 ### Decision: Use one payout attempt per provider submission and keep attempts append-only
 
@@ -155,11 +154,11 @@ Why:
 - [Risk] Provider callbacks may arrive out of order or duplicate. → Mitigation: dedupe by provider event/request identifiers and guard terminal transitions carefully.
 - [Risk] Failure reversal can become ambiguous if the provider outcome arrives after a later retry. → Mitigation: always link callbacks to `payout_attempts` and use payout-level state rules before applying financial reversal.
 - [Risk] Settlement and failure accounting choices can grow more nuanced for real rails. → Mitigation: keep this slice limited to the current simple booking, settlement, and failure paths while documenting the assumptions.
-- [Risk] Adding persistence to the PSP sandbox increases the surface area of what was previously a simple mock. → Mitigation: keep the sandbox data model minimal and scoped to payout activities and event history only.
+- [Risk] A read-through sandbox depends on platform records being present before callbacks are simulated. → Mitigation: only use the DB seam for callback/report lookup after payout submission has already recorded `payout_attempts`.
 
 ## Migration Plan
 
-1. Add PSP sandbox payout submission and payout callback contracts plus sandbox activity persistence.
+1. Add PSP sandbox payout submission and payout callback contracts, keeping the sandbox lightweight while preserving a DB seam for later read-only reporting.
 2. Add API payout submission gateway and `payout_attempts` persistence.
 3. Update payout execution flow to submit after booking and move payout state to `submitted` or `processing`.
 4. Add payout callback ingestion and transition handling for `paid` and `failed`.
@@ -176,4 +175,4 @@ Rollback approach:
 - Should failed payouts restore the original customer reference, or add a distinct failure reference on reversal-linked records?
 - Do we want the sandbox to support both immediate terminal success and delayed callbacks in the first slice, or only delayed callbacks plus an explicit test control?
 - Should customer transaction history expose `processing` separately from `submitted`, or is one in-flight display state enough in the UI initially?
-- Should PSP sandbox activity persistence live in the shared Postgres database immediately, or begin as sandbox-local storage and migrate later if report simulation grows?
+- Should the PSP sandbox later query platform payout records directly for report generation, or should we still introduce a provider-owned read model if reconciliation simulation becomes more advanced?

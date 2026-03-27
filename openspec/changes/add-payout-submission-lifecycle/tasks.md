@@ -1,15 +1,15 @@
 ## 1. PSP Sandbox Payout Contracts
 
 - [x] 1.1 Add PSP sandbox payout submission and payout update contracts, including deterministic success or failure controls for local testing.
-- [x] 1.2 Add PSP sandbox persistence for submitted payouts and payout activity events so later report simulation can be generated from sandbox-owned records.
+- [x] 1.2 Keep a PSP sandbox database seam available for later report simulation, without introducing sandbox-owned payout activity tables in this slice.
 - [x] 1.3 Implement PSP sandbox endpoints for payout submission and payout status callback delivery.
 - [x] 1.4 Add automated coverage for accepted payout submissions, persisted sandbox activity, and delayed payout outcome simulation.
 
 ## 2. API Payout Submission And Attempt Tracking
 
-- [ ] 2.1 Add API-side payout submission gateway contracts and SQL repository support for creating and updating `payout_attempts`.
-- [ ] 2.2 Update payout execution so booked payouts are submitted to the PSP sandbox after internal booking and transition to provider-facing in-flight states.
-- [ ] 2.3 Add automated coverage for payout submission success, idempotent retry behavior, and attempt persistence.
+- [x] 2.1 Add API-side payout submission gateway contracts and SQL repository support for creating and updating `payout_attempts`.
+- [x] 2.2 Update payout execution so booked payouts are submitted to the PSP sandbox after internal booking and transition to provider-facing in-flight states.
+- [x] 2.3 Add automated coverage for payout submission success, idempotent retry behavior, and attempt persistence.
 
 ## 3. Provider Callback Handling And Financial Outcomes
 

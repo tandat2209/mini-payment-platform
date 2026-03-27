@@ -148,4 +148,90 @@ export class SqlPayoutWriteRepository implements PayoutWriteRepository {
       ],
     );
   }
+
+  async recordSubmissionAttempt(
+    context: TransactionContext,
+    input: {
+      attemptId: string;
+      externalPayoutId: string;
+      externalRequestId: string;
+      idempotencyKeyId?: string | null;
+      payoutId: string;
+      provider: string;
+      requestPayload: Record<string, unknown>;
+      responsePayload: Record<string, unknown>;
+      status: 'accepted';
+      submittedAt: string;
+    },
+  ): Promise<void> {
+    const database = getDatabaseQueryable(context);
+
+    await database.query(
+      `
+        INSERT INTO payout_attempts (
+          id,
+          payout_id,
+          idempotency_key_id,
+          provider,
+          external_request_id,
+          external_payout_id,
+          status,
+          request_payload,
+          response_payload,
+          submitted_at,
+          resolved_at,
+          created_at
+        )
+        VALUES (
+          $1::uuid,
+          $2::uuid,
+          $3::uuid,
+          $4,
+          $5,
+          $6,
+          $7,
+          $8::jsonb,
+          $9::jsonb,
+          $10::timestamptz,
+          NULL,
+          $10::timestamptz
+        )
+      `,
+      [
+        input.attemptId,
+        input.payoutId,
+        input.idempotencyKeyId ?? null,
+        input.provider,
+        input.externalRequestId,
+        input.externalPayoutId,
+        input.status,
+        JSON.stringify(input.requestPayload),
+        JSON.stringify(input.responsePayload),
+        input.submittedAt,
+      ],
+    );
+  }
+
+  async updatePayoutAfterSubmission(
+    context: TransactionContext,
+    input: {
+      payoutId: string;
+      status: 'submitted';
+      submittedAt: string;
+      updatedAt: string;
+    },
+  ): Promise<void> {
+    const database = getDatabaseQueryable(context);
+
+    await database.query(
+      `
+        UPDATE payouts
+        SET status = $2,
+            submitted_at = $3::timestamptz,
+            updated_at = $4::timestamptz
+        WHERE id = $1::uuid
+      `,
+      [input.payoutId, input.status, input.submittedAt, input.updatedAt],
+    );
+  }
 }

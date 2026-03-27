@@ -1,12 +1,12 @@
 ## Why
 
-The platform can now book a payout request internally, but it stops at `pending_submission` and never submits that payout to the PSP sandbox or progresses it through real provider outcomes. We need the next slice so outbound payouts behave like a real payment flow, with provider attempt history, asynchronous status handling, accounting follow-up after settlement or failure, and sandbox-owned activity records that can later drive end-of-day and reconciliation simulations.
+The platform can now book a payout request internally, but it stops at `pending_submission` and never submits that payout to the PSP sandbox or progresses it through real provider outcomes. We need the next slice so outbound payouts behave like a real payment flow, with provider attempt history, asynchronous status handling, accounting follow-up after settlement or failure, and a sandbox seam that can later drive end-of-day and reconciliation simulations without duplicating provider-owned payout tables.
 
 ## What Changes
 
 - Add payout submission from the API to the PSP sandbox after payout booking, including persisted `payout_attempts` records and provider identifiers.
 - Add PSP sandbox payout endpoints for create/submit behavior and payout-status callbacks so the sandbox can model synchronous acceptance plus asynchronous completion or failure.
-- Add PSP sandbox-side persistence for payout submissions and payout events so the sandbox keeps a provider-style operational history instead of acting as a stateless mock.
+- Keep the PSP sandbox lightweight while preserving a database seam for later report generation, using platform payout records instead of separate sandbox-owned payout tables.
 - Add API-side payout status ingestion that maps provider updates onto payout and attempt state transitions.
 - Add follow-up ledger and customer-transaction state handling for terminal payout outcomes:
   - settlement clears `recipient payables` against `platform cash`
@@ -44,4 +44,4 @@ The platform can now book a payout request internally, but it stops at `pending_
   - `payout_attempts`
   - ledger posting flow
   - user transaction lifecycle
-  - PSP sandbox provider-activity storage
+  - PSP sandbox payout simulation and future read-only report seam

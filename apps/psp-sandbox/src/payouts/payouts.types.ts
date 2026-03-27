@@ -58,11 +58,3 @@ export type PayoutUpdateSimulationResponse = {
   };
   receiverResponse: Record<string, unknown>;
 };
-
-export type SandboxPayoutRecord = {
-  callbackMode: 'manual';
-  externalPayoutId: string;
-  externalRequestId: string;
-  payoutReference: string;
-  simulatedFinalStatus: 'failed' | 'paid';
-};

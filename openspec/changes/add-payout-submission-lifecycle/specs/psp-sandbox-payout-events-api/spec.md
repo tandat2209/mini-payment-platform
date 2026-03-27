@@ -18,14 +18,14 @@ The PSP sandbox SHALL expose a way to deliver payout lifecycle updates back to t
 - **WHEN** the sandbox determines that a submitted payout has completed or failed
 - **THEN** it sends a callback payload containing the provider payout identifier, terminal status, and occurrence timestamp to the configured API endpoint
 
-### Requirement: PSP sandbox persists payout activities for later reporting
+### Requirement: PSP sandbox keeps a database seam for later reporting
 
-The PSP sandbox SHALL persist submitted payouts and payout lifecycle events as sandbox-owned activity records so later provider-style settlement or reconciliation simulations can be generated from that stored history.
+The PSP sandbox SHALL remain lightweight in this slice, but it SHALL preserve a database seam so later provider-style settlement or reconciliation simulations can read from platform payout records without introducing separate sandbox-owned payout tables yet.
 
-#### Scenario: Sandbox stores submitted payout activity
+#### Scenario: Sandbox simulates callback using platform payout records
 
-- **WHEN** the platform submits a payout to the PSP sandbox
-- **THEN** the sandbox stores a persistent payout activity record with provider identifiers, request context, current status, and timestamps
+- **WHEN** the platform later asks the sandbox to simulate a payout status update for a submitted provider payout identifier
+- **THEN** the sandbox can resolve the needed request and payout context from platform payout records through its database seam
 
 ### Requirement: PSP sandbox supports deterministic payout outcome simulation
 

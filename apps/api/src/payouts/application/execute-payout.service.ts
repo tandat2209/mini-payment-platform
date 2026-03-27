@@ -13,6 +13,11 @@ import {
   PAYOUT_IDEMPOTENCY_REPOSITORY,
   type PayoutIdempotencyRepository,
 } from '../domain/payout-idempotency.repository';
+import { type PreparedPayoutIntent } from '../domain/payout-preparation.types';
+import {
+  PAYOUT_SUBMISSION_GATEWAY,
+  type PayoutSubmissionGateway,
+} from '../domain/payout-submission.gateway';
 import {
   PAYOUT_WALLET_REPOSITORY,
   PAYOUT_WRITE_REPOSITORY,
@@ -40,6 +45,8 @@ export class ExecutePayoutService {
     private readonly preparePayoutIntentService: PreparePayoutIntentService,
     @Inject(PAYOUT_IDEMPOTENCY_REPOSITORY)
     private readonly payoutIdempotencyRepository: PayoutIdempotencyRepository,
+    @Inject(PAYOUT_SUBMISSION_GATEWAY)
+    private readonly payoutSubmissionGateway: PayoutSubmissionGateway,
     @Inject(PAYOUT_WALLET_REPOSITORY)
     private readonly payoutWalletRepository: PayoutWalletRepository,
     @Inject(PAYOUT_WRITE_REPOSITORY)
@@ -146,6 +153,7 @@ export class ExecutePayoutService {
       }
 
       const payoutId = randomUUID();
+      const payoutAttemptId = randomUUID();
       const userTransactionId = randomUUID();
       const reference = buildPayoutReference();
 
@@ -206,6 +214,38 @@ export class ExecutePayoutService {
         walletId: payoutIntent.sourceWalletId,
       });
 
+      const providerSubmission = await this.payoutSubmissionGateway.submitPayout({
+        amountMinor: payoutIntent.amountMinor,
+        currency: payoutIntent.currency,
+        payoutId,
+        payoutReference: reference,
+        preparedIntent: payoutIntent,
+      });
+
+      await this.payoutWriteRepository.recordSubmissionAttempt(context, {
+        attemptId: payoutAttemptId,
+        externalPayoutId: providerSubmission.externalPayoutId,
+        externalRequestId: providerSubmission.externalRequestId,
+        ...(idempotencyKeyId === null ? {} : { idempotencyKeyId }),
+        payoutId,
+        provider: providerSubmission.provider,
+        requestPayload: buildSubmissionRequestPayload(
+          payoutIntent,
+          payoutIntent.amountMinor,
+          reference,
+        ),
+        responsePayload: providerSubmission.rawResponse,
+        status: providerSubmission.providerStatus,
+        submittedAt: providerSubmission.acceptedAt,
+      });
+
+      await this.payoutWriteRepository.updatePayoutAfterSubmission(context, {
+        payoutId,
+        status: 'submitted',
+        submittedAt: providerSubmission.acceptedAt,
+        updatedAt: providerSubmission.acceptedAt,
+      });
+
       await this.ledgerPostingService.createPostedTransaction(context, {
         currency: payoutIntent.currency,
         description: buildLedgerDescription(payoutIntent.recipientName, payoutIntent.reference),
@@ -245,6 +285,8 @@ export class ExecutePayoutService {
           event: 'payout_execution_booked',
           feeAmountMinor,
           grossAmountMinor,
+          externalPayoutId: providerSubmission.externalPayoutId,
+          externalRequestId: providerSubmission.externalRequestId,
           payoutId,
           recipientId: payoutIntent.recipientId,
           recipientRailId: payoutIntent.recipientRailId,
@@ -271,7 +313,7 @@ export class ExecutePayoutService {
           railId: payoutIntent.recipientRailId,
         },
         reference,
-        status: 'pending_submission',
+        status: 'submitted',
         transactionId: userTransactionId,
         walletId: payoutIntent.sourceWalletId,
       };
@@ -334,4 +376,44 @@ function buildLedgerDescription(recipientName: string, reference: string | null)
   }
 
   return `Book payout request for ${recipientName}`;
+}
+
+function buildSubmissionRequestPayload(
+  payoutIntent: PreparedPayoutIntent,
+  amountMinor: number,
+  payoutReference: string,
+): Record<string, unknown> {
+  return {
+    amountMinor,
+    currency: payoutIntent.currency,
+    payoutReference,
+    recipient: {
+      countryCode: getSubmissionCountryCode(payoutIntent),
+      name: payoutIntent.recipientName,
+      rail: payoutIntent.rail,
+    },
+    submissionTarget:
+      payoutIntent.submissionTarget.mode === 'provider_reference'
+        ? {
+            beneficiaryId: payoutIntent.submissionTarget.providerReference,
+            mode: 'provider_beneficiary',
+          }
+        : {
+            details: payoutIntent.submissionTarget.details,
+            mode: 'inline_details',
+          },
+  };
+}
+
+function getSubmissionCountryCode(payoutIntent: PreparedPayoutIntent): string {
+  const candidate =
+    payoutIntent.submissionTarget.mode === 'inline_recipient_details'
+      ? payoutIntent.submissionTarget.details.countryCode
+      : undefined;
+
+  if (typeof candidate === 'string' && /^[A-Z]{2}$/u.test(candidate)) {
+    return candidate;
+  }
+
+  return 'US';
 }

@@ -10,6 +10,7 @@ import {
 } from '../../shared/application/transaction-manager';
 import type { PayoutIdempotencyRepository } from '../domain/payout-idempotency.repository';
 import { type PreparedPayoutIntent } from '../domain/payout-preparation.types';
+import type { PayoutSubmissionGateway } from '../domain/payout-submission.gateway';
 import {
   type OwnedWalletBalance,
   type PayoutWalletRepository,
@@ -85,6 +86,24 @@ class InMemoryPayoutWriteRepository implements PayoutWriteRepository {
     userTransactionId: string;
     walletId: string;
   } | null = null;
+  payoutSubmissionUpdate: {
+    payoutId: string;
+    status: 'submitted';
+    submittedAt: string;
+    updatedAt: string;
+  } | null = null;
+  recordedAttempt: {
+    attemptId: string;
+    externalPayoutId: string;
+    externalRequestId: string;
+    idempotencyKeyId?: string | null;
+    payoutId: string;
+    provider: string;
+    requestPayload: Record<string, unknown>;
+    responsePayload: Record<string, unknown>;
+    status: 'accepted';
+    submittedAt: string;
+  } | null = null;
 
   async createPayoutBooking(
     _context: TransactionContext,
@@ -108,6 +127,36 @@ class InMemoryPayoutWriteRepository implements PayoutWriteRepository {
     },
   ): Promise<void> {
     this.createdBooking = input;
+  }
+
+  async recordSubmissionAttempt(
+    _context: TransactionContext,
+    input: {
+      attemptId: string;
+      externalPayoutId: string;
+      externalRequestId: string;
+      idempotencyKeyId?: string | null;
+      payoutId: string;
+      provider: string;
+      requestPayload: Record<string, unknown>;
+      responsePayload: Record<string, unknown>;
+      status: 'accepted';
+      submittedAt: string;
+    },
+  ): Promise<void> {
+    this.recordedAttempt = input;
+  }
+
+  async updatePayoutAfterSubmission(
+    _context: TransactionContext,
+    input: {
+      payoutId: string;
+      status: 'submitted';
+      submittedAt: string;
+      updatedAt: string;
+    },
+  ): Promise<void> {
+    this.payoutSubmissionUpdate = input;
   }
 }
 
@@ -194,6 +243,25 @@ class StubLedgerPostingService {
   }
 }
 
+class StubPayoutSubmissionGateway {
+  async submitPayout() {
+    return {
+      acceptedAt: '2026-03-26T08:10:00.000Z',
+      externalPayoutId: 'ppay_123',
+      externalRequestId: 'preq_123',
+      provider: 'psp_sandbox' as const,
+      providerStatus: 'accepted' as const,
+      rawResponse: {
+        acceptedAt: '2026-03-26T08:10:00.000Z',
+        externalPayoutId: 'ppay_123',
+        externalRequestId: 'preq_123',
+        provider: 'psp_sandbox',
+        status: 'accepted',
+      },
+    };
+  }
+}
+
 function createPreparedIntent(overrides: Partial<PreparedPayoutIntent> = {}): PreparedPayoutIntent {
   return {
     amountMinor: 100_000,
@@ -233,7 +301,7 @@ function createCompletedPayoutResponse() {
       railId: 'rail-1',
     },
     reference: 'payout-existing',
-    status: 'pending_submission' as const,
+    status: 'submitted' as const,
     transactionId: 'txn-1',
     walletId: 'wallet-1',
   };
@@ -247,12 +315,14 @@ test('execute payout books wallet debit, payout, and ledger entries with fee rec
   const payoutWriteRepository = new InMemoryPayoutWriteRepository();
   const payoutIdempotencyRepository = new InMemoryPayoutIdempotencyRepository();
   const ledgerPostingService = new StubLedgerPostingService();
+  const payoutSubmissionGateway = new StubPayoutSubmissionGateway();
   const service = new ExecutePayoutService(
     new ImmediateTransactionManager(),
     new StubPreparePayoutIntentService(
       createPreparedIntent(),
     ) as unknown as PreparePayoutIntentService,
     payoutIdempotencyRepository,
+    payoutSubmissionGateway as unknown as PayoutSubmissionGateway,
     payoutWalletRepository,
     payoutWriteRepository,
     new StubLedgerAccountService() as unknown as LedgerAccountService,
@@ -270,7 +340,7 @@ test('execute payout books wallet debit, payout, and ledger entries with fee rec
   });
 
   assert.equal(result.currency, 'USD');
-  assert.equal(result.status, 'pending_submission');
+  assert.equal(result.status, 'submitted');
   assert.equal(result.amounts.netAmountMinor, '100000');
   assert.equal(result.amounts.feeAmountMinor, '100');
   assert.equal(result.amounts.grossAmountMinor, '100100');
@@ -281,6 +351,13 @@ test('execute payout books wallet debit, payout, and ledger entries with fee rec
   assert.equal(payoutWriteRepository.createdBooking?.idempotencyKeyId, 'idem-1');
   assert.equal(payoutWriteRepository.createdBooking?.netAmountMinor, 100_000);
   assert.match(payoutWriteRepository.createdBooking?.description ?? '', /^Payout to Vendor One:/u);
+  assert.equal(payoutWriteRepository.recordedAttempt?.externalPayoutId, 'ppay_123');
+  assert.equal(payoutWriteRepository.recordedAttempt?.externalRequestId, 'preq_123');
+  assert.equal(payoutWriteRepository.recordedAttempt?.status, 'accepted');
+  assert.equal(payoutWriteRepository.recordedAttempt?.provider, 'psp_sandbox');
+  assert.equal(payoutWriteRepository.recordedAttempt?.idempotencyKeyId, 'idem-1');
+  assert.equal(payoutWriteRepository.payoutSubmissionUpdate?.status, 'submitted');
+  assert.equal(payoutWriteRepository.payoutSubmissionUpdate?.payoutId, result.payoutId);
   assert.equal(payoutIdempotencyRepository.completedRecord?.id, 'idem-1');
   assert.equal(ledgerPostingService.createdTransaction?.transactionType, 'payout');
   assert.deepEqual(
@@ -316,6 +393,7 @@ test('execute payout rejects when the source wallet balance is missing', async (
       createPreparedIntent(),
     ) as unknown as PreparePayoutIntentService,
     new InMemoryPayoutIdempotencyRepository(),
+    new StubPayoutSubmissionGateway() as unknown as PayoutSubmissionGateway,
     new InMemoryPayoutWalletRepository(null),
     new InMemoryPayoutWriteRepository(),
     new StubLedgerAccountService() as unknown as LedgerAccountService,
@@ -347,6 +425,7 @@ test('execute payout rejects when available balance cannot cover fee-inclusive a
       createPreparedIntent(),
     ) as unknown as PreparePayoutIntentService,
     new InMemoryPayoutIdempotencyRepository(),
+    new StubPayoutSubmissionGateway() as unknown as PayoutSubmissionGateway,
     payoutWalletRepository,
     new InMemoryPayoutWriteRepository(),
     new StubLedgerAccountService() as unknown as LedgerAccountService,
@@ -382,6 +461,7 @@ test('execute payout returns the stored response for a completed idempotent repl
       result: 'existing',
       status: 'completed',
     }),
+    new StubPayoutSubmissionGateway() as unknown as PayoutSubmissionGateway,
     new InMemoryPayoutWalletRepository({
       availableAmountMinor: 200_000,
       walletId: 'wallet-1',
@@ -417,6 +497,7 @@ test('execute payout rejects idempotency key reuse with a different request fing
       result: 'existing',
       status: 'completed',
     }),
+    new StubPayoutSubmissionGateway() as unknown as PayoutSubmissionGateway,
     new InMemoryPayoutWalletRepository({
       availableAmountMinor: 200_000,
       walletId: 'wallet-1',

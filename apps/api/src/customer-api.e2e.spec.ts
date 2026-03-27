@@ -7,6 +7,7 @@ import { Test } from '@nestjs/testing';
 import { configureApp } from './app.factory';
 import { AppModule } from './app.module';
 import { DatabaseService } from './database/database.service';
+import { PAYOUT_SUBMISSION_GATEWAY } from './payouts/domain/payout-submission.gateway';
 import { RECIPIENT_PROVIDER_REGISTRATION_GATEWAY } from './recipients/domain/recipient-provider-registration.gateway';
 
 type QueryResponseRow = Record<string, unknown>;
@@ -16,6 +17,8 @@ const PAYOUT_TEST_WALLET_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2';
 
 class ApiFakeDatabaseService {
   private readonly idempotencyKeys = new Map<string, QueryResponseRow>();
+  private readonly payoutAttempts: QueryResponseRow[] = [];
+  private readonly payouts = new Map<string, QueryResponseRow>();
   private readonly webhookEvents = new Map<string, QueryResponseRow>();
   private readonly ledgerAccounts: QueryResponseRow[] = [];
   private readonly recipients: QueryResponseRow[] = [
@@ -654,6 +657,92 @@ class ApiFakeDatabaseService {
     }
 
     if (sql.includes('INSERT INTO payouts')) {
+      const [
+        payoutId,
+        userId,
+        walletId,
+        recipientId,
+        recipientRailId,
+        userTransactionId,
+        idempotencyKeyId,
+        rail,
+        currency,
+        grossAmountMinor,
+        feeAmountMinor,
+        netAmountMinor,
+        reference,
+        createdAt,
+      ] = parameters;
+
+      this.payouts.set(String(payoutId), {
+        completed_at: null,
+        created_at: String(createdAt),
+        currency: String(currency),
+        failed_at: null,
+        fee_amount_minor: String(feeAmountMinor),
+        gross_amount_minor: String(grossAmountMinor),
+        id: String(payoutId),
+        idempotency_key_id: idempotencyKeyId === null ? null : String(idempotencyKeyId),
+        net_amount_minor: String(netAmountMinor),
+        rail: String(rail),
+        recipient_id: String(recipientId),
+        recipient_rail_id: String(recipientRailId),
+        reference: String(reference),
+        status: 'pending_submission',
+        submitted_at: null,
+        updated_at: String(createdAt),
+        user_id: String(userId),
+        user_transaction_id: String(userTransactionId),
+        wallet_id: String(walletId),
+      });
+
+      return withRows([]);
+    }
+
+    if (sql.includes('INSERT INTO payout_attempts')) {
+      const [
+        attemptId,
+        payoutId,
+        idempotencyKeyId,
+        provider,
+        externalRequestId,
+        externalPayoutId,
+        status,
+        requestPayload,
+        responsePayload,
+        submittedAt,
+      ] = parameters;
+
+      this.payoutAttempts.push({
+        created_at: String(submittedAt),
+        external_payout_id: String(externalPayoutId),
+        external_request_id: String(externalRequestId),
+        id: String(attemptId),
+        idempotency_key_id: idempotencyKeyId === null ? null : String(idempotencyKeyId),
+        payout_id: String(payoutId),
+        provider: String(provider),
+        request_payload: JSON.parse(String(requestPayload)),
+        response_payload: JSON.parse(String(responsePayload)),
+        resolved_at: null,
+        status: String(status),
+        submitted_at: String(submittedAt),
+      });
+
+      return withRows([]);
+    }
+
+    if (sql.includes('UPDATE payouts') && sql.includes('submitted_at = $3::timestamptz')) {
+      const [payoutId, status, submittedAt, updatedAt] = parameters;
+      const payout = this.payouts.get(String(payoutId));
+
+      if (!payout) {
+        return withRows([]);
+      }
+
+      payout.status = String(status);
+      payout.submitted_at = String(submittedAt);
+      payout.updated_at = String(updatedAt);
+
       return withRows([]);
     }
 
@@ -686,6 +775,25 @@ async function createTestApp() {
           providerReference: 'bene_swift_test',
           providerRegisteredAt: '2026-03-24T09:30:00.000Z',
           status: 'active' as const,
+        };
+      },
+    })
+    .overrideProvider(PAYOUT_SUBMISSION_GATEWAY)
+    .useValue({
+      async submitPayout() {
+        return {
+          acceptedAt: '2026-03-26T08:10:00.000Z',
+          externalPayoutId: 'ppay_test_001',
+          externalRequestId: 'preq_test_001',
+          provider: 'psp_sandbox' as const,
+          providerStatus: 'accepted' as const,
+          rawResponse: {
+            acceptedAt: '2026-03-26T08:10:00.000Z',
+            externalPayoutId: 'ppay_test_001',
+            externalRequestId: 'preq_test_001',
+            provider: 'psp_sandbox',
+            status: 'accepted',
+          },
         };
       },
     })
@@ -976,7 +1084,7 @@ test('payout create API books a payout request and reduces the visible wallet ba
     );
 
     assert.equal(payoutResponse.status, 201);
-    assert.equal((payoutResponse.body.payout as { status: string }).status, 'pending_submission');
+    assert.equal((payoutResponse.body.payout as { status: string }).status, 'submitted');
     assert.match((payoutResponse.body.payout as { reference: string }).reference, /^payout-/u);
     assert.equal(
       (payoutResponse.body.amounts as { fee: { amountMinor: string } }).fee.amountMinor,

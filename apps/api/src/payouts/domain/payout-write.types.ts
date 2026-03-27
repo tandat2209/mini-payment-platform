@@ -24,7 +24,7 @@ export type CreatedPayout = {
     railId: string;
   };
   reference: string;
-  status: 'pending_submission';
+  status: 'pending_submission' | 'processing' | 'submitted';
   transactionId: string;
   walletId: string;
 };

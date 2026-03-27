@@ -47,6 +47,30 @@ export interface PayoutWriteRepository {
       walletId: string;
     },
   ): Promise<void>;
+  recordSubmissionAttempt(
+    context: TransactionContext,
+    input: {
+      attemptId: string;
+      externalPayoutId: string;
+      externalRequestId: string;
+      idempotencyKeyId?: string | null;
+      payoutId: string;
+      provider: string;
+      requestPayload: Record<string, unknown>;
+      responsePayload: Record<string, unknown>;
+      status: 'accepted';
+      submittedAt: string;
+    },
+  ): Promise<void>;
+  updatePayoutAfterSubmission(
+    context: TransactionContext,
+    input: {
+      payoutId: string;
+      status: 'submitted';
+      submittedAt: string;
+      updatedAt: string;
+    },
+  ): Promise<void>;
 }
 
 export const PAYOUT_WALLET_REPOSITORY = Symbol('PAYOUT_WALLET_REPOSITORY');

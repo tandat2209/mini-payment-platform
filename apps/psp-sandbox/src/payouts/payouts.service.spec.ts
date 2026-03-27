@@ -2,67 +2,64 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { type DatabaseQueryable } from '../database/database.service';
-import { type PayoutActivityRepository } from './payout-activity.repository';
 import { PayoutsService } from './payouts.service';
-import { type SandboxPayoutRecord } from './payouts.types';
-
-class InMemoryPayoutActivityRepository implements PayoutActivityRepository {
-  readonly events: {
-    aggregateExternalId: string;
-    eventType: 'payout.submitted' | 'payout.updated';
-    externalEventId: string;
-    payload: Record<string, unknown>;
-  }[] = [];
-
-  private readonly payouts = new Map<string, SandboxPayoutRecord>();
-
-  async createSubmittedPayout(
-    _database: DatabaseQueryable,
-    input: Parameters<PayoutActivityRepository['createSubmittedPayout']>[1],
-  ): Promise<void> {
-    this.payouts.set(input.externalPayoutId, {
-      callbackMode: input.callbackMode,
-      externalPayoutId: input.externalPayoutId,
-      externalRequestId: input.externalRequestId,
-      payoutReference: input.payoutReference,
-      simulatedFinalStatus: input.simulatedFinalStatus,
-    });
-  }
-
-  async findSubmittedPayoutByExternalPayoutId(
-    _database: DatabaseQueryable,
-    externalPayoutId: string,
-  ): Promise<SandboxPayoutRecord | null> {
-    return this.payouts.get(externalPayoutId) ?? null;
-  }
-
-  async recordPayoutEvent(
-    _database: DatabaseQueryable,
-    input: Parameters<PayoutActivityRepository['recordPayoutEvent']>[1],
-  ): Promise<void> {
-    this.events.push({
-      aggregateExternalId: input.aggregateExternalId,
-      eventType: input.eventType,
-      externalEventId: input.externalEventId,
-      payload: input.payload,
-    });
-  }
-
-  async updatePayoutStatus(
-    database: DatabaseQueryable,
-    input: Parameters<PayoutActivityRepository['updatePayoutStatus']>[1],
-  ): Promise<void> {
-    void database;
-    void input;
-  }
-}
 
 function createDatabaseServiceDouble(): {
   query: DatabaseQueryable['query'];
   transaction: <T>(callback: (database: DatabaseQueryable) => Promise<T>) => Promise<T>;
 } {
   const query: DatabaseQueryable['query'] = async () => {
-    throw new Error('query should not be called directly in this test');
+    return {
+      command: 'SELECT',
+      fields: [],
+      oid: 0,
+      rowCount: 0,
+      rows: [],
+    } as never;
+  };
+
+  return {
+    query,
+    async transaction<T>(callback: (database: DatabaseQueryable) => Promise<T>): Promise<T> {
+      return await callback({ query });
+    },
+  };
+}
+
+function createSubmittedPayoutDatabaseServiceDouble(input: {
+  externalPayoutId: string;
+  externalRequestId: string;
+  payoutReference: string;
+}): {
+  query: DatabaseQueryable['query'];
+  transaction: <T>(callback: (database: DatabaseQueryable) => Promise<T>) => Promise<T>;
+} {
+  const query: DatabaseQueryable['query'] = async (_sql, parameters = []) => {
+    const externalPayoutId = parameters[0];
+
+    if (externalPayoutId !== input.externalPayoutId) {
+      return {
+        command: 'SELECT',
+        fields: [],
+        oid: 0,
+        rowCount: 0,
+        rows: [],
+      } as never;
+    }
+
+    return {
+      command: 'SELECT',
+      fields: [],
+      oid: 0,
+      rowCount: 1,
+      rows: [
+        {
+          external_payout_id: input.externalPayoutId,
+          external_request_id: input.externalRequestId,
+          payout_reference: input.payoutReference,
+        },
+      ],
+    } as never;
   };
 
   return {
@@ -74,8 +71,7 @@ function createDatabaseServiceDouble(): {
 }
 
 test('submitPayout stores provider identifiers and deterministic sandbox outcome', async () => {
-  const repository = new InMemoryPayoutActivityRepository();
-  const service = new PayoutsService(createDatabaseServiceDouble() as never, repository);
+  const service = new PayoutsService(createDatabaseServiceDouble() as never);
 
   const response = await service.submitPayout({
     amountMinor: 12500,
@@ -104,7 +100,6 @@ test('submitPayout stores provider identifiers and deterministic sandbox outcome
   assert.equal(response.simulatedFinalStatus, 'failed');
   assert.match(response.externalRequestId, /^preq_/);
   assert.match(response.externalPayoutId, /^ppay_/);
-  assert.equal(repository.events[0]?.eventType, 'payout.submitted');
 });
 
 test('simulatePayoutUpdate posts payout callback payload to the API target', async () => {
@@ -113,22 +108,14 @@ test('simulatePayoutUpdate posts payout callback payload to the API target', asy
   process.env.PSP_SANDBOX_TARGET_API_BASE_URL = 'http://api.test';
 
   try {
-    const repository = new InMemoryPayoutActivityRepository();
-    const service = new PayoutsService(createDatabaseServiceDouble() as never, repository);
-    const submission = await service.submitPayout({
-      amountMinor: 4500,
-      currency: 'EUR',
+    const submission = {
+      externalPayoutId: 'ppay_demo_002',
+      externalRequestId: 'preq_demo_002',
       payoutReference: 'payout-demo-002',
-      recipient: {
-        countryCode: 'DE',
-        name: 'Acme GmbH',
-        rail: 'sepa',
-      },
-      submissionTarget: {
-        beneficiaryId: 'bene_123',
-        mode: 'provider_beneficiary',
-      },
-    });
+    };
+    const service = new PayoutsService(
+      createSubmittedPayoutDatabaseServiceDouble(submission) as never,
+    );
 
     let requestUrl = '';
     let requestBody: unknown;
@@ -168,7 +155,6 @@ test('simulatePayoutUpdate posts payout callback payload to the API target', asy
       (requestBody as { data: { externalRequestId: string } }).data.externalRequestId,
       submission.externalRequestId,
     );
-    assert.equal(repository.events.at(-1)?.eventType, 'payout.updated');
   } finally {
     globalThis.fetch = originalFetch;
 
@@ -181,8 +167,7 @@ test('simulatePayoutUpdate posts payout callback payload to the API target', asy
 });
 
 test('simulatePayoutUpdate rejects unknown payouts', async () => {
-  const repository = new InMemoryPayoutActivityRepository();
-  const service = new PayoutsService(createDatabaseServiceDouble() as never, repository);
+  const service = new PayoutsService(createDatabaseServiceDouble() as never);
 
   await assert.rejects(
     () =>
