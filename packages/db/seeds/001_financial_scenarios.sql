@@ -8,8 +8,8 @@ INSERT INTO wallets (id, user_id, status, label, opened_at, closed_at, created_a
   ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1', '22222222-2222-2222-2222-222222222222', 'active', 'Bob primary wallet', '2026-03-22T00:05:00Z', NULL, '2026-03-22T00:05:00Z', '2026-03-22T00:05:00Z');
 
 INSERT INTO wallet_balances (id, wallet_id, currency, available_amount_minor, pending_amount_minor, created_at, updated_at) VALUES
-  ('baaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2', 'USD', 9800, 0, '2026-03-22T01:10:00Z', '2026-03-22T01:20:00Z'),
-  ('baaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2', 'EUR', 1500, 0, '2026-03-22T01:10:00Z', '2026-03-22T01:10:00Z'),
+  ('baaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2', 'USD', 6800, 0, '2026-03-22T01:10:00Z', '2026-03-22T01:21:20Z'),
+  ('baaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2', 'EUR', 0, 0, '2026-03-22T01:10:00Z', '2026-03-22T01:10:00Z'),
   ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1', 'USD', 0, 0, '2026-03-22T00:10:00Z', '2026-03-22T00:10:00Z');
 
 INSERT INTO wallet_funding_details (id, wallet_id, rail, currency, details, is_active, created_at, updated_at) VALUES

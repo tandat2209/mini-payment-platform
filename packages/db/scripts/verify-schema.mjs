@@ -109,6 +109,46 @@ async function main() {
       throw new Error('Expected payout operations query to resolve exactly one seeded payout');
     }
 
+    const walletExposureRows = await db.query(`
+      WITH wallet_exposure AS (
+        SELECT
+          wb.currency,
+          SUM(wb.available_amount_minor + wb.pending_amount_minor)::text AS wallet_exposure_amount_minor
+        FROM wallet_balances wb
+        GROUP BY wb.currency
+      ),
+      wallet_liabilities AS (
+        SELECT
+          le.currency,
+          (
+            COALESCE(SUM(CASE WHEN le.direction = 'credit' THEN le.amount_minor ELSE 0 END), 0) -
+            COALESCE(SUM(CASE WHEN le.direction = 'debit' THEN le.amount_minor ELSE 0 END), 0)
+          )::text AS wallet_liability_amount_minor
+        FROM ledger_entries le
+        JOIN ledger_accounts la
+          ON la.id = le.ledger_account_id
+        WHERE la.owner_type = 'wallet'
+          AND la.account_type = 'liability'
+        GROUP BY le.currency
+      )
+      SELECT
+        we.currency,
+        we.wallet_exposure_amount_minor,
+        COALESCE(wl.wallet_liability_amount_minor, '0') AS wallet_liability_amount_minor
+      FROM wallet_exposure we
+      LEFT JOIN wallet_liabilities wl
+        ON wl.currency = we.currency
+      ORDER BY we.currency ASC
+    `);
+
+    for (const row of walletExposureRows.rows) {
+      if (row.wallet_exposure_amount_minor !== row.wallet_liability_amount_minor) {
+        throw new Error(
+          `Expected wallet exposure to match wallet liabilities for ${row.currency}, got ${row.wallet_exposure_amount_minor} vs ${row.wallet_liability_amount_minor}`,
+        );
+      }
+    }
+
     const reconciliationRows = await getCount(
       db,
       `
@@ -153,6 +193,7 @@ async function main() {
     console.log('Financial schema verification passed.');
     console.log(`Statement query rows: ${statementRows}`);
     console.log(`Payout query rows: ${payoutRows}`);
+    console.log(`Wallet exposure currencies: ${walletExposureRows.rows.length}`);
     console.log(`Reconciliation query rows: ${reconciliationRows}`);
   } finally {
     await db.close();
