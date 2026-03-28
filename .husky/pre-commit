@@ -1,2 +1,23 @@
 #!/usr/bin/env sh
-pnpm lint-staged
+
+if [ -n "$HOME" ]; then
+  export PATH="$HOME/.nvm/versions/node/v22.12.0/bin:$HOME/.local/share/pnpm:$PATH"
+
+  if [ -s "$HOME/.nvm/nvm.sh" ]; then
+    # Load nvm so git hooks can resolve node/corepack/pnpm outside interactive shells.
+    . "$HOME/.nvm/nvm.sh"
+  fi
+fi
+
+if command -v pnpm >/dev/null 2>&1; then
+  pnpm lint-staged
+  exit $?
+fi
+
+if command -v corepack >/dev/null 2>&1; then
+  corepack pnpm lint-staged
+  exit $?
+fi
+
+echo "pre-commit: pnpm is not available in PATH" >&2
+exit 127

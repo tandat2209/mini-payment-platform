@@ -1,6 +1,7 @@
 import type { JSX } from 'react';
 
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import type { AdminWalletItem } from '@/features/admin/api';
 import { AdminPageShell } from '@/features/admin/components/admin-page-shell';
@@ -9,10 +10,14 @@ import { formatDate, formatMoney, shortenIdentifier, toTitleCase } from '@/lib/f
 export function AdminWalletPage({
   error,
   isLoading,
+  onOpenPayouts,
+  onOpenTransactions,
   wallets,
 }: {
   error: string | null;
   isLoading: boolean;
+  onOpenPayouts: (query: string) => void;
+  onOpenTransactions: (query: string) => void;
   wallets: AdminWalletItem[];
 }): JSX.Element {
   return (
@@ -110,6 +115,24 @@ export function AdminWalletPage({
                             })
                           : 'No movement yet'}
                       </p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <Button
+                          className="h-8 rounded-full px-3"
+                          onClick={() => onOpenTransactions(wallet.customer.externalRef)}
+                          type="button"
+                          variant="outline"
+                        >
+                          Transactions
+                        </Button>
+                        <Button
+                          className="h-8 rounded-full px-3"
+                          onClick={() => onOpenPayouts(wallet.customer.externalRef)}
+                          type="button"
+                          variant="outline"
+                        >
+                          Payouts
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))

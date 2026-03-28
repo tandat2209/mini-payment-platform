@@ -27,6 +27,8 @@ export function AdminTransactionsPanel({
   onClose,
   onNextPage,
   onOpenLedger,
+  onOpenPayouts,
+  onOpenWebhooks,
   onPreviousPage,
   onSearchChange,
   onSelect,
@@ -47,9 +49,11 @@ export function AdminTransactionsPanel({
   onClose: () => void;
   onNextPage: () => void;
   onOpenLedger: (ledgerTransactionId: string) => void;
+  onOpenPayouts: (query: string) => void;
   onPreviousPage: () => void;
   onSearchChange: (query: string) => void;
   onSelect: (transactionId: string) => void;
+  onOpenWebhooks: (query: string) => void;
   onTypeFilterChange: (filter: 'all' | 'funding' | 'payout') => void;
   pageIndex: number;
   searchQuery: string;
@@ -424,6 +428,62 @@ export function AdminTransactionsPanel({
                         </div>
                       ))
                     )}
+                  </div>
+                </div>
+              ) : null}
+
+              {'payout' in selectedTransaction && selectedTransaction.payout ? (
+                <div className="rounded-[24px] border border-slate-200 bg-white p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                        Related operations
+                      </p>
+                      <p className="mt-1 text-sm text-slate-500">
+                        Continue the investigation from this transaction into payout and webhook
+                        views.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Button
+                      className="h-9 rounded-full px-3"
+                      onClick={() => onOpenPayouts(selectedTransaction.payout?.payoutId ?? '')}
+                      variant="outline"
+                    >
+                      Open payout
+                    </Button>
+                    {selectedTransaction.webhookEventId ? (
+                      <Button
+                        className="h-9 rounded-full px-3"
+                        onClick={() => onOpenWebhooks(selectedTransaction.webhookEventId ?? '')}
+                        variant="outline"
+                      >
+                        Open webhook
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
+              ) : selectedTransaction.webhookEventId ? (
+                <div className="rounded-[24px] border border-slate-200 bg-white p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                        Related operations
+                      </p>
+                      <p className="mt-1 text-sm text-slate-500">
+                        Continue the investigation into webhook evidence for this transaction.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Button
+                      className="h-9 rounded-full px-3"
+                      onClick={() => onOpenWebhooks(selectedTransaction.webhookEventId ?? '')}
+                      variant="outline"
+                    >
+                      Open webhook
+                    </Button>
                   </div>
                 </div>
               ) : null}

@@ -107,7 +107,9 @@ export function AdminLedgersRoutePage(): JSX.Element {
       onOpenTransaction={(transactionId) => {
         void navigate({
           search: {
+            query: undefined,
             transactionId,
+            type: undefined,
           },
           to: '/admin/transactions',
         });

@@ -72,7 +72,12 @@ const adminTransactionsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/admin/transactions',
   validateSearch: (search: Record<string, unknown>) => ({
+    query: typeof search.query === 'string' ? search.query : undefined,
     transactionId: typeof search.transactionId === 'string' ? search.transactionId : undefined,
+    type:
+      search.type === 'all' || search.type === 'funding' || search.type === 'payout'
+        ? search.type
+        : undefined,
   }),
 });
 
@@ -91,6 +96,9 @@ const adminPayoutsRoute = createRoute({
   component: AdminPayoutsRoutePage,
   getParentRoute: () => rootRoute,
   path: '/admin/payouts',
+  validateSearch: (search: Record<string, unknown>) => ({
+    query: typeof search.query === 'string' ? search.query : undefined,
+  }),
 });
 
 const adminRecipientsRoute = createRoute({
@@ -109,6 +117,9 @@ const adminWebhooksRoute = createRoute({
   component: AdminWebhooksRoutePage,
   getParentRoute: () => rootRoute,
   path: '/admin/webhooks',
+  validateSearch: (search: Record<string, unknown>) => ({
+    query: typeof search.query === 'string' ? search.query : undefined,
+  }),
 });
 
 const adminReportsRoute = createRoute({

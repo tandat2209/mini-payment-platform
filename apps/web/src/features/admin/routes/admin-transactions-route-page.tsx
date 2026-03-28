@@ -9,13 +9,17 @@ import {
 import { AdminTransactionsPanel } from '@/features/admin/components/admin-transactions-panel';
 
 const PAGE_SIZE = 20;
+const TRANSACTION_TYPE_FILTERS = new Set(['all', 'funding', 'payout']);
 
 export function AdminTransactionsRoutePage(): JSX.Element {
   const navigate = useNavigate();
   const search = useSearch({ from: '/admin/transactions' });
   const [cursorStack, setCursorStack] = useState<Array<string | null>>([null]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [typeFilter, setTypeFilter] = useState<'all' | 'funding' | 'payout'>('all');
+  const searchQuery = search.query ?? '';
+  const typeFilter =
+    search.type && TRANSACTION_TYPE_FILTERS.has(search.type)
+      ? (search.type as 'all' | 'funding' | 'payout')
+      : 'all';
   const selectedTransactionId = search.transactionId ?? null;
   const currentCursor = cursorStack.at(-1) ?? null;
   const deferredSearchQuery = useDeferredValue(searchQuery.trim());
@@ -50,8 +54,9 @@ export function AdminTransactionsRoutePage(): JSX.Element {
       onClose={() => {
         void navigate({
           search: (previous) => ({
-            ...previous,
+            query: previous.query,
             transactionId: undefined,
+            type: previous.type,
           }),
           to: '/admin/transactions',
         });
@@ -67,8 +72,9 @@ export function AdminTransactionsRoutePage(): JSX.Element {
           setCursorStack((previous) => [...previous, nextCursor]);
           void navigate({
             search: (previous) => ({
-              ...previous,
+              query: previous.query,
               transactionId: undefined,
+              type: previous.type,
             }),
             to: '/admin/transactions',
           });
@@ -83,8 +89,9 @@ export function AdminTransactionsRoutePage(): JSX.Element {
           setCursorStack((previous) => previous.slice(0, -1));
           void navigate({
             search: (previous) => ({
-              ...previous,
+              query: previous.query,
               transactionId: undefined,
+              type: previous.type,
             }),
             to: '/admin/transactions',
           });
@@ -92,12 +99,12 @@ export function AdminTransactionsRoutePage(): JSX.Element {
       }}
       onSearchChange={(query) => {
         startTransition(() => {
-          setSearchQuery(query);
           setCursorStack([null]);
           void navigate({
             search: (previous) => ({
-              ...previous,
+              query: query.length > 0 ? query : undefined,
               transactionId: undefined,
+              type: previous.type,
             }),
             to: '/admin/transactions',
           });
@@ -112,23 +119,40 @@ export function AdminTransactionsRoutePage(): JSX.Element {
           to: '/admin/ledger',
         });
       }}
+      onOpenPayouts={(query) => {
+        void navigate({
+          search: {
+            query,
+          },
+          to: '/admin/payouts',
+        });
+      }}
       onSelect={(transactionId) => {
         void navigate({
           search: (previous) => ({
-            ...previous,
+            query: previous.query,
             transactionId: previous.transactionId === transactionId ? undefined : transactionId,
+            type: previous.type,
           }),
           to: '/admin/transactions',
         });
       }}
+      onOpenWebhooks={(query) => {
+        void navigate({
+          search: {
+            query,
+          },
+          to: '/admin/webhooks',
+        });
+      }}
       onTypeFilterChange={(filter) => {
         startTransition(() => {
-          setTypeFilter(filter);
           setCursorStack([null]);
           void navigate({
             search: (previous) => ({
-              ...previous,
+              query: previous.query,
               transactionId: undefined,
+              type: filter === 'all' ? undefined : filter,
             }),
             to: '/admin/transactions',
           });
