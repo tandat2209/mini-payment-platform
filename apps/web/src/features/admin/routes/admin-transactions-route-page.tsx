@@ -106,9 +106,10 @@ export function AdminTransactionsRoutePage(): JSX.Element {
       onOpenLedger={(ledgerTransactionId) => {
         void navigate({
           search: {
+            currency: undefined,
             ledgerTransactionId,
           },
-          to: '/admin/ledgers',
+          to: '/admin/ledger',
         });
       }}
       onSelect={(transactionId) => {

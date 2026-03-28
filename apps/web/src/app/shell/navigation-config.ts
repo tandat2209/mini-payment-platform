@@ -1,19 +1,36 @@
 import type { LucideIcon } from 'lucide-react';
 import {
+  AlertTriangle,
   ArrowLeftRight,
-  Boxes,
   CreditCard,
+  FileBarChart2,
   FlaskConical,
+  Landmark,
   LayoutGrid,
+  ListChecks,
   Radar,
   ReceiptText,
+  Settings,
   Shield,
+  Users,
   Wallet,
+  Webhook,
 } from 'lucide-react';
 
 export type Workspace = 'admin' | 'customer' | 'sandbox';
 export type CustomerPageId = 'funding-details' | 'overview' | 'payout' | 'recipients';
-export type AdminPageId = 'balances' | 'ledgers' | 'transactions' | 'wallet';
+export type AdminPageId =
+  | 'audit-logs'
+  | 'customers'
+  | 'dashboard'
+  | 'ledger'
+  | 'payouts'
+  | 'reconciliation'
+  | 'reports'
+  | 'settings'
+  | 'transactions'
+  | 'treasury'
+  | 'webhooks';
 export type SandboxPageId = 'funding' | 'payout-updates' | 'reconciliation-reports';
 export type NavigationId = AdminPageId | CustomerPageId | SandboxPageId;
 
@@ -32,10 +49,22 @@ export const customerNavigationItems: NavigationItem[] = [
 ];
 
 export const adminNavigationItems: NavigationItem[] = [
-  { icon: Wallet, id: 'wallet', label: 'Wallet', path: '/admin' },
-  { icon: Boxes, id: 'balances', label: 'Balances', path: '/admin/balances' },
+  { icon: LayoutGrid, id: 'dashboard', label: 'Dashboard', path: '/admin' },
+  { icon: Landmark, id: 'treasury', label: 'Treasury', path: '/admin/treasury' },
+  { icon: ReceiptText, id: 'ledger', label: 'Ledger', path: '/admin/ledger' },
+  { icon: Users, id: 'customers', label: 'Customers', path: '/admin/customers' },
   { icon: CreditCard, id: 'transactions', label: 'Transactions', path: '/admin/transactions' },
-  { icon: ReceiptText, id: 'ledgers', label: 'Ledgers', path: '/admin/ledgers' },
+  { icon: ArrowLeftRight, id: 'payouts', label: 'Payouts', path: '/admin/payouts' },
+  {
+    icon: AlertTriangle,
+    id: 'reconciliation',
+    label: 'Reconciliation',
+    path: '/admin/reconciliation',
+  },
+  { icon: Webhook, id: 'webhooks', label: 'Webhooks', path: '/admin/webhooks' },
+  { icon: FileBarChart2, id: 'reports', label: 'Reports', path: '/admin/reports' },
+  { icon: ListChecks, id: 'audit-logs', label: 'Audit logs', path: '/admin/audit-logs' },
+  { icon: Settings, id: 'settings', label: 'Settings', path: '/admin/settings' },
 ];
 
 export const sandboxNavigationItems: NavigationItem[] = [
@@ -106,7 +135,7 @@ export function getWorkspaceHeadline(workspace: Workspace): {
     case 'admin':
       return {
         navLabel: 'Admin navigation',
-        title: 'Admin',
+        title: 'Operations',
       };
     case 'sandbox':
       return {
@@ -132,13 +161,30 @@ export function getActiveNavigationId(pathname: string): NavigationId {
     case '/funding-details':
       return 'funding-details';
     case '/admin':
-      return 'wallet';
-    case '/admin/balances':
-      return 'balances';
+    case '/admin/dashboard':
+      return 'dashboard';
+    case '/admin/customers':
+      return 'customers';
+    case '/admin/treasury':
+      return 'treasury';
     case '/admin/transactions':
       return 'transactions';
-    case '/admin/ledgers':
-      return 'ledgers';
+    case '/admin/ledger':
+      return 'ledger';
+    case '/admin/payouts':
+      return 'payouts';
+    case '/admin/recipients':
+      return 'payouts';
+    case '/admin/reconciliation':
+      return 'reconciliation';
+    case '/admin/webhooks':
+      return 'webhooks';
+    case '/admin/reports':
+      return 'reports';
+    case '/admin/audit-logs':
+      return 'audit-logs';
+    case '/admin/settings':
+      return 'settings';
     case '/sandbox/funding':
       return 'funding';
     case '/sandbox/payout-updates':
@@ -158,6 +204,40 @@ export function getActiveNavigationId(pathname: string): NavigationId {
         return 'funding';
       }
 
-      return pathname.startsWith('/admin') ? 'wallet' : 'overview';
+      if (pathname.startsWith('/admin/transactions')) {
+        return 'transactions';
+      }
+      if (pathname.startsWith('/admin/ledger')) {
+        return 'ledger';
+      }
+      if (pathname.startsWith('/admin/payouts')) {
+        return 'payouts';
+      }
+      if (pathname.startsWith('/admin/recipients')) {
+        return 'payouts';
+      }
+      if (pathname.startsWith('/admin/customers')) {
+        return 'customers';
+      }
+      if (pathname.startsWith('/admin/treasury')) {
+        return 'treasury';
+      }
+      if (pathname.startsWith('/admin/reconciliation')) {
+        return 'reconciliation';
+      }
+      if (pathname.startsWith('/admin/webhooks')) {
+        return 'webhooks';
+      }
+      if (pathname.startsWith('/admin/reports')) {
+        return 'reports';
+      }
+      if (pathname.startsWith('/admin/audit-logs')) {
+        return 'audit-logs';
+      }
+      if (pathname.startsWith('/admin/settings')) {
+        return 'settings';
+      }
+
+      return pathname.startsWith('/admin') ? 'dashboard' : 'overview';
   }
 }

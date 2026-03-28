@@ -1,14 +1,26 @@
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 
 import {
+  type AdminBalanceSummaryResponse,
   type AdminLedgerDetailItem,
   type AdminLedgerListResponse,
+  type AdminPayoutListResponse,
+  type AdminRecipientListResponse,
+  type AdminReconciliationExceptionListResponse,
   type AdminTransactionDetailItem,
   type AdminTransactionListResponse,
+  type AdminWalletListResponse,
+  type AdminWebhookEventListResponse,
+  fetchAdminBalanceSummaries,
   fetchAdminLedgerDetail,
   fetchAdminLedgers,
+  fetchAdminPayouts,
+  fetchAdminRecipients,
+  fetchAdminReconciliationExceptions,
   fetchAdminTransactionDetail,
   fetchAdminTransactions,
+  fetchAdminWallets,
+  fetchAdminWebhooks,
 } from '@/features/admin/api';
 
 export function useAdminTransactionsQuery(input: {
@@ -52,5 +64,68 @@ export function useAdminLedgerDetailQuery(
     enabled: ledgerTransactionId !== null,
     queryFn: async () => await fetchAdminLedgerDetail(ledgerTransactionId ?? ''),
     queryKey: ['admin-ledger-detail', ledgerTransactionId],
+  });
+}
+
+export function useAdminLedgerSummaryQuery(): UseQueryResult<
+  AdminLedgerListResponse['summary'],
+  Error
+> {
+  return useQuery({
+    queryFn: async () =>
+      (
+        await fetchAdminLedgers({
+          limit: 1,
+        })
+      ).summary,
+    queryKey: ['admin-ledger-summary'],
+  });
+}
+
+export function useAdminWalletsQuery(): UseQueryResult<AdminWalletListResponse, Error> {
+  return useQuery({
+    queryFn: async () => await fetchAdminWallets(),
+    queryKey: ['admin-wallets'],
+  });
+}
+
+export function useAdminBalanceSummariesQuery(): UseQueryResult<
+  AdminBalanceSummaryResponse,
+  Error
+> {
+  return useQuery({
+    queryFn: async () => await fetchAdminBalanceSummaries(),
+    queryKey: ['admin-balance-summaries'],
+  });
+}
+
+export function useAdminPayoutsQuery(): UseQueryResult<AdminPayoutListResponse, Error> {
+  return useQuery({
+    queryFn: async () => await fetchAdminPayouts(),
+    queryKey: ['admin-payouts'],
+  });
+}
+
+export function useAdminRecipientsQuery(): UseQueryResult<AdminRecipientListResponse, Error> {
+  return useQuery({
+    queryFn: async () => await fetchAdminRecipients(),
+    queryKey: ['admin-recipients'],
+  });
+}
+
+export function useAdminWebhooksQuery(): UseQueryResult<AdminWebhookEventListResponse, Error> {
+  return useQuery({
+    queryFn: async () => await fetchAdminWebhooks(),
+    queryKey: ['admin-webhooks'],
+  });
+}
+
+export function useAdminReconciliationExceptionsQuery(): UseQueryResult<
+  AdminReconciliationExceptionListResponse,
+  Error
+> {
+  return useQuery({
+    queryFn: async () => await fetchAdminReconciliationExceptions(),
+    queryKey: ['admin-reconciliation-exceptions'],
   });
 }

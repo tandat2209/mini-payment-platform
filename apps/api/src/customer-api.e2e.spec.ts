@@ -62,6 +62,12 @@ class ApiFakeDatabaseService {
       wallet_id: 'wallet-alice',
     },
     {
+      available_amount_minor: '1500',
+      currency: 'EUR',
+      updated_at: '2026-03-22T01:10:00.000Z',
+      wallet_id: 'wallet-alice',
+    },
+    {
       available_amount_minor: '0',
       currency: 'USD',
       updated_at: '2026-03-22T00:10:00.000Z',
@@ -131,7 +137,11 @@ class ApiFakeDatabaseService {
       return withRows([]);
     }
 
-    if (sql.includes('FROM wallets w') && sql.includes('wallet_balances')) {
+    if (
+      sql.includes('FROM wallets w') &&
+      sql.includes('wallet_balances') &&
+      sql.includes('WHERE w.user_id = $1')
+    ) {
       const customerId = parameters[0];
 
       if (customerId === 'alice-id') {
@@ -164,6 +174,72 @@ class ApiFakeDatabaseService {
       }
 
       return withRows([]);
+    }
+
+    if (
+      sql.includes('GROUP BY w.id, u.id') &&
+      sql.includes('customer_external_ref') &&
+      sql.includes('last_movement_at')
+    ) {
+      return withRows([
+        {
+          closed_at: null,
+          customer_external_ref: 'user_demo_alice',
+          customer_id: 'alice-id',
+          last_movement_at: '2026-03-22T01:20:00.000Z',
+          opened_at: '2026-03-22T01:00:00.000Z',
+          wallet_id: 'wallet-alice',
+          wallet_label: 'Alice primary wallet',
+          wallet_status: 'active',
+        },
+        {
+          closed_at: null,
+          customer_external_ref: 'user_demo_bob',
+          customer_id: 'bob-id',
+          last_movement_at: '2026-03-22T00:10:00.000Z',
+          opened_at: '2026-03-22T00:05:00.000Z',
+          wallet_id: 'wallet-bob',
+          wallet_label: 'Bob primary wallet',
+          wallet_status: 'active',
+        },
+      ]);
+    }
+
+    if (
+      sql.includes('FROM wallet_balances wb') &&
+      sql.includes('ORDER BY wb.wallet_id ASC, wb.currency ASC')
+    ) {
+      return withRows(
+        this.walletBalances.map((balance) => ({
+          available_amount_minor: String(balance.available_amount_minor),
+          currency: String(balance.currency),
+          pending_amount_minor: balance.wallet_id === 'wallet-bob' ? '0' : '0',
+          updated_at: balance.updated_at,
+          wallet_id: String(balance.wallet_id),
+        })),
+      );
+    }
+
+    if (
+      sql.includes("COUNT(DISTINCT w.id) FILTER (WHERE w.status = 'active')") &&
+      sql.includes('posted_today')
+    ) {
+      return withRows([
+        {
+          active_wallet_count: 2,
+          available_amount_minor: '1500',
+          currency: 'EUR',
+          pending_amount_minor: '0',
+          posted_today: 0,
+        },
+        {
+          active_wallet_count: 2,
+          available_amount_minor: '9800',
+          currency: 'USD',
+          pending_amount_minor: '0',
+          posted_today: 0,
+        },
+      ]);
     }
 
     if (
@@ -1081,6 +1157,16 @@ async function fetchJson(app: INestApplication, path: string, customerExternalRe
   };
 }
 
+async function fetchAdminJson(app: INestApplication, path: string) {
+  const port = await ensureListening(app);
+  const response = await fetch(`http://127.0.0.1:${port}${path}`);
+
+  return {
+    body: (await response.json()) as Record<string, unknown>,
+    status: response.status,
+  };
+}
+
 async function postJson(
   app: INestApplication,
   path: string,
@@ -1282,6 +1368,63 @@ test('recipient capabilities API returns backend-owned onboarding options', asyn
               rail: 'swift',
             },
           ],
+        },
+      ],
+    });
+  } finally {
+    await app.close();
+  }
+});
+
+test('admin wallets API returns live multi-currency wallet data', async () => {
+  const app = await createTestApp();
+
+  try {
+    const response = await fetchAdminJson(app, '/admin/wallets');
+
+    assert.equal(response.status, 200);
+    assert.equal((response.body.items as Array<unknown>).length, 2);
+    assert.equal(
+      (response.body.items as Array<{ customer: { externalRef: string } }>)[0]?.customer
+        .externalRef,
+      'user_demo_alice',
+    );
+    assert.deepEqual(
+      (
+        response.body.items as Array<{
+          balances: Array<{ currency: string }>;
+          wallet: { id: string };
+        }>
+      )[0]?.balances.map((balance) => balance.currency),
+      ['EUR', 'USD'],
+    );
+  } finally {
+    await app.close();
+  }
+});
+
+test('admin balances API returns currency aggregates', async () => {
+  const app = await createTestApp();
+
+  try {
+    const response = await fetchAdminJson(app, '/admin/balances');
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(response.body, {
+      items: [
+        {
+          activeWalletCount: 2,
+          available: { amountMinor: '1500', currency: 'EUR' },
+          currency: 'EUR',
+          pending: { amountMinor: '0', currency: 'EUR' },
+          postedToday: 0,
+        },
+        {
+          activeWalletCount: 2,
+          available: { amountMinor: '9800', currency: 'USD' },
+          currency: 'USD',
+          pending: { amountMinor: '0', currency: 'USD' },
+          postedToday: 0,
         },
       ],
     });

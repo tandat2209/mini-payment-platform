@@ -2,6 +2,7 @@ import type { CSSProperties, JSX, ReactNode } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { AdminTopbar } from '@/features/admin/components/admin-topbar';
 
 import { CUSTOMER_MOBILE_NAV_OFFSET, CUSTOMER_MOBILE_PAYOUT_ACTION_OFFSET } from './mobile-layout';
 import { MobileNavigation } from './mobile-navigation';
@@ -63,7 +64,10 @@ export function AppShell({
                   workspace={activeWorkspace}
                 />
               </div>
-              <div className="hidden space-y-5 py-2 lg:block">{children}</div>
+              <div className="hidden space-y-5 py-2 lg:block">
+                {activeWorkspace === 'admin' ? <AdminTopbar /> : null}
+                {children}
+              </div>
             </>
           )}
         </div>

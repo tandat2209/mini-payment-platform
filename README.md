@@ -341,6 +341,7 @@ The payout side remains stable:
 
 More detail:
 
+- [Admin Operations Console](/Users/datnguyen/Projects/mini-payment-platform/docs/admin-operations-console.md)
 - [Recipient Capability Discovery](/Users/datnguyen/Projects/mini-payment-platform/docs/recipient-capability-discovery.md)
 
 ## Goals

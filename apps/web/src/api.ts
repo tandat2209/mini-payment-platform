@@ -408,6 +408,135 @@ type AdminLedgerListResponse = {
   };
 };
 
+type AdminWalletItem = {
+  balances: Array<{
+    available: MoneyDto;
+    currency: string;
+    pending: MoneyDto;
+    updatedAt: string | null;
+  }>;
+  closedAt: string | null;
+  customer: {
+    externalRef: string;
+    id: string;
+  };
+  lastMovementAt: string | null;
+  openedAt: string | null;
+  status: string;
+  wallet: {
+    id: string;
+    label: string | null;
+  };
+};
+
+type AdminWalletListResponse = {
+  items: AdminWalletItem[];
+};
+
+type AdminBalanceSummaryItem = {
+  activeWalletCount: number;
+  available: MoneyDto;
+  currency: string;
+  pending: MoneyDto;
+  postedToday: number;
+};
+
+type AdminBalanceSummaryResponse = {
+  items: AdminBalanceSummaryItem[];
+};
+
+type AdminPayoutItem = {
+  amounts: {
+    fee: MoneyDto;
+    gross: MoneyDto;
+  };
+  attemptStatus: string | null;
+  completedAt: string | null;
+  createdAt: string | null;
+  currency: string;
+  customer: {
+    externalRef: string;
+    id: string;
+  };
+  externalPayoutId: string | null;
+  externalRequestId: string | null;
+  failedAt: string | null;
+  id: string;
+  latestWebhookEventId: string | null;
+  provider: string | null;
+  recipient: {
+    id: string;
+    name: string;
+  };
+  reference: string | null;
+  status: string;
+  submittedAt: string | null;
+  userTransactionId: string;
+  walletId: string;
+};
+
+type AdminPayoutListResponse = {
+  items: AdminPayoutItem[];
+};
+
+type AdminRecipientItem = {
+  createdAt: string | null;
+  customer: {
+    externalRef: string;
+    id: string;
+  };
+  id: string;
+  name: string;
+  rails: Array<{
+    countryCode: string;
+    currency: string | null;
+    id: string;
+    payoutReady: boolean;
+    providerRegistrationError: string | null;
+    rail: string;
+    readinessStatus: string;
+  }>;
+  status: string;
+};
+
+type AdminRecipientListResponse = {
+  items: AdminRecipientItem[];
+};
+
+type AdminWebhookEventItem = {
+  eventType: string;
+  externalEventId: string;
+  id: string;
+  linkedPayoutId: string | null;
+  linkedTransactionId: string | null;
+  payload: Record<string, unknown>;
+  processingStatus: string;
+  processedAt: string | null;
+  provider: string;
+  receivedAt: string | null;
+};
+
+type AdminWebhookEventListResponse = {
+  items: AdminWebhookEventItem[];
+};
+
+type AdminReconciliationExceptionItem = {
+  kind: string;
+  linkedLedgerTransactionId: string | null;
+  linkedPayoutId: string | null;
+  linkedTransactionId: string | null;
+  linkedWebhookEventId: string | null;
+  occurredAt: string | null;
+  reference: string | null;
+  severity: string;
+  sourceId: string;
+  summary: string;
+};
+
+type AdminReconciliationExceptionListResponse = {
+  items: AdminReconciliationExceptionItem[];
+};
+
 function getErrorMessage(caughtError: unknown): string {
   return caughtError instanceof Error ? caughtError.message : 'Unknown error';
 }
@@ -702,13 +831,70 @@ export async function fetchAdminLedgerDetail(
   });
 }
 
+export async function fetchAdminWallets(): Promise<AdminWalletListResponse> {
+  return await getJson<AdminWalletListResponse>('/admin/wallets', {
+    errorLabel: 'Admin wallets request',
+    includeCustomerContext: false,
+  });
+}
+
+export async function fetchAdminBalanceSummaries(): Promise<AdminBalanceSummaryResponse> {
+  return await getJson<AdminBalanceSummaryResponse>('/admin/balances', {
+    errorLabel: 'Admin balances request',
+    includeCustomerContext: false,
+  });
+}
+
+export async function fetchAdminPayouts(): Promise<AdminPayoutListResponse> {
+  return await getJson<AdminPayoutListResponse>('/admin/payouts', {
+    errorLabel: 'Admin payouts request',
+    includeCustomerContext: false,
+  });
+}
+
+export async function fetchAdminRecipients(): Promise<AdminRecipientListResponse> {
+  return await getJson<AdminRecipientListResponse>('/admin/recipients', {
+    errorLabel: 'Admin recipients request',
+    includeCustomerContext: false,
+  });
+}
+
+export async function fetchAdminWebhooks(): Promise<AdminWebhookEventListResponse> {
+  return await getJson<AdminWebhookEventListResponse>('/admin/webhooks', {
+    errorLabel: 'Admin webhooks request',
+    includeCustomerContext: false,
+  });
+}
+
+export async function fetchAdminReconciliationExceptions(): Promise<AdminReconciliationExceptionListResponse> {
+  return await getJson<AdminReconciliationExceptionListResponse>(
+    '/admin/reconciliation/exceptions',
+    {
+      errorLabel: 'Admin reconciliation request',
+      includeCustomerContext: false,
+    },
+  );
+}
+
 export type {
+  AdminBalanceSummaryItem,
+  AdminBalanceSummaryResponse,
   AdminLedgerDetailItem,
   AdminLedgerItem,
   AdminLedgerListResponse,
+  AdminPayoutItem,
+  AdminPayoutListResponse,
+  AdminRecipientItem,
+  AdminRecipientListResponse,
+  AdminReconciliationExceptionItem,
+  AdminReconciliationExceptionListResponse,
   AdminTransactionDetailItem,
   AdminTransactionItem,
   AdminTransactionListResponse,
+  AdminWalletItem,
+  AdminWalletListResponse,
+  AdminWebhookEventItem,
+  AdminWebhookEventListResponse,
   CreatePayoutRequest,
   CreatePayoutResponse,
   FundingDetailValue,

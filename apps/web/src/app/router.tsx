@@ -1,10 +1,18 @@
 import { createRootRoute, createRoute, createRouter } from '@tanstack/react-router';
 
 import App from '@/app/app-root';
+import { AdminAuditLogsRoutePage } from '@/features/admin/routes/admin-audit-logs-route-page';
 import { AdminBalancesRoutePage } from '@/features/admin/routes/admin-balances-route-page';
+import { AdminDashboardRoutePage } from '@/features/admin/routes/admin-dashboard-route-page';
 import { AdminLedgersRoutePage } from '@/features/admin/routes/admin-ledgers-route-page';
+import { AdminPayoutsRoutePage } from '@/features/admin/routes/admin-payouts-route-page';
+import { AdminRecipientsRoutePage } from '@/features/admin/routes/admin-recipients-route-page';
+import { AdminReconciliationRoutePage } from '@/features/admin/routes/admin-reconciliation-route-page';
+import { AdminReportsRoutePage } from '@/features/admin/routes/admin-reports-route-page';
+import { AdminSettingsRoutePage } from '@/features/admin/routes/admin-settings-route-page';
 import { AdminTransactionsRoutePage } from '@/features/admin/routes/admin-transactions-route-page';
 import { AdminWalletRoutePage } from '@/features/admin/routes/admin-wallet-route-page';
+import { AdminWebhooksRoutePage } from '@/features/admin/routes/admin-webhooks-route-page';
 import { AddMoneyRoutePage } from '@/features/customer/routes/add-money-route-page';
 import { CustomerPayoutRoutePage } from '@/features/customer/routes/customer-payout-route-page';
 import { CustomerRecipientsRoutePage } from '@/features/customer/routes/customer-recipients-route-page';
@@ -42,7 +50,7 @@ const fundingDetailsRoute = createRoute({
 });
 
 const adminWalletRoute = createRoute({
-  component: AdminWalletRoutePage,
+  component: AdminDashboardRoutePage,
   getParentRoute: () => rootRoute,
   path: '/admin',
 });
@@ -50,7 +58,13 @@ const adminWalletRoute = createRoute({
 const adminBalancesRoute = createRoute({
   component: AdminBalancesRoutePage,
   getParentRoute: () => rootRoute,
-  path: '/admin/balances',
+  path: '/admin/treasury',
+});
+
+const adminCustomersRoute = createRoute({
+  component: AdminWalletRoutePage,
+  getParentRoute: () => rootRoute,
+  path: '/admin/customers',
 });
 
 const adminTransactionsRoute = createRoute({
@@ -65,11 +79,54 @@ const adminTransactionsRoute = createRoute({
 const adminLedgersRoute = createRoute({
   component: AdminLedgersRoutePage,
   getParentRoute: () => rootRoute,
-  path: '/admin/ledgers',
+  path: '/admin/ledger',
   validateSearch: (search: Record<string, unknown>) => ({
+    currency: typeof search.currency === 'string' ? search.currency : undefined,
     ledgerTransactionId:
       typeof search.ledgerTransactionId === 'string' ? search.ledgerTransactionId : undefined,
   }),
+});
+
+const adminPayoutsRoute = createRoute({
+  component: AdminPayoutsRoutePage,
+  getParentRoute: () => rootRoute,
+  path: '/admin/payouts',
+});
+
+const adminRecipientsRoute = createRoute({
+  component: AdminRecipientsRoutePage,
+  getParentRoute: () => rootRoute,
+  path: '/admin/recipients',
+});
+
+const adminReconciliationRoute = createRoute({
+  component: AdminReconciliationRoutePage,
+  getParentRoute: () => rootRoute,
+  path: '/admin/reconciliation',
+});
+
+const adminWebhooksRoute = createRoute({
+  component: AdminWebhooksRoutePage,
+  getParentRoute: () => rootRoute,
+  path: '/admin/webhooks',
+});
+
+const adminReportsRoute = createRoute({
+  component: AdminReportsRoutePage,
+  getParentRoute: () => rootRoute,
+  path: '/admin/reports',
+});
+
+const adminAuditLogsRoute = createRoute({
+  component: AdminAuditLogsRoutePage,
+  getParentRoute: () => rootRoute,
+  path: '/admin/audit-logs',
+});
+
+const adminSettingsRoute = createRoute({
+  component: AdminSettingsRoutePage,
+  getParentRoute: () => rootRoute,
+  path: '/admin/settings',
 });
 
 const sandboxFundingRoute = createRoute({
@@ -97,8 +154,16 @@ const routeTree = rootRoute.addChildren([
   fundingDetailsRoute,
   adminWalletRoute,
   adminBalancesRoute,
+  adminCustomersRoute,
   adminTransactionsRoute,
   adminLedgersRoute,
+  adminPayoutsRoute,
+  adminRecipientsRoute,
+  adminReconciliationRoute,
+  adminWebhooksRoute,
+  adminReportsRoute,
+  adminAuditLogsRoute,
+  adminSettingsRoute,
   sandboxFundingRoute,
   sandboxPayoutUpdatesRoute,
   sandboxReconciliationReportsRoute,

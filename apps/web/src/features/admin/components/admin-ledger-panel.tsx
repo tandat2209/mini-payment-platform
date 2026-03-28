@@ -7,12 +7,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
-import type {
-  AdminLedgerDetailItem,
-  AdminLedgerItem,
-  AdminLedgerListResponse,
-} from '@/features/admin/api';
-import { formatDate, formatMoney, getToneFromStatus, toTitleCase } from '@/lib/formatters';
+import type { AdminLedgerDetailItem, AdminLedgerItem } from '@/features/admin/api';
+import {
+  formatDate,
+  formatMoney,
+  getToneFromStatus,
+  shortenIdentifier,
+  toTitleCase,
+} from '@/lib/formatters';
 
 export function AdminLedgerPanel({
   canNextPage,
@@ -21,7 +23,6 @@ export function AdminLedgerPanel({
   detailLoading,
   error,
   isLoading,
-  ledgerSummary,
   ledgerTransactions,
   onClose,
   onOpenTransaction,
@@ -41,7 +42,6 @@ export function AdminLedgerPanel({
   detailLoading: boolean;
   error: string | null;
   isLoading: boolean;
-  ledgerSummary: AdminLedgerListResponse['summary'] | null;
   ledgerTransactions: AdminLedgerItem[];
   onClose: () => void;
   onOpenTransaction: (transactionId: string) => void;
@@ -104,7 +104,9 @@ export function AdminLedgerPanel({
         accessorKey: 'userTransactionId',
         cell: ({ row }) => (
           <span className="text-xs text-slate-500">
-            {row.original.userTransactionId ?? 'Not linked'}
+            {row.original.userTransactionId
+              ? shortenIdentifier(row.original.userTransactionId)
+              : 'Not linked'}
           </span>
         ),
         header: 'Linked txn',
@@ -175,208 +177,6 @@ export function AdminLedgerPanel({
           <div className="rounded-[20px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
             {error}
           </div>
-        ) : null}
-
-        {ledgerSummary ? (
-          <>
-            <div className="grid gap-3 xl:grid-cols-[minmax(0,1.2fr)_minmax(300px,0.8fr)]">
-              <div className="grid gap-3 md:grid-cols-3">
-                <IntegrityCard
-                  label="Integrity status"
-                  tone={ledgerSummary.unbalancedTransactions === 0 ? 'positive' : 'warning'}
-                  value={
-                    ledgerSummary.unbalancedTransactions === 0 ? 'Healthy' : 'Attention needed'
-                  }
-                />
-                <IntegrityCard
-                  label="Unbalanced transactions"
-                  tone={ledgerSummary.unbalancedTransactions === 0 ? 'positive' : 'warning'}
-                  value={String(ledgerSummary.unbalancedTransactions)}
-                />
-                <IntegrityCard
-                  label="Accounts in trial balance"
-                  tone="default"
-                  value={String(ledgerSummary.trialBalanceRows.length)}
-                />
-              </div>
-
-              <div className="rounded-[24px] border border-slate-200 bg-[#fcfaf6] p-4">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  Currency control
-                </p>
-                <div className="mt-3 space-y-3">
-                  {ledgerSummary.currencySummaries.map((summary) => (
-                    <div
-                      className="rounded-[18px] border border-white bg-white px-4 py-3"
-                      key={summary.currency}
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <p className="text-sm font-semibold text-slate-950">{summary.currency}</p>
-                        <Badge tone={summary.delta.amountMinor === '0' ? 'positive' : 'warning'}>
-                          {summary.delta.amountMinor === '0' ? 'In balance' : 'Drift detected'}
-                        </Badge>
-                      </div>
-                      <div className="mt-3 grid grid-cols-3 gap-3 text-sm">
-                        <SummaryStat label="Debits" value={formatMoney(summary.debits)} />
-                        <SummaryStat label="Credits" value={formatMoney(summary.credits)} />
-                        <SummaryStat label="Delta" value={formatMoney(summary.delta)} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="overflow-hidden rounded-[24px] border border-slate-200 bg-[#fcfaf6]">
-              <div className="border-b border-slate-200 bg-[#f4efe7] px-4 py-3">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                  Account classes
-                </p>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="min-w-full border-collapse">
-                  <thead className="bg-[#faf7f2] text-left">
-                    <tr>
-                      <th className="border-b border-slate-200 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                        Group
-                      </th>
-                      <th className="border-b border-slate-200 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                        Accounts
-                      </th>
-                      <th className="border-b border-slate-200 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                        Debits
-                      </th>
-                      <th className="border-b border-slate-200 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                        Credits
-                      </th>
-                      <th className="border-b border-slate-200 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                        Net
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200/80 bg-white">
-                    {ledgerSummary.accountGroupSummaries.map((row) => (
-                      <tr key={`${row.accountGroup}-${row.currency}`}>
-                        <td className="px-4 py-3">
-                          <p className="text-sm font-semibold text-slate-950">{row.accountGroup}</p>
-                          <p className="mt-1 text-xs text-slate-500">{row.description}</p>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-slate-600">{row.accountCount}</td>
-                        <td className="px-4 py-3 text-sm font-medium text-slate-900">
-                          {formatMoney(row.debits)}
-                        </td>
-                        <td className="px-4 py-3 text-sm font-medium text-slate-900">
-                          {formatMoney(row.credits)}
-                        </td>
-                        <td className="px-4 py-3 text-sm font-semibold text-slate-950">
-                          {formatMoney(row.net)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(280px,0.8fr)]">
-              <div className="overflow-hidden rounded-[24px] border border-slate-200 bg-[#fcfaf6]">
-                <div className="border-b border-slate-200 bg-[#f4efe7] px-4 py-3">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                    Account explorer
-                  </p>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Server summary keeps the default view dense; use search to find specific
-                    accounts.
-                  </p>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full border-collapse">
-                    <thead className="bg-[#faf7f2] text-left">
-                      <tr>
-                        <th className="border-b border-slate-200 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                          Account
-                        </th>
-                        <th className="border-b border-slate-200 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                          Group
-                        </th>
-                        <th className="border-b border-slate-200 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                          CCY
-                        </th>
-                        <th className="border-b border-slate-200 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                          Net
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-200/80 bg-white">
-                      {ledgerSummary.trialBalanceRows.slice(0, 8).map((row) => (
-                        <tr key={`${row.accountCode}-${row.currency}`}>
-                          <td className="px-4 py-3">
-                            <p className="text-sm font-semibold text-slate-950">
-                              {row.accountName}
-                            </p>
-                            <p className="mt-1 text-xs uppercase tracking-[0.14em] text-slate-400">
-                              {row.accountCode}
-                            </p>
-                          </td>
-                          <td className="px-4 py-3 text-sm text-slate-600">{row.accountGroup}</td>
-                          <td className="px-4 py-3 text-sm text-slate-600">{row.currency}</td>
-                          <td className="px-4 py-3 text-sm font-semibold text-slate-950">
-                            {formatMoney(row.net)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <div className="border-t border-slate-200 bg-[#faf7f2] px-4 py-3 text-xs text-slate-500">
-                  Showing {Math.min(ledgerSummary.trialBalanceRows.length, 8)} of{' '}
-                  {ledgerSummary.trialBalanceRows.length} summarized accounts.
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="rounded-[24px] border border-slate-200 bg-[#fcfaf6] p-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                    Exceptions
-                  </p>
-                  <div className="mt-3 space-y-3">
-                    {ledgerSummary.unbalancedTransactions > 0 ? (
-                      <div className="rounded-[18px] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                        {ledgerSummary.unbalancedTransactions} unbalanced ledger transaction(s)
-                        require review.
-                      </div>
-                    ) : (
-                      <div className="rounded-[18px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                        No unbalanced transactions detected.
-                      </div>
-                    )}
-                    {ledgerSummary.currencySummaries.every(
-                      (summary) => summary.delta.amountMinor === '0',
-                    ) ? (
-                      <div className="rounded-[18px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                        Every tracked currency currently reconciles to zero delta.
-                      </div>
-                    ) : (
-                      <div className="rounded-[18px] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                        One or more currencies show a debit/credit mismatch.
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="rounded-[24px] border border-slate-200 bg-[#fcfaf6] p-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                    Scale posture
-                  </p>
-                  <p className="mt-3 text-sm leading-6 text-slate-500">
-                    This layout is summary-first by design. Thousands of wallet-liability accounts
-                    should not crowd the default ledger view; they belong in a searchable explorer
-                    or a dedicated account page.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </>
         ) : null}
 
         <div className="overflow-hidden rounded-[24px] border border-slate-200 bg-[#fcfaf6]">
@@ -495,31 +295,25 @@ export function AdminLedgerPanel({
                 </p>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-4">
-                <IntegrityCard
-                  label="Integrity"
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge
                   tone={selectedLedgerTransaction.integrity.isBalanced ? 'positive' : 'warning'}
-                  value={selectedLedgerTransaction.integrity.isBalanced ? 'Balanced' : 'Unbalanced'}
-                />
-                <IntegrityCard
-                  label="Debits"
-                  tone="default"
-                  value={formatMoney(selectedLedgerTransaction.debits)}
-                />
-                <IntegrityCard
-                  label="Credits"
-                  tone="default"
-                  value={formatMoney(selectedLedgerTransaction.credits)}
-                />
-                <IntegrityCard
-                  label="Delta"
+                >
+                  {selectedLedgerTransaction.integrity.isBalanced ? 'Balanced' : 'Unbalanced'}
+                </Badge>
+                <Badge tone="default">Debits {formatMoney(selectedLedgerTransaction.debits)}</Badge>
+                <Badge tone="default">
+                  Credits {formatMoney(selectedLedgerTransaction.credits)}
+                </Badge>
+                <Badge
                   tone={
                     selectedLedgerTransaction.integrity.delta.amountMinor === '0'
                       ? 'positive'
                       : 'warning'
                   }
-                  value={formatMoney(selectedLedgerTransaction.integrity.delta)}
-                />
+                >
+                  Delta {formatMoney(selectedLedgerTransaction.integrity.delta)}
+                </Badge>
               </div>
 
               <dl className="space-y-3 rounded-[24px] border border-slate-200 bg-[#f9f6f1] p-4">
@@ -545,26 +339,24 @@ export function AdminLedgerPanel({
                   label="Linked user transaction"
                   value={
                     selectedLedgerTransaction.userTransactionId
-                      ? selectedLedgerTransaction.userTransactionId
+                      ? shortenIdentifier(selectedLedgerTransaction.userTransactionId)
                       : 'Not linked'
                   }
                 />
                 <DetailRow
                   label="Webhook"
-                  value={selectedLedgerTransaction.webhookEventId ?? 'Not linked'}
+                  value={
+                    selectedLedgerTransaction.webhookEventId
+                      ? shortenIdentifier(selectedLedgerTransaction.webhookEventId)
+                      : 'Not linked'
+                  }
                 />
               </dl>
 
               {selectedLedgerTransaction.userTransactionId ? (
                 <div className="rounded-[20px] border border-slate-200 bg-[#fcfaf6] px-4 py-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-                    Source transaction
-                  </p>
-                  <p className="mt-2 text-sm text-slate-500">
-                    Continue the investigation from accounting back to the customer-facing event.
-                  </p>
                   <Button
-                    className="mt-4 h-10 rounded-full px-4"
+                    className="h-10 rounded-full px-4"
                     onClick={() => onOpenTransaction(selectedLedgerTransaction.userTransactionId!)}
                     variant="outline"
                   >
@@ -605,9 +397,6 @@ export function AdminLedgerPanel({
                             <p className="text-sm font-semibold text-slate-950">
                               {entry.account.name}
                             </p>
-                            <p className="mt-1 text-xs uppercase tracking-[0.14em] text-slate-400">
-                              {entry.account.code}
-                            </p>
                           </td>
                           <td className="px-3 py-3">
                             <Badge tone={entry.direction === 'debit' ? 'default' : 'positive'}>
@@ -639,41 +428,6 @@ function DetailRow({ label, value }: { label: string; value: string }): JSX.Elem
     <div className="flex items-start justify-between gap-4 border-b border-slate-200/70 pb-3 last:border-b-0 last:pb-0">
       <dt className="text-sm text-slate-500">{label}</dt>
       <dd className="max-w-[60%] text-right text-sm font-medium text-slate-900">{value}</dd>
-    </div>
-  );
-}
-
-function IntegrityCard({
-  label,
-  tone,
-  value,
-}: {
-  label: string;
-  tone: 'default' | 'positive' | 'warning';
-  value: string;
-}): JSX.Element {
-  return (
-    <div className="rounded-[20px] border border-slate-200 bg-[#fcfaf6] px-4 py-4">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-          {label}
-        </p>
-        {tone === 'default' ? null : (
-          <Badge tone={tone}>{tone === 'positive' ? 'OK' : 'Review'}</Badge>
-        )}
-      </div>
-      <p className="mt-2 text-lg font-semibold text-slate-950">{value}</p>
-    </div>
-  );
-}
-
-function SummaryStat({ label, value }: { label: string; value: string }): JSX.Element {
-  return (
-    <div>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-        {label}
-      </p>
-      <p className="mt-1 text-sm font-semibold text-slate-950">{value}</p>
     </div>
   );
 }

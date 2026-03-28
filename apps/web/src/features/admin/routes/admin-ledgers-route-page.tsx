@@ -12,19 +12,21 @@ const PAGE_SIZE = 20;
 
 export function AdminLedgersRoutePage(): JSX.Element {
   const navigate = useNavigate();
-  const search = useSearch({ from: '/admin/ledgers' });
+  const search = useSearch({ from: '/admin/ledger' });
   const [cursorStack, setCursorStack] = useState<Array<string | null>>([null]);
   const [searchQuery, setSearchQuery] = useState('');
+  const currency = search.currency ?? null;
   const selectedLedgerTransactionId = search.ledgerTransactionId ?? null;
   const currentCursor = cursorStack.at(-1) ?? null;
   const deferredSearchQuery = useDeferredValue(searchQuery.trim());
   const ledgerQueryInput = useMemo(
     () => ({
       cursor: currentCursor,
+      ...(currency ? { currency } : {}),
       limit: PAGE_SIZE,
       ...(deferredSearchQuery.length > 0 ? { query: deferredSearchQuery } : {}),
     }),
-    [currentCursor, deferredSearchQuery],
+    [currency, currentCursor, deferredSearchQuery],
   );
   const ledgersQuery = useAdminLedgersQuery(ledgerQueryInput);
   const ledgerDetailQuery = useAdminLedgerDetailQuery(selectedLedgerTransactionId);
@@ -45,15 +47,14 @@ export function AdminLedgersRoutePage(): JSX.Element {
       detailLoading={ledgerDetailQuery.isLoading}
       error={ledgersQuery.error?.message ?? null}
       isLoading={ledgersQuery.isLoading}
-      ledgerSummary={ledgersQuery.data?.summary ?? null}
       ledgerTransactions={ledgersQuery.data?.items ?? []}
       onClose={() => {
         void navigate({
           search: (previous) => ({
-            ...previous,
+            currency: previous.currency,
             ledgerTransactionId: undefined,
           }),
-          to: '/admin/ledgers',
+          to: '/admin/ledger',
         });
       }}
       onNextPage={() => {
@@ -67,10 +68,10 @@ export function AdminLedgersRoutePage(): JSX.Element {
           setCursorStack((previous) => [...previous, nextCursor]);
           void navigate({
             search: (previous) => ({
-              ...previous,
+              currency: previous.currency,
               ledgerTransactionId: undefined,
             }),
-            to: '/admin/ledgers',
+            to: '/admin/ledger',
           });
         });
       }}
@@ -83,10 +84,10 @@ export function AdminLedgersRoutePage(): JSX.Element {
           setCursorStack((previous) => previous.slice(0, -1));
           void navigate({
             search: (previous) => ({
-              ...previous,
+              currency: previous.currency,
               ledgerTransactionId: undefined,
             }),
-            to: '/admin/ledgers',
+            to: '/admin/ledger',
           });
         });
       }}
@@ -96,10 +97,10 @@ export function AdminLedgersRoutePage(): JSX.Element {
           setCursorStack([null]);
           void navigate({
             search: (previous) => ({
-              ...previous,
+              currency: previous.currency,
               ledgerTransactionId: undefined,
             }),
-            to: '/admin/ledgers',
+            to: '/admin/ledger',
           });
         });
       }}
@@ -114,11 +115,11 @@ export function AdminLedgersRoutePage(): JSX.Element {
       onSelect={(transactionId) => {
         void navigate({
           search: (previous) => ({
-            ...previous,
+            currency: previous.currency,
             ledgerTransactionId:
               previous.ledgerTransactionId === transactionId ? undefined : transactionId,
           }),
-          to: '/admin/ledgers',
+          to: '/admin/ledger',
         });
       }}
       pageIndex={cursorStack.length}
