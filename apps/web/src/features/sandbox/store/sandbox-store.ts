@@ -2,42 +2,66 @@ import { create } from 'zustand';
 
 import {
   type SandboxFundingResponse,
+  type SandboxPayoutUpdateResponse,
   triggerSandboxFundingSimulation,
+  triggerSandboxPayoutUpdateSimulation,
 } from '@/features/sandbox/api';
 import {
   initialSandboxFundingSimulationFormState,
+  initialSandboxPayoutUpdateFormState,
   type SandboxFundingSimulationFormState,
   type SandboxFundingSimulationResult,
+  type SandboxPayoutUpdateFormState,
+  type SandboxPayoutUpdateResult,
 } from '@/features/sandbox/data/sandbox-data';
 import { queryClient } from '@/lib/query-client';
 
 type SandboxStore = {
-  formState: SandboxFundingSimulationFormState;
-  isSubmitting: boolean;
-  setFormField: (field: keyof SandboxFundingSimulationFormState, value: string) => void;
+  fundingFormState: SandboxFundingSimulationFormState;
+  fundingSimulationError: string | null;
+  fundingSimulationResult: SandboxFundingSimulationResult | null;
+  isFundingSubmitting: boolean;
+  isPayoutUpdateSubmitting: boolean;
+  payoutUpdateFormState: SandboxPayoutUpdateFormState;
+  payoutUpdateSimulationError: string | null;
+  payoutUpdateSimulationResult: SandboxPayoutUpdateResult | null;
+  setFundingFormField: (field: keyof SandboxFundingSimulationFormState, value: string) => void;
+  setPayoutUpdateFormField: (field: keyof SandboxPayoutUpdateFormState, value: string) => void;
   simulateFunding: () => Promise<void>;
-  simulationError: string | null;
-  simulationResult: SandboxFundingSimulationResult | null;
+  simulatePayoutUpdate: () => Promise<void>;
 };
 
 export const useSandboxStore = create<SandboxStore>((set, get) => ({
-  formState: initialSandboxFundingSimulationFormState,
-  isSubmitting: false,
-  setFormField: (field, value) =>
+  fundingFormState: initialSandboxFundingSimulationFormState,
+  fundingSimulationError: null,
+  fundingSimulationResult: null,
+  isFundingSubmitting: false,
+  isPayoutUpdateSubmitting: false,
+  payoutUpdateFormState: initialSandboxPayoutUpdateFormState,
+  payoutUpdateSimulationError: null,
+  payoutUpdateSimulationResult: null,
+  setFundingFormField: (field, value) =>
     set((state) => ({
-      formState: {
-        ...state.formState,
+      fundingFormState: {
+        ...state.fundingFormState,
+        [field]: value,
+      },
+    })),
+  setPayoutUpdateFormField: (field, value) =>
+    set((state) => ({
+      payoutUpdateFormState: {
+        ...state.payoutUpdateFormState,
         [field]: value,
       },
     })),
   simulateFunding: async () => {
-    if (get().isSubmitting) {
+    if (get().isFundingSubmitting) {
       return;
     }
 
-    set({ isSubmitting: true, simulationError: null });
+    set({ fundingSimulationError: null, isFundingSubmitting: true });
 
-    const formState = get().formState;
+    const formState = get().fundingFormState;
     const request: Parameters<typeof triggerSandboxFundingSimulation>[0] = {
       amountMinor: Number.parseInt(formState.amountMinor, 10),
       currency: formState.currency.trim().toUpperCase(),
@@ -85,8 +109,8 @@ export const useSandboxStore = create<SandboxStore>((set, get) => ({
 
     if (!Number.isFinite(request.amountMinor) || request.amountMinor <= 0) {
       set({
-        isSubmitting: false,
-        simulationError: 'Amount minor must be a positive integer.',
+        fundingSimulationError: 'Amount minor must be a positive integer.',
+        isFundingSubmitting: false,
       });
       return;
     }
@@ -103,8 +127,7 @@ export const useSandboxStore = create<SandboxStore>((set, get) => ({
           : null;
 
       set({
-        isSubmitting: false,
-        simulationResult: {
+        fundingSimulationResult: {
           delivered: response.delivered,
           deliveryTarget: response.deliveryTarget,
           externalEventId: response.externalEventId,
@@ -116,6 +139,7 @@ export const useSandboxStore = create<SandboxStore>((set, get) => ({
           receiverProcessingStatus,
           status: 'delivered',
         },
+        isFundingSubmitting: false,
       });
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['admin-transactions'] }),
@@ -123,14 +147,90 @@ export const useSandboxStore = create<SandboxStore>((set, get) => ({
       ]);
     } catch (caughtError) {
       set({
-        isSubmitting: false,
-        simulationError:
+        fundingSimulationError:
           caughtError instanceof Error ? caughtError.message : 'PSP sandbox request failed.',
+        isFundingSubmitting: false,
       });
     }
   },
-  simulationError: null,
-  simulationResult: null,
+  simulatePayoutUpdate: async () => {
+    if (get().isPayoutUpdateSubmitting) {
+      return;
+    }
+
+    set({ isPayoutUpdateSubmitting: true, payoutUpdateSimulationError: null });
+
+    const formState = get().payoutUpdateFormState;
+    const request: Parameters<typeof triggerSandboxPayoutUpdateSimulation>[0] = {
+      externalPayoutId: formState.externalPayoutId.trim(),
+      status: formState.status,
+    };
+    const externalEventId = toOptionalTrimmedString(formState.externalEventId);
+    const failureReason = toOptionalTrimmedString(formState.failureReason);
+
+    if (!request.externalPayoutId) {
+      set({
+        isPayoutUpdateSubmitting: false,
+        payoutUpdateSimulationError: 'External payout id is required.',
+      });
+      return;
+    }
+
+    if (externalEventId !== undefined) {
+      request.externalEventId = externalEventId;
+    }
+
+    if (request.status === 'failed' && failureReason !== undefined) {
+      request.failureReason = failureReason;
+    }
+
+    try {
+      const response: SandboxPayoutUpdateResponse =
+        await triggerSandboxPayoutUpdateSimulation(request);
+      const receiverDuplicate =
+        typeof response.receiverResponse.duplicate === 'boolean'
+          ? response.receiverResponse.duplicate
+          : null;
+      const receiverProcessingStatus =
+        typeof response.receiverResponse === 'object' &&
+        response.receiverResponse !== null &&
+        'event' in response.receiverResponse &&
+        typeof response.receiverResponse.event === 'object' &&
+        response.receiverResponse.event !== null &&
+        'processingStatus' in response.receiverResponse.event &&
+        typeof response.receiverResponse.event.processingStatus === 'string'
+          ? response.receiverResponse.event.processingStatus
+          : null;
+
+      set({
+        isPayoutUpdateSubmitting: false,
+        payoutUpdateSimulationResult: {
+          delivered: response.delivered,
+          deliveryTarget: response.deliveryTarget,
+          externalEventId: response.externalEventId,
+          payoutReference: response.payload.data.payoutReference,
+          postedAt: response.payload.occurredAt,
+          provider: response.payload.provider,
+          receiverDuplicate,
+          receiverProcessingStatus,
+          status: response.payload.data.status,
+        },
+      });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['balances'] }),
+        queryClient.invalidateQueries({ queryKey: ['transactions'] }),
+        queryClient.invalidateQueries({ queryKey: ['transaction-detail'] }),
+        queryClient.invalidateQueries({ queryKey: ['admin-transactions'] }),
+        queryClient.invalidateQueries({ queryKey: ['admin-ledgers'] }),
+      ]);
+    } catch (caughtError) {
+      set({
+        isPayoutUpdateSubmitting: false,
+        payoutUpdateSimulationError:
+          caughtError instanceof Error ? caughtError.message : 'PSP sandbox payout update failed.',
+      });
+    }
+  },
 }));
 
 function toOptionalTrimmedString(value: string): string | undefined {

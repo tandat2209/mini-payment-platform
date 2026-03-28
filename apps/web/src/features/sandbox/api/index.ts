@@ -1,2 +1,7 @@
-export type { SandboxFundingRequest, SandboxFundingResponse } from '@/api';
-export { triggerSandboxFundingSimulation } from '@/api';
+export type {
+  SandboxFundingRequest,
+  SandboxFundingResponse,
+  SandboxPayoutUpdateRequest,
+  SandboxPayoutUpdateResponse,
+} from '@/api';
+export { triggerSandboxFundingSimulation, triggerSandboxPayoutUpdateSimulation } from '@/api';

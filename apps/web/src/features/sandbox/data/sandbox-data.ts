@@ -1,4 +1,5 @@
 type DestinationType = 'account_number' | 'iban' | 'virtual_account';
+type PayoutUpdateStatus = 'failed' | 'paid' | 'processing';
 
 export type SandboxFundingSimulationFormState = {
   amountMinor: string;
@@ -27,6 +28,25 @@ export type SandboxFundingSimulationResult = {
   status: 'delivered';
 };
 
+export type SandboxPayoutUpdateFormState = {
+  externalEventId: string;
+  externalPayoutId: string;
+  failureReason: string;
+  status: PayoutUpdateStatus;
+};
+
+export type SandboxPayoutUpdateResult = {
+  delivered: true;
+  deliveryTarget: string;
+  externalEventId: string;
+  payoutReference: string;
+  postedAt: string;
+  provider: 'psp_sandbox';
+  receiverDuplicate: boolean | null;
+  receiverProcessingStatus: string | null;
+  status: PayoutUpdateStatus;
+};
+
 export const initialSandboxFundingSimulationFormState: SandboxFundingSimulationFormState = {
   amountMinor: '2500',
   currency: 'USD',
@@ -39,4 +59,11 @@ export const initialSandboxFundingSimulationFormState: SandboxFundingSimulationF
   senderBankCode: 'VCB',
   senderBankName: 'Vietcombank',
   senderName: 'Alice Nguyen',
+};
+
+export const initialSandboxPayoutUpdateFormState: SandboxPayoutUpdateFormState = {
+  externalEventId: 'evt_sandbox_payout_001',
+  externalPayoutId: 'ppay_',
+  failureReason: 'Beneficiary bank rejected the payout.',
+  status: 'processing',
 };

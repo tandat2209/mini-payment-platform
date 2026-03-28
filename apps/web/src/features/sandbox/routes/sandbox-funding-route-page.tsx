@@ -6,12 +6,12 @@ import { SandboxPageShell } from '@/features/sandbox/components/sandbox-page-she
 import { useSandboxStore } from '@/features/sandbox/store/sandbox-store';
 
 export function SandboxFundingRoutePage(): JSX.Element {
-  const formState = useSandboxStore((state) => state.formState);
-  const isSubmitting = useSandboxStore((state) => state.isSubmitting);
-  const simulationError = useSandboxStore((state) => state.simulationError);
-  const setFormField = useSandboxStore((state) => state.setFormField);
+  const formState = useSandboxStore((state) => state.fundingFormState);
+  const isSubmitting = useSandboxStore((state) => state.isFundingSubmitting);
+  const simulationError = useSandboxStore((state) => state.fundingSimulationError);
+  const setFormField = useSandboxStore((state) => state.setFundingFormField);
   const simulateFunding = useSandboxStore((state) => state.simulateFunding);
-  const simulationResult = useSandboxStore((state) => state.simulationResult);
+  const simulationResult = useSandboxStore((state) => state.fundingSimulationResult);
 
   return (
     <SandboxPageShell

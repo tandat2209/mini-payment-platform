@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 
 import { CustomerAccessModule } from './access/customer/customer-access.module';
 import { DatabaseModule } from './database/database.module';
@@ -14,6 +15,11 @@ import { WalletsModule } from './wallets/wallets.module';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      cache: true,
+      envFilePath: ['.env.local', '.env'],
+      isGlobal: true,
+    }),
     DatabaseModule,
     CustomerAccessModule,
     FundingModule,

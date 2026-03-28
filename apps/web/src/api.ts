@@ -261,6 +261,33 @@ type SandboxFundingResponse = {
   receiverResponse: Record<string, unknown>;
 };
 
+type SandboxPayoutUpdateRequest = {
+  externalEventId?: string;
+  externalPayoutId: string;
+  failureReason?: string;
+  status: 'failed' | 'paid' | 'processing';
+};
+
+type SandboxPayoutUpdateResponse = {
+  deliveryTarget: string;
+  delivered: true;
+  externalEventId: string;
+  payload: {
+    data: {
+      externalPayoutId: string;
+      externalRequestId: string;
+      failureReason?: string;
+      payoutReference: string;
+      status: 'failed' | 'paid' | 'processing';
+    };
+    eventType: 'payout.updated';
+    externalEventId: string;
+    occurredAt: string;
+    provider: 'psp_sandbox';
+  };
+  receiverResponse: Record<string, unknown>;
+};
+
 type AdminTransactionItem = {
   amounts: {
     fee: MoneyDto;
@@ -587,6 +614,20 @@ export async function triggerSandboxFundingSimulation(
   );
 }
 
+export async function triggerSandboxPayoutUpdateSimulation(
+  request: SandboxPayoutUpdateRequest,
+): Promise<SandboxPayoutUpdateResponse> {
+  return await postJsonToBase<SandboxPayoutUpdateResponse, SandboxPayoutUpdateRequest>(
+    getPspSandboxBaseUrl(),
+    '/simulate/payout-updates',
+    request,
+    {
+      errorLabel: 'PSP sandbox payout update request',
+      includeCustomerContext: false,
+    },
+  );
+}
+
 export async function fetchAdminTransactions(input: {
   cursor?: string | null;
   limit: number;
@@ -681,6 +722,8 @@ export type {
   RecipientSummary,
   SandboxFundingRequest,
   SandboxFundingResponse,
+  SandboxPayoutUpdateRequest,
+  SandboxPayoutUpdateResponse,
   StatementDetailResponse,
   StatementOverviewData,
   StatementPeriod,

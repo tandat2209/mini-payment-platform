@@ -1,4 +1,5 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Pool, type PoolClient, type QueryResult, type QueryResultRow } from 'pg';
 
 export type DatabaseHealth =
@@ -26,13 +27,18 @@ export interface DatabaseQueryable {
 
 @Injectable()
 export class DatabaseService implements DatabaseQueryable, OnModuleDestroy {
-  private readonly databaseUrl = process.env.DATABASE_URL;
-  private readonly pool = this.databaseUrl
-    ? new Pool({
-        connectionString: this.databaseUrl,
-        max: 10,
-      })
-    : null;
+  private readonly databaseUrl: string | undefined;
+  private readonly pool: Pool | null;
+
+  constructor(private readonly configService: ConfigService) {
+    this.databaseUrl = this.configService.get<string>('DATABASE_URL');
+    this.pool = this.databaseUrl
+      ? new Pool({
+          connectionString: this.databaseUrl,
+          max: 10,
+        })
+      : null;
+  }
 
   async getHealth(): Promise<DatabaseHealth> {
     if (!this.pool) {
