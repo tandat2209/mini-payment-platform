@@ -41,6 +41,12 @@ class StubPreparePayoutIntentService {
 }
 
 class InMemoryPayoutWalletRepository implements PayoutWalletRepository {
+  creditCalls: Array<{
+    amountMinor: number;
+    currency: string;
+    updatedAt: string;
+    walletId: string;
+  }> = [];
   debitCalls: Array<{
     amountMinor: number;
     currency: string;
@@ -55,6 +61,13 @@ class InMemoryPayoutWalletRepository implements PayoutWalletRepository {
 
   async findOwnedActiveWalletBalance(): Promise<OwnedWalletBalance | null> {
     return this.ownedWalletBalance;
+  }
+
+  async creditAvailableBalance(
+    _context: TransactionContext,
+    input: { amountMinor: number; currency: string; updatedAt: string; walletId: string },
+  ): Promise<void> {
+    this.creditCalls.push(input);
   }
 
   async debitAvailableBalance(
@@ -104,6 +117,16 @@ class InMemoryPayoutWriteRepository implements PayoutWriteRepository {
     status: 'accepted';
     submittedAt: string;
   } | null = null;
+
+  async findExecutionByProviderPayoutId(): Promise<null> {
+    return null;
+  }
+
+  async markPayoutAsFailed(): Promise<void> {}
+
+  async markPayoutAsPaid(): Promise<void> {}
+
+  async markPayoutAsProcessing(): Promise<void> {}
 
   async createPayoutBooking(
     _context: TransactionContext,
@@ -158,6 +181,8 @@ class InMemoryPayoutWriteRepository implements PayoutWriteRepository {
   ): Promise<void> {
     this.payoutSubmissionUpdate = input;
   }
+
+  async updateAttemptOutcome(): Promise<void> {}
 }
 
 class InMemoryPayoutIdempotencyRepository implements PayoutIdempotencyRepository {

@@ -19,6 +19,7 @@ class ApiFakeDatabaseService {
   private readonly idempotencyKeys = new Map<string, QueryResponseRow>();
   private readonly payoutAttempts: QueryResponseRow[] = [];
   private readonly payouts = new Map<string, QueryResponseRow>();
+  private readonly userTransactions = new Map<string, QueryResponseRow>();
   private readonly webhookEvents = new Map<string, QueryResponseRow>();
   private readonly ledgerAccounts: QueryResponseRow[] = [];
   private readonly recipients: QueryResponseRow[] = [
@@ -193,6 +194,37 @@ class ApiFakeDatabaseService {
       return withRows([balance]);
     }
 
+    if (
+      sql.includes('INSERT INTO wallet_balances') &&
+      sql.includes('ON CONFLICT (wallet_id, currency) DO UPDATE')
+    ) {
+      const [, walletId, currency, amountMinor, updatedAt] = parameters;
+      const normalizedWalletId =
+        walletId === PAYOUT_TEST_WALLET_ID ? 'wallet-alice' : String(walletId);
+      const existing = this.walletBalances.find(
+        (item) => item.wallet_id === normalizedWalletId && item.currency === currency,
+      );
+
+      if (existing) {
+        existing.available_amount_minor = String(
+          Number(existing.available_amount_minor) + Number(amountMinor),
+        );
+        existing.updated_at = String(updatedAt);
+
+        return withRows([existing]);
+      }
+
+      const row = {
+        available_amount_minor: String(amountMinor),
+        currency: String(currency),
+        updated_at: String(updatedAt),
+        wallet_id: normalizedWalletId,
+      };
+      this.walletBalances.push(row);
+
+      return withRows([row]);
+    }
+
     if (sql.includes('INSERT INTO webhook_events')) {
       const [id, provider, externalEventId, eventType, payload, receivedAt] = parameters;
       const lookupKey = `${String(provider)}:${String(externalEventId)}`;
@@ -245,6 +277,27 @@ class ApiFakeDatabaseService {
       const row = this.idempotencyKeys.get(`${String(scope)}:${String(key)}`);
 
       return withRows(row ? [row] : []);
+    }
+
+    if (sql.includes('UPDATE webhook_events') && sql.includes('processed_at = $3::timestamptz')) {
+      const [webhookId, processingStatus, processedAt] = parameters;
+      const entry = [...this.webhookEvents.entries()].find(([, value]) => value.id === webhookId);
+
+      if (!entry) {
+        return withRows([]);
+      }
+
+      entry[1].processing_status = String(processingStatus);
+      entry[1].processed_at = String(processedAt);
+
+      return withRows([entry[1]]);
+    }
+
+    if (sql.includes('FROM webhook_events') && sql.includes('WHERE id = $1::uuid')) {
+      const [webhookId] = parameters;
+      const entry = [...this.webhookEvents.entries()].find(([, value]) => value.id === webhookId);
+
+      return withRows(entry ? [entry[1]] : []);
     }
 
     if (sql.includes('UPDATE idempotency_keys') && sql.includes("status = 'completed'")) {
@@ -653,6 +706,38 @@ class ApiFakeDatabaseService {
     }
 
     if (sql.includes('INSERT INTO user_transactions') && sql.includes("'payout'")) {
+      const [
+        userTransactionId,
+        userId,
+        walletId,
+        currency,
+        grossAmountMinor,
+        feeAmountMinor,
+        netAmountMinor,
+        description,
+        reference,
+        occurredAt,
+        createdAt,
+      ] = parameters;
+
+      this.userTransactions.set(String(userTransactionId), {
+        created_at: String(createdAt),
+        currency: String(currency),
+        description: String(description),
+        fee_amount_minor: String(feeAmountMinor),
+        gross_amount_minor: String(grossAmountMinor),
+        id: String(userTransactionId),
+        net_amount_minor: String(netAmountMinor),
+        occurred_at: String(occurredAt),
+        posted_at: null,
+        reference: String(reference),
+        status: 'pending',
+        updated_at: String(createdAt),
+        user_id: String(userId),
+        wallet_id: String(walletId),
+        webhook_event_id: null,
+      });
+
       return withRows([]);
     }
 
@@ -744,6 +829,140 @@ class ApiFakeDatabaseService {
       payout.updated_at = String(updatedAt);
 
       return withRows([]);
+    }
+
+    if (
+      sql.includes('FROM payout_attempts pa') &&
+      sql.includes('INNER JOIN payouts p') &&
+      sql.includes('pa.external_payout_id = $2')
+    ) {
+      const [provider, externalPayoutId] = parameters;
+      const attempt = this.payoutAttempts.find(
+        (item) => item.provider === provider && item.external_payout_id === externalPayoutId,
+      );
+
+      if (!attempt) {
+        return withRows([]);
+      }
+
+      const payout = this.payouts.get(String(attempt.payout_id));
+
+      if (!payout) {
+        return withRows([]);
+      }
+
+      return withRows([
+        {
+          attempt_id: attempt.id,
+          attempt_status: attempt.status,
+          currency: payout.currency,
+          fee_amount_minor: payout.fee_amount_minor,
+          gross_amount_minor: payout.gross_amount_minor,
+          net_amount_minor: payout.net_amount_minor,
+          payout_id: payout.id,
+          payout_reference: payout.reference,
+          payout_status: payout.status,
+          provider: attempt.provider,
+          recipient_id: payout.recipient_id,
+          user_transaction_id: payout.user_transaction_id,
+          wallet_id: payout.wallet_id,
+        },
+      ]);
+    }
+
+    if (sql.includes('UPDATE payout_attempts') && sql.includes('response_payload = COALESCE')) {
+      const [attemptId, status, responsePayload, resolvedAt] = parameters;
+      const attempt = this.payoutAttempts.find((item) => item.id === attemptId);
+
+      if (!attempt) {
+        return withRows([]);
+      }
+
+      attempt.status = String(status);
+      attempt.response_payload = {
+        ...(typeof attempt.response_payload === 'object' && attempt.response_payload !== null
+          ? (attempt.response_payload as Record<string, unknown>)
+          : {}),
+        ...JSON.parse(String(responsePayload)),
+      };
+      attempt.resolved_at = resolvedAt === null ? null : String(resolvedAt);
+
+      return withRows([attempt]);
+    }
+
+    if (sql.includes('UPDATE payouts') && sql.includes("SET status = 'processing'")) {
+      const [payoutId, updatedAt] = parameters;
+      const payout = this.payouts.get(String(payoutId));
+
+      if (!payout) {
+        return withRows([]);
+      }
+
+      payout.status = 'processing';
+      payout.updated_at = String(updatedAt);
+
+      return withRows([payout]);
+    }
+
+    if (sql.includes('UPDATE payouts') && sql.includes("SET status = 'paid'")) {
+      const [payoutId, completedAt, updatedAt] = parameters;
+      const payout = this.payouts.get(String(payoutId));
+
+      if (!payout) {
+        return withRows([]);
+      }
+
+      payout.status = 'paid';
+      payout.completed_at = String(completedAt);
+      payout.updated_at = String(updatedAt);
+
+      return withRows([payout]);
+    }
+
+    if (sql.includes('UPDATE payouts') && sql.includes("SET status = 'failed'")) {
+      const [payoutId, failedAt, updatedAt] = parameters;
+      const payout = this.payouts.get(String(payoutId));
+
+      if (!payout) {
+        return withRows([]);
+      }
+
+      payout.status = 'failed';
+      payout.failed_at = String(failedAt);
+      payout.updated_at = String(updatedAt);
+
+      return withRows([payout]);
+    }
+
+    if (sql.includes('UPDATE user_transactions') && sql.includes("SET status = 'completed'")) {
+      const [transactionId, webhookEventId, postedAt, updatedAt] = parameters;
+      const transaction = this.userTransactions.get(String(transactionId));
+
+      if (!transaction) {
+        return withRows([]);
+      }
+
+      transaction.status = 'completed';
+      transaction.webhook_event_id = String(webhookEventId);
+      transaction.posted_at = String(postedAt);
+      transaction.updated_at = String(updatedAt);
+
+      return withRows([transaction]);
+    }
+
+    if (sql.includes('UPDATE user_transactions') && sql.includes("SET status = 'failed'")) {
+      const [transactionId, webhookEventId, updatedAt] = parameters;
+      const transaction = this.userTransactions.get(String(transactionId));
+
+      if (!transaction) {
+        return withRows([]);
+      }
+
+      transaction.status = 'failed';
+      transaction.webhook_event_id = String(webhookEventId);
+      transaction.updated_at = String(updatedAt);
+
+      return withRows([transaction]);
     }
 
     if (sql.includes('INSERT INTO ledger_transactions')) {
@@ -1181,6 +1400,131 @@ test('payout create API returns the stored response for duplicate idempotency ke
       (balancesResponse.body.balances as Array<{ available: { amountMinor: string } }>)[0]
         ?.available.amountMinor,
       '7297',
+    );
+  } finally {
+    await app.close();
+  }
+});
+
+test('payout webhook API marks a submitted payout as paid', async () => {
+  const app = await createTestApp();
+
+  try {
+    const payoutResponse = await postJson(
+      app,
+      '/customers/me/payouts',
+      'user_demo_alice',
+      {
+        amountMinor: 2500,
+        recipientRailId: PAYOUT_TEST_RECIPIENT_RAIL_ID,
+        reference: 'Invoice 206',
+        sourceCurrency: 'USD',
+        sourceWalletId: PAYOUT_TEST_WALLET_ID,
+      },
+      {
+        headers: {
+          'idempotency-key': 'idem-payout-paid-001',
+        },
+      },
+    );
+
+    const callbackResponse = await postJson(app, '/webhooks/payouts', 'user_demo_alice', {
+      data: {
+        externalPayoutId: 'ppay_test_001',
+        externalRequestId: 'preq_test_001',
+        payoutReference: (payoutResponse.body.payout as { reference: string }).reference,
+        status: 'paid',
+      },
+      eventType: 'payout.updated',
+      externalEventId: 'evt_payout_paid_001',
+      occurredAt: '2026-03-26T09:15:00.000Z',
+      provider: 'psp_sandbox',
+    });
+
+    assert.equal(callbackResponse.status, 202);
+    assert.equal(callbackResponse.body.duplicate, false);
+    assert.equal(
+      (callbackResponse.body.event as { processingStatus: string }).processingStatus,
+      'processed',
+    );
+
+    const balancesResponse = await fetchJson(app, '/customers/me/balances', 'user_demo_alice');
+
+    assert.equal(balancesResponse.status, 200);
+    assert.equal(
+      (balancesResponse.body.balances as Array<{ available: { amountMinor: string } }>)[0]
+        ?.available.amountMinor,
+      '7297',
+    );
+  } finally {
+    await app.close();
+  }
+});
+
+test('payout webhook API marks a submitted payout as failed, restores balance, and deduplicates replay', async () => {
+  const app = await createTestApp();
+
+  try {
+    const payoutResponse = await postJson(
+      app,
+      '/customers/me/payouts',
+      'user_demo_alice',
+      {
+        amountMinor: 2500,
+        recipientRailId: PAYOUT_TEST_RECIPIENT_RAIL_ID,
+        reference: 'Invoice 207',
+        sourceCurrency: 'USD',
+        sourceWalletId: PAYOUT_TEST_WALLET_ID,
+      },
+      {
+        headers: {
+          'idempotency-key': 'idem-payout-failed-001',
+        },
+      },
+    );
+    const callbackBody = {
+      data: {
+        externalPayoutId: 'ppay_test_001',
+        externalRequestId: 'preq_test_001',
+        failureReason: 'bank_rejected',
+        payoutReference: (payoutResponse.body.payout as { reference: string }).reference,
+        status: 'failed',
+      },
+      eventType: 'payout.updated',
+      externalEventId: 'evt_payout_failed_001',
+      occurredAt: '2026-03-26T09:25:00.000Z',
+      provider: 'psp_sandbox',
+    } satisfies Record<string, unknown>;
+
+    const firstCallbackResponse = await postJson(
+      app,
+      '/webhooks/payouts',
+      'user_demo_alice',
+      callbackBody,
+    );
+    const secondCallbackResponse = await postJson(
+      app,
+      '/webhooks/payouts',
+      'user_demo_alice',
+      callbackBody,
+    );
+
+    assert.equal(firstCallbackResponse.status, 202);
+    assert.equal(firstCallbackResponse.body.duplicate, false);
+    assert.equal(
+      (firstCallbackResponse.body.event as { processingStatus: string }).processingStatus,
+      'processed',
+    );
+    assert.equal(secondCallbackResponse.status, 202);
+    assert.equal(secondCallbackResponse.body.duplicate, true);
+
+    const balancesResponse = await fetchJson(app, '/customers/me/balances', 'user_demo_alice');
+
+    assert.equal(balancesResponse.status, 200);
+    assert.equal(
+      (balancesResponse.body.balances as Array<{ available: { amountMinor: string } }>)[0]
+        ?.available.amountMinor,
+      '9800',
     );
   } finally {
     await app.close();

@@ -13,10 +13,10 @@
 
 ## 3. Provider Callback Handling And Financial Outcomes
 
-- [ ] 3.1 Add payout provider callback ingestion and mapping from provider identifiers to payout attempts and payouts.
-- [ ] 3.2 Implement paid-payout settlement handling, including payout state changes, customer transaction updates, and settlement ledger posting.
-- [ ] 3.3 Implement failed-payout reversal handling, including wallet restoration, customer transaction failure state, and compensating ledger posting.
-- [ ] 3.4 Add automated coverage for paid and failed callback paths, including duplicate callback replay.
+- [x] 3.1 Add payout provider callback ingestion and mapping from provider identifiers to payout attempts and payouts.
+- [x] 3.2 Implement paid-payout settlement handling, including payout state changes, customer transaction updates, and settlement ledger posting.
+- [x] 3.3 Implement failed-payout reversal handling, including wallet restoration, customer transaction failure state, and compensating ledger posting.
+- [x] 3.4 Add automated coverage for paid and failed callback paths, including duplicate callback replay.
 
 ## 4. Customer Flow And Verification
 

@@ -5,7 +5,32 @@ export type OwnedWalletBalance = {
   walletId: string;
 };
 
+export type PayoutExecutionRecord = {
+  attemptId: string;
+  attemptStatus: 'accepted' | 'failed' | 'processing' | 'submitted' | 'succeeded' | 'unknown';
+  currency: string;
+  feeAmountMinor: number;
+  grossAmountMinor: number;
+  netAmountMinor: number;
+  payoutId: string;
+  payoutReference: string | null;
+  payoutStatus: 'failed' | 'paid' | 'processing' | 'submitted';
+  provider: string;
+  recipientId: string;
+  userTransactionId: string;
+  walletId: string;
+};
+
 export interface PayoutWalletRepository {
+  creditAvailableBalance(
+    context: TransactionContext,
+    input: {
+      amountMinor: number;
+      currency: string;
+      updatedAt: string;
+      walletId: string;
+    },
+  ): Promise<void>;
   debitAvailableBalance(
     context: TransactionContext,
     input: {
@@ -47,6 +72,40 @@ export interface PayoutWriteRepository {
       walletId: string;
     },
   ): Promise<void>;
+  findExecutionByProviderPayoutId(
+    context: TransactionContext,
+    input: {
+      externalPayoutId: string;
+      provider: string;
+    },
+  ): Promise<PayoutExecutionRecord | null>;
+  markPayoutAsFailed(
+    context: TransactionContext,
+    input: {
+      failedAt: string;
+      payoutId: string;
+      updatedAt: string;
+      userTransactionId: string;
+      webhookEventId: string;
+    },
+  ): Promise<void>;
+  markPayoutAsPaid(
+    context: TransactionContext,
+    input: {
+      completedAt: string;
+      payoutId: string;
+      updatedAt: string;
+      userTransactionId: string;
+      webhookEventId: string;
+    },
+  ): Promise<void>;
+  markPayoutAsProcessing(
+    context: TransactionContext,
+    input: {
+      payoutId: string;
+      updatedAt: string;
+    },
+  ): Promise<void>;
   recordSubmissionAttempt(
     context: TransactionContext,
     input: {
@@ -60,6 +119,15 @@ export interface PayoutWriteRepository {
       responsePayload: Record<string, unknown>;
       status: 'accepted';
       submittedAt: string;
+    },
+  ): Promise<void>;
+  updateAttemptOutcome(
+    context: TransactionContext,
+    input: {
+      attemptId: string;
+      responsePayload: Record<string, unknown>;
+      resolvedAt?: string;
+      status: 'failed' | 'processing' | 'succeeded';
     },
   ): Promise<void>;
   updatePayoutAfterSubmission(
