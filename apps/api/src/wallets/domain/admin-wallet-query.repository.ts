@@ -20,9 +20,36 @@ export type AdminWalletListItemView = {
 export type AdminWalletBalanceSummaryView = {
   activeWalletCount: number;
   availableAmountMinor: string;
+  businessIntegrity: {
+    cashCoverageGapAmountMinor: string;
+    inFlightPayoutCount: number;
+    inFlightGrossAmountMinor: string;
+    inFlightNetAmountMinor: string;
+    isHealthy: boolean;
+    issues: Array<{
+      code: string;
+      count: number | null;
+      severity: 'high' | 'medium';
+      summary: string;
+      valueAmountMinor: string | null;
+    }>;
+    walletExposureAmountMinor: string;
+    walletExposureMismatchAmountMinor: string;
+  };
   currency: string;
   pendingAmountMinor: string;
+  positions: {
+    platformCashAmountMinor: string;
+    platformRevenueAmountMinor: string;
+    recipientPayablesAmountMinor: string;
+    walletLiabilitiesAmountMinor: string;
+  };
   postedToday: number;
+  accountingIntegrity: {
+    isBalanced: boolean;
+    trialBalanceDeltaAmountMinor: string;
+    unbalancedJournalCount: number;
+  };
 };
 
 export interface AdminWalletQueryRepository {

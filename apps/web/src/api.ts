@@ -435,9 +435,36 @@ type AdminWalletListResponse = {
 
 type AdminBalanceSummaryItem = {
   activeWalletCount: number;
+  accountingIntegrity: {
+    isBalanced: boolean;
+    trialBalanceDelta: MoneyDto;
+    unbalancedJournalCount: number;
+  };
   available: MoneyDto;
+  businessIntegrity: {
+    cashCoverageGap: MoneyDto;
+    inFlightGross: MoneyDto;
+    inFlightNet: MoneyDto;
+    inFlightPayoutCount: number;
+    isHealthy: boolean;
+    issues: Array<{
+      code: string;
+      count: number | null;
+      severity: 'high' | 'medium';
+      summary: string;
+      value: MoneyDto | null;
+    }>;
+    walletExposure: MoneyDto;
+    walletExposureMismatch: MoneyDto;
+  };
   currency: string;
   pending: MoneyDto;
+  positions: {
+    platformCash: MoneyDto;
+    platformRevenue: MoneyDto;
+    recipientPayables: MoneyDto;
+    walletLiabilities: MoneyDto;
+  };
   postedToday: number;
 };
 
