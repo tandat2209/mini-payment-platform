@@ -27,10 +27,14 @@ export type TransactionListItemView = {
 
 export type TransactionDetailView = TransactionListItemView & {
   payoutContext: {
+    completedAt: Date | string | null;
+    failedAt: Date | string | null;
     payoutId: string;
     payoutReference: string | null;
+    status: 'failed' | 'paid' | 'pending_submission' | 'processing' | 'submitted';
     recipientId: string | null;
     recipientName: string | null;
+    submittedAt: Date | string | null;
   } | null;
 };
 

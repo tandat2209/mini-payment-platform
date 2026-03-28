@@ -3,6 +3,7 @@ import {
   type UseMutationResult,
   useQuery,
   useQueryClient,
+  type UseQueryOptions,
   type UseQueryResult,
 } from '@tanstack/react-query';
 
@@ -28,8 +29,16 @@ import {
   type WalletFundingDetailsResponse,
 } from '@/features/customer/api';
 
-export function useBalancesQuery(): UseQueryResult<WalletBalancesResponse, Error> {
+type CustomerQueryOptions<TData> = Pick<
+  UseQueryOptions<TData, Error>,
+  'enabled' | 'refetchInterval'
+>;
+
+export function useBalancesQuery(
+  options?: CustomerQueryOptions<WalletBalancesResponse>,
+): UseQueryResult<WalletBalancesResponse, Error> {
   return useQuery({
+    ...(options ?? {}),
     queryFn: fetchBalances,
     queryKey: ['balances'],
   });
@@ -56,9 +65,11 @@ export function useTransactionsQuery(
 
 export function useTransactionDetailQuery(
   transactionId: string | null,
+  options?: CustomerQueryOptions<TransactionDetailItem>,
 ): UseQueryResult<TransactionDetailItem, Error> {
   return useQuery({
-    enabled: transactionId !== null,
+    ...(options ?? {}),
+    enabled: (options?.enabled ?? true) && transactionId !== null,
     queryFn: async () => await fetchTransactionDetail(transactionId ?? ''),
     queryKey: ['transaction-detail', transactionId],
   });

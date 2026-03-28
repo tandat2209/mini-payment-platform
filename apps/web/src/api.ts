@@ -64,10 +64,14 @@ type TransactionItem = {
 
 type TransactionDetailItem = TransactionItem & {
   payout: {
+    completedAt: string | null;
+    failedAt: string | null;
     payoutId: string;
     payoutReference: string | null;
     recipientId: string | null;
     recipientName: string | null;
+    status: 'failed' | 'paid' | 'pending_submission' | 'processing' | 'submitted';
+    submittedAt: string | null;
   } | null;
 };
 

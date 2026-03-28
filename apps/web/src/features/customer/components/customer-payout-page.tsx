@@ -3,11 +3,14 @@ import {
   ArrowRight,
   CheckCircle2,
   CircleAlert,
+  Clock3,
   Landmark,
+  LoaderCircle,
+  RefreshCcw,
   ShieldCheck,
   Sparkles,
 } from 'lucide-react';
-import { type JSX, useMemo, useState } from 'react';
+import { type JSX, useEffect, useMemo, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -27,8 +30,12 @@ import type {
   RecipientSummary,
   WalletBalance,
 } from '@/features/customer/api';
+import {
+  useBalancesQuery,
+  useTransactionDetailQuery,
+} from '@/features/customer/api/use-customer-queries';
 import { EmptyState, LoadingBlock } from '@/features/customer/components/shared';
-import { formatMoney, formatMoneyFromMinor, toTitleCase } from '@/lib/formatters';
+import { formatDate, formatMoney, formatMoneyFromMinor, toTitleCase } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 
 type ReadyRail = RecipientSummary['rails'][number] & {
@@ -40,7 +47,7 @@ const STEPS = [
   { id: 'recipient', label: 'Recipient' },
   { id: 'details', label: 'Details' },
   { id: 'review', label: 'Review' },
-  { id: 'success', label: 'Success' },
+  { id: 'status', label: 'Status' },
 ] as const;
 
 export function CustomerPayoutPage({
@@ -71,6 +78,16 @@ export function CustomerPayoutPage({
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [submittedPayout, setSubmittedPayout] = useState<CreatePayoutResponse | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const liveBalancesQuery = useBalancesQuery();
+  const createdTransactionId = submittedPayout?.transaction.id ?? null;
+  const livePayoutQuery = useTransactionDetailQuery(createdTransactionId, {
+    enabled: step === 3 && createdTransactionId !== null,
+    refetchInterval: (query) => {
+      const payoutStatus = query.state.data?.payout?.status ?? submittedPayout?.payout.status;
+
+      return payoutStatus === 'submitted' || payoutStatus === 'processing' ? 3_000 : false;
+    },
+  });
 
   const readyRails = useMemo<ReadyRail[]>(() => {
     return recipients.flatMap((recipient) =>
@@ -97,18 +114,20 @@ export function CustomerPayoutPage({
   }, [recipients]);
 
   const selectedRail = readyRails.find((rail) => rail.id === selectedRailId) ?? null;
+  const currentBalances = liveBalancesQuery.data?.balances ?? visibleBalances;
+  const currentWalletId = liveBalancesQuery.data?.wallet.id ?? walletId;
 
   const sourceBalances = useMemo(() => {
     if (!selectedRail) {
-      return visibleBalances;
+      return currentBalances;
     }
 
-    const matchingBalances = visibleBalances.filter(
+    const matchingBalances = currentBalances.filter(
       (balance) => balance.currency === selectedRail.currency,
     );
 
-    return matchingBalances.length > 0 ? matchingBalances : visibleBalances;
-  }, [selectedRail, visibleBalances]);
+    return matchingBalances.length > 0 ? matchingBalances : currentBalances;
+  }, [currentBalances, selectedRail]);
 
   const effectiveSourceCurrency = selectedSourceCurrency;
   const selectedSourceBalance =
@@ -134,13 +153,38 @@ export function CustomerPayoutPage({
 
   const canContinueFromRecipient = selectedRail !== null;
   const canContinueFromDetails =
-    walletId !== null && selectedSourceBalance !== null && amountMinor > 0n && hasSufficientBalance;
+    currentWalletId !== null &&
+    selectedSourceBalance !== null &&
+    amountMinor > 0n &&
+    hasSufficientBalance;
   const primaryActionDisabled =
     (step === 0 && !canContinueFromRecipient) ||
     (step === 1 && !canContinueFromDetails) ||
     (step === 2 && (!canContinueFromDetails || isSubmitting));
   const primaryActionLabel =
-    step === 2 ? (isSubmitting ? 'Creating...' : 'Create payout') : 'Continue';
+    step === 2 ? (isSubmitting ? 'Submitting...' : 'Submit payout') : 'Continue';
+  const livePayoutDetail = livePayoutQuery.data;
+  const payoutLifecycleStatus = resolvePayoutLifecycleStatus(submittedPayout, livePayoutDetail);
+  const payoutLifecycleCopy = getPayoutLifecycleCopy(payoutLifecycleStatus);
+  const payoutLifecycleTimestamp = getPayoutLifecycleTimestamp(
+    payoutLifecycleStatus,
+    submittedPayout,
+    livePayoutDetail,
+  );
+  const payoutBalanceCurrency =
+    selectedSourceBalance?.currency ?? submittedPayout?.amounts.gross.currency ?? '';
+  const liveSourceBalance =
+    currentBalances.find((balance) => balance.currency === payoutBalanceCurrency) ?? null;
+  const returnedBalancePreview =
+    payoutLifecycleStatus === 'failed' && liveSourceBalance
+      ? formatMoney(liveSourceBalance.available)
+      : null;
+
+  useEffect(() => {
+    if (step === 3 && payoutLifecycleStatus === 'failed') {
+      void liveBalancesQuery.refetch();
+    }
+  }, [liveBalancesQuery, payoutLifecycleStatus, step]);
 
   async function handleAdvance(): Promise<void> {
     if (step === 0 && canContinueFromRecipient) {
@@ -158,7 +202,7 @@ export function CustomerPayoutPage({
     if (
       step === 2 &&
       canContinueFromDetails &&
-      walletId !== null &&
+      currentWalletId !== null &&
       selectedRail !== null &&
       selectedSourceBalance !== null
     ) {
@@ -172,7 +216,7 @@ export function CustomerPayoutPage({
           recipientRailId: selectedRail.id,
           ...(reference.trim() ? { reference: reference.trim() } : {}),
           sourceCurrency: selectedSourceBalance.currency,
-          sourceWalletId: walletId,
+          sourceWalletId: currentWalletId,
         });
 
         setSubmittedPayout(result);
@@ -481,8 +525,8 @@ export function CustomerPayoutPage({
                       ) : null}
 
                       <div className="rounded-[20px] border border-slate-200 bg-[#fcfaf7] p-3.5 text-sm text-slate-600">
-                        This creates a real payout request and books the wallet debit immediately.
-                        Provider submission comes next.
+                        This submits a real payout request and debits the wallet immediately. The
+                        next step follows the provider status live.
                       </div>
                     </div>
                   ) : null}
@@ -490,23 +534,27 @@ export function CustomerPayoutPage({
                   {step === 3 && submittedPayout ? (
                     <div className="space-y-5">
                       <div className="space-y-3">
-                        <Badge tone="positive" className="w-fit">
-                          Pending submission
+                        <Badge className="w-fit" tone={payoutLifecycleCopy.badgeTone}>
+                          {payoutLifecycleCopy.badgeLabel}
                         </Badge>
                         <div className="flex items-center gap-3">
-                          <span className="rounded-full bg-emerald-100 p-2 text-emerald-700">
-                            <CheckCircle2 className="h-5 w-5" />
+                          <span className={cn('rounded-full p-2', payoutLifecycleCopy.iconTone)}>
+                            {payoutLifecycleCopy.icon}
                           </span>
                           <div>
-                            <h2 className="text-xl font-semibold text-slate-950">Payout created</h2>
-                            <p className="text-sm text-slate-500">
-                              The payout is booked and waiting for provider submission.
-                            </p>
+                            <h2 className="text-xl font-semibold text-slate-950">
+                              {payoutLifecycleCopy.title}
+                            </h2>
+                            <p className="text-sm text-slate-500">{payoutLifecycleCopy.message}</p>
                           </div>
                         </div>
                       </div>
 
                       <div className="grid gap-3">
+                        <ReviewRow
+                          label="Payout status"
+                          value={toTitleCase(payoutLifecycleStatus)}
+                        />
                         <ReviewRow label="Reference" value={submittedPayout.payout.reference} />
                         <ReviewRow label="Recipient" value={submittedPayout.recipient.name} />
                         <ReviewRow
@@ -518,7 +566,40 @@ export function CustomerPayoutPage({
                           label="Total debit"
                           value={formatMoney(submittedPayout.amounts.gross)}
                         />
+                        <ReviewRow
+                          label={payoutLifecycleTimestamp.label}
+                          value={payoutLifecycleTimestamp.value}
+                        />
+                        {payoutLifecycleStatus === 'failed' ? (
+                          <>
+                            <ReviewRow
+                              label="Failure reason"
+                              value="The provider could not complete this payout."
+                            />
+                            <ReviewRow
+                              label="Balance return"
+                              value={
+                                returnedBalancePreview
+                                  ? `${formatMoney(submittedPayout.amounts.gross)} returned · Available now ${returnedBalancePreview}`
+                                  : `${formatMoney(submittedPayout.amounts.gross)} is being returned to your available balance`
+                              }
+                            />
+                          </>
+                        ) : null}
                       </div>
+
+                      {livePayoutQuery.isLoading && payoutLifecycleStatus !== 'paid' ? (
+                        <div className="rounded-[20px] border border-slate-200 bg-[#fcfaf7] px-3.5 py-3 text-sm text-slate-600">
+                          Checking the latest provider update...
+                        </div>
+                      ) : null}
+
+                      {livePayoutQuery.error ? (
+                        <div className="rounded-[20px] border border-amber-200 bg-amber-50 px-3.5 py-3 text-sm text-amber-800">
+                          Live status could not be refreshed right now. Your payout request is still
+                          recorded.
+                        </div>
+                      ) : null}
 
                       <div className="grid gap-3 sm:grid-cols-2">
                         <Button className="rounded-xl px-4" onClick={onViewOverview}>
@@ -565,6 +646,9 @@ export function CustomerPayoutPage({
                     label="Source"
                     value={selectedSourceBalance?.currency ?? amountCurrency ?? 'Select'}
                   />
+                  {step === 3 && submittedPayout ? (
+                    <SummaryMetric label="Status" value={toTitleCase(payoutLifecycleStatus)} />
+                  ) : null}
                   <SummaryMetric
                     label="Recipient gets"
                     value={
@@ -740,4 +824,117 @@ function formatReadinessStatus(value: string | null | undefined): string {
   }
 
   return toTitleCase(value.replace(/_/g, ' '));
+}
+
+function resolvePayoutLifecycleStatus(
+  submittedPayout: CreatePayoutResponse | null,
+  transactionDetail: { payout: { status: string } | null } | undefined,
+): 'failed' | 'paid' | 'processing' | 'submitted' {
+  const liveStatus = transactionDetail?.payout?.status;
+
+  if (
+    liveStatus === 'failed' ||
+    liveStatus === 'paid' ||
+    liveStatus === 'processing' ||
+    liveStatus === 'submitted'
+  ) {
+    return liveStatus;
+  }
+
+  const createdStatus = submittedPayout?.payout.status;
+
+  return createdStatus === 'submitted' ? 'submitted' : 'submitted';
+}
+
+function getPayoutLifecycleCopy(status: 'failed' | 'paid' | 'processing' | 'submitted'): {
+  badgeLabel: string;
+  badgeTone: 'default' | 'positive' | 'warning';
+  icon: JSX.Element;
+  iconTone: string;
+  message: string;
+  title: string;
+} {
+  if (status === 'paid') {
+    return {
+      badgeLabel: 'Paid',
+      badgeTone: 'positive',
+      icon: <CheckCircle2 className="h-5 w-5" />,
+      iconTone: 'bg-emerald-100 text-emerald-700',
+      message: 'The payout completed successfully.',
+      title: 'Payout completed',
+    };
+  }
+
+  if (status === 'failed') {
+    return {
+      badgeLabel: 'Failed',
+      badgeTone: 'default',
+      icon: <RefreshCcw className="h-5 w-5" />,
+      iconTone: 'bg-rose-100 text-rose-700',
+      message: 'The payout failed and the total debit is being returned to the wallet.',
+      title: 'Payout failed',
+    };
+  }
+
+  if (status === 'processing') {
+    return {
+      badgeLabel: 'Processing',
+      badgeTone: 'warning',
+      icon: <LoaderCircle className="h-5 w-5 animate-spin" />,
+      iconTone: 'bg-amber-100 text-amber-700',
+      message: 'The provider accepted the payout and is still processing it.',
+      title: 'Payout processing',
+    };
+  }
+
+  return {
+    badgeLabel: 'Submitted',
+    badgeTone: 'warning',
+    icon: <Clock3 className="h-5 w-5" />,
+    iconTone: 'bg-slate-100 text-slate-700',
+    message: 'The payout was submitted and is waiting for the next provider update.',
+    title: 'Payout submitted',
+  };
+}
+
+function getPayoutLifecycleTimestamp(
+  status: 'failed' | 'paid' | 'processing' | 'submitted',
+  submittedPayout: CreatePayoutResponse | null,
+  transactionDetail:
+    | {
+        payout: {
+          completedAt: string | null;
+          failedAt: string | null;
+          submittedAt: string | null;
+        } | null;
+      }
+    | undefined,
+): { label: string; value: string } {
+  if (status === 'paid') {
+    return {
+      label: 'Completed',
+      value: formatDate(transactionDetail?.payout?.completedAt ?? null),
+    };
+  }
+
+  if (status === 'failed') {
+    return {
+      label: 'Failed',
+      value: formatDate(transactionDetail?.payout?.failedAt ?? null),
+    };
+  }
+
+  if (status === 'processing') {
+    return {
+      label: 'In progress',
+      value: formatDate(
+        transactionDetail?.payout?.submittedAt ?? submittedPayout?.createdAt ?? null,
+      ),
+    };
+  }
+
+  return {
+    label: 'Submitted',
+    value: formatDate(transactionDetail?.payout?.submittedAt ?? submittedPayout?.createdAt ?? null),
+  };
 }

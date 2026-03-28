@@ -384,8 +384,12 @@ class ApiFakeDatabaseService {
             id: 'txn-alice',
             net_amount_minor: '200',
             occurred_at: '2026-03-22T01:20:00.000Z',
+            payout_completed_at: '2026-03-22T01:21:20.000Z',
+            payout_failed_at: null,
             payout_id: 'payout-1',
             payout_reference: 'payout-001',
+            payout_status: 'paid',
+            payout_submitted_at: '2026-03-22T01:20:20.000Z',
             posted_at: '2026-03-22T01:21:20.000Z',
             recipient_id: 'recipient-alice',
             recipient_name: 'Vendor One',
@@ -396,7 +400,43 @@ class ApiFakeDatabaseService {
         ]);
       }
 
-      return withRows([]);
+      const transaction = this.userTransactions.get(String(transactionId));
+
+      if (!transaction || transaction.user_id !== customerId) {
+        return withRows([]);
+      }
+
+      const payout = Array.from(this.payouts.values()).find(
+        (item) => item.user_transaction_id === transaction.id,
+      );
+      const recipient = payout
+        ? this.recipients.find((item) => item.id === payout.recipient_id)
+        : null;
+
+      return withRows([
+        {
+          currency: transaction.currency,
+          description: transaction.description,
+          direction: transaction.direction ?? 'debit',
+          fee_amount_minor: transaction.fee_amount_minor,
+          gross_amount_minor: transaction.gross_amount_minor,
+          id: transaction.id,
+          net_amount_minor: transaction.net_amount_minor,
+          occurred_at: transaction.occurred_at,
+          payout_completed_at: payout?.completed_at ?? null,
+          payout_failed_at: payout?.failed_at ?? null,
+          payout_id: payout?.id ?? null,
+          payout_reference: payout?.reference ?? null,
+          payout_status: payout?.status ?? null,
+          payout_submitted_at: payout?.submitted_at ?? null,
+          posted_at: transaction.posted_at,
+          recipient_id: recipient?.id ?? null,
+          recipient_name: recipient?.name ?? null,
+          reference: transaction.reference,
+          status: transaction.status,
+          type: transaction.type ?? 'payout',
+        },
+      ]);
     }
 
     if (
@@ -724,6 +764,7 @@ class ApiFakeDatabaseService {
         created_at: String(createdAt),
         currency: String(currency),
         description: String(description),
+        direction: 'debit',
         fee_amount_minor: String(feeAmountMinor),
         gross_amount_minor: String(grossAmountMinor),
         id: String(userTransactionId),
@@ -732,6 +773,7 @@ class ApiFakeDatabaseService {
         posted_at: null,
         reference: String(reference),
         status: 'pending',
+        type: 'payout',
         updated_at: String(createdAt),
         user_id: String(userId),
         wallet_id: String(walletId),
@@ -1348,6 +1390,45 @@ test('payout create API rejects requests without idempotency key', async () => {
       (payoutResponse.body.error as { message: string }).message,
       'Idempotency-Key header is required',
     );
+  } finally {
+    await app.close();
+  }
+});
+
+test('transaction detail exposes payout lifecycle status for a created payout', async () => {
+  const app = await createTestApp();
+
+  try {
+    const payoutResponse = await postJson(
+      app,
+      '/customers/me/payouts',
+      'user_demo_alice',
+      {
+        amountMinor: 2500,
+        recipientRailId: PAYOUT_TEST_RECIPIENT_RAIL_ID,
+        reference: 'Invoice 205',
+        sourceCurrency: 'USD',
+        sourceWalletId: PAYOUT_TEST_WALLET_ID,
+      },
+      {
+        headers: {
+          'idempotency-key': 'idem-payout-create-002',
+        },
+      },
+    );
+
+    assert.equal(payoutResponse.status, 201);
+
+    const transactionId = (payoutResponse.body.transaction as { id: string }).id;
+    const detailResponse = await fetchJson(
+      app,
+      `/customers/me/transactions/${transactionId}`,
+      'user_demo_alice',
+    );
+
+    assert.equal(detailResponse.status, 200);
+    assert.equal((detailResponse.body.payout as { status: string }).status, 'submitted');
+    assert.ok((detailResponse.body.payout as { submittedAt: string | null }).submittedAt);
   } finally {
     await app.close();
   }

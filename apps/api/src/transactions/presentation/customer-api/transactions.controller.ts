@@ -34,7 +34,16 @@ type TransactionResponse = {
 };
 
 type TransactionDetailResponse = TransactionResponse & {
-  payout: TransactionDetailView['payoutContext'];
+  payout: {
+    completedAt: string | null;
+    failedAt: string | null;
+    payoutId: string;
+    payoutReference: string | null;
+    recipientId: string | null;
+    recipientName: string | null;
+    status: string;
+    submittedAt: string | null;
+  } | null;
 };
 
 @UseGuards(CurrentCustomerGuard)
@@ -86,7 +95,18 @@ export class TransactionsController {
 
     return {
       ...this.toTransactionResponse(transaction),
-      payout: transaction.payoutContext,
+      payout: transaction.payoutContext
+        ? {
+            completedAt: toIsoTimestamp(transaction.payoutContext.completedAt),
+            failedAt: toIsoTimestamp(transaction.payoutContext.failedAt),
+            payoutId: transaction.payoutContext.payoutId,
+            payoutReference: transaction.payoutContext.payoutReference,
+            recipientId: transaction.payoutContext.recipientId,
+            recipientName: transaction.payoutContext.recipientName,
+            status: transaction.payoutContext.status,
+            submittedAt: toIsoTimestamp(transaction.payoutContext.submittedAt),
+          }
+        : null,
     };
   }
 

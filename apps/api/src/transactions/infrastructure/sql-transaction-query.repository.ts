@@ -26,10 +26,14 @@ type TransactionRow = {
 };
 
 type TransactionDetailRow = TransactionRow & {
+  payout_completed_at: Date | string | null;
+  payout_failed_at: Date | string | null;
   payout_id: string | null;
   payout_reference: string | null;
+  payout_status: 'failed' | 'paid' | 'pending_submission' | 'processing' | 'submitted' | null;
   recipient_id: string | null;
   recipient_name: string | null;
+  payout_submitted_at: Date | string | null;
 };
 
 @Injectable()
@@ -143,6 +147,10 @@ export class SqlTransactionQueryRepository implements TransactionQueryRepository
           ut.posted_at,
           p.id AS payout_id,
           p.reference AS payout_reference,
+          p.status AS payout_status,
+          p.submitted_at AS payout_submitted_at,
+          p.completed_at AS payout_completed_at,
+          p.failed_at AS payout_failed_at,
           r.id AS recipient_id,
           r.name AS recipient_name
         FROM user_transactions ut
@@ -167,10 +175,14 @@ export class SqlTransactionQueryRepository implements TransactionQueryRepository
       ...this.mapTransactionRow(transaction),
       payoutContext: transaction.payout_id
         ? {
+            completedAt: transaction.payout_completed_at,
+            failedAt: transaction.payout_failed_at,
             payoutId: transaction.payout_id,
             payoutReference: transaction.payout_reference,
+            status: transaction.payout_status ?? 'submitted',
             recipientId: transaction.recipient_id,
             recipientName: transaction.recipient_name,
+            submittedAt: transaction.payout_submitted_at,
           }
         : null,
     };
