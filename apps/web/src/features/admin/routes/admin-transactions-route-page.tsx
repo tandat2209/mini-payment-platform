@@ -119,12 +119,28 @@ export function AdminTransactionsRoutePage(): JSX.Element {
           to: '/admin/ledger',
         });
       }}
+      onOpenCustomers={(query) => {
+        void navigate({
+          search: {
+            query,
+          },
+          to: '/admin/customers',
+        });
+      }}
       onOpenPayouts={(query) => {
         void navigate({
           search: {
             query,
           },
           to: '/admin/payouts',
+        });
+      }}
+      onOpenReconciliation={(query) => {
+        void navigate({
+          search: {
+            query,
+          },
+          to: '/admin/reconciliation',
         });
       }}
       onSelect={(transactionId) => {

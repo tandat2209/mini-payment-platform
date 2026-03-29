@@ -65,6 +65,9 @@ const adminCustomersRoute = createRoute({
   component: AdminWalletRoutePage,
   getParentRoute: () => rootRoute,
   path: '/admin/customers',
+  validateSearch: (search: Record<string, unknown>) => ({
+    query: typeof search.query === 'string' ? search.query : undefined,
+  }),
 });
 
 const adminTransactionsRoute = createRoute({
@@ -111,6 +114,9 @@ const adminReconciliationRoute = createRoute({
   component: AdminReconciliationRoutePage,
   getParentRoute: () => rootRoute,
   path: '/admin/reconciliation',
+  validateSearch: (search: Record<string, unknown>) => ({
+    query: typeof search.query === 'string' ? search.query : undefined,
+  }),
 });
 
 const adminWebhooksRoute = createRoute({

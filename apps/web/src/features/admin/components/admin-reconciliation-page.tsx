@@ -3,6 +3,7 @@ import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import type { AdminReconciliationExceptionItem } from '@/features/admin/api';
@@ -14,10 +15,18 @@ export function AdminReconciliationPage({
   error,
   exceptions,
   isLoading,
+  onOpenLedger,
+  onOpenPayouts,
+  onOpenTransactions,
+  onOpenWebhooks,
 }: {
   error: string | null;
   exceptions: AdminReconciliationExceptionItem[];
   isLoading: boolean;
+  onOpenLedger: (ledgerTransactionId: string) => void;
+  onOpenPayouts: (query: string) => void;
+  onOpenTransactions: (query: string) => void;
+  onOpenWebhooks: (query: string) => void;
 }): JSX.Element {
   const [selectedExceptionKey, setSelectedExceptionKey] = useState<string | null>(null);
   const selectedException = useMemo(
@@ -161,64 +170,123 @@ export function AdminReconciliationPage({
 
             <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5">
               {selectedException ? (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <DetailCard
-                    label="Kind"
-                    value={toTitleCase(selectedException.kind.replaceAll('_', ' '))}
-                  />
-                  <DetailCard label="Severity" value={toTitleCase(selectedException.severity)} />
-                  <DetailCard label="Reference" value={selectedException.reference ?? 'Not set'} />
-                  <DetailCard
-                    label="Source"
-                    value={shortenIdentifier(selectedException.sourceId)}
-                  />
-                  <DetailCard
-                    label="Occurred"
-                    value={
-                      selectedException.occurredAt
-                        ? formatDate(selectedException.occurredAt, {
-                            day: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            month: 'short',
-                            year: 'numeric',
-                          })
-                        : 'No timestamp'
-                    }
-                  />
-                  <DetailCard
-                    label="Payout"
-                    value={
-                      selectedException.linkedPayoutId
-                        ? shortenIdentifier(selectedException.linkedPayoutId)
-                        : 'Not linked'
-                    }
-                  />
-                  <DetailCard
-                    label="Transaction"
-                    value={
-                      selectedException.linkedTransactionId
-                        ? shortenIdentifier(selectedException.linkedTransactionId)
-                        : 'Not linked'
-                    }
-                  />
-                  <DetailCard
-                    label="Webhook"
-                    value={
-                      selectedException.linkedWebhookEventId
-                        ? shortenIdentifier(selectedException.linkedWebhookEventId)
-                        : 'Not linked'
-                    }
-                  />
-                  <DetailCard
-                    label="Ledger"
-                    value={
-                      selectedException.linkedLedgerTransactionId
-                        ? shortenIdentifier(selectedException.linkedLedgerTransactionId)
-                        : 'Not linked'
-                    }
-                  />
-                </div>
+                <>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <DetailCard
+                      label="Kind"
+                      value={toTitleCase(selectedException.kind.replaceAll('_', ' '))}
+                    />
+                    <DetailCard label="Severity" value={toTitleCase(selectedException.severity)} />
+                    <DetailCard
+                      label="Reference"
+                      value={selectedException.reference ?? 'Not set'}
+                    />
+                    <DetailCard
+                      label="Source"
+                      value={shortenIdentifier(selectedException.sourceId)}
+                    />
+                    <DetailCard
+                      label="Occurred"
+                      value={
+                        selectedException.occurredAt
+                          ? formatDate(selectedException.occurredAt, {
+                              day: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              month: 'short',
+                              year: 'numeric',
+                            })
+                          : 'No timestamp'
+                      }
+                    />
+                    <DetailCard
+                      label="Payout"
+                      value={
+                        selectedException.linkedPayoutId
+                          ? shortenIdentifier(selectedException.linkedPayoutId)
+                          : 'Not linked'
+                      }
+                    />
+                    <DetailCard
+                      label="Transaction"
+                      value={
+                        selectedException.linkedTransactionId
+                          ? shortenIdentifier(selectedException.linkedTransactionId)
+                          : 'Not linked'
+                      }
+                    />
+                    <DetailCard
+                      label="Webhook"
+                      value={
+                        selectedException.linkedWebhookEventId
+                          ? shortenIdentifier(selectedException.linkedWebhookEventId)
+                          : 'Not linked'
+                      }
+                    />
+                    <DetailCard
+                      label="Ledger"
+                      value={
+                        selectedException.linkedLedgerTransactionId
+                          ? shortenIdentifier(selectedException.linkedLedgerTransactionId)
+                          : 'Not linked'
+                      }
+                    />
+                  </div>
+
+                  <div className="rounded-[24px] border border-slate-200 bg-white p-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                      Related pages
+                    </p>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {selectedException.linkedPayoutId ? (
+                        <Button
+                          className="h-9 rounded-full px-3"
+                          onClick={() => onOpenPayouts(selectedException.linkedPayoutId ?? '')}
+                          type="button"
+                          variant="outline"
+                        >
+                          Open payout
+                        </Button>
+                      ) : null}
+                      {selectedException.linkedTransactionId ? (
+                        <Button
+                          className="h-9 rounded-full px-3"
+                          onClick={() =>
+                            onOpenTransactions(selectedException.linkedTransactionId ?? '')
+                          }
+                          type="button"
+                          variant="outline"
+                        >
+                          Open transaction
+                        </Button>
+                      ) : null}
+                      {selectedException.linkedWebhookEventId ? (
+                        <Button
+                          className="h-9 rounded-full px-3"
+                          onClick={() =>
+                            onOpenWebhooks(selectedException.linkedWebhookEventId ?? '')
+                          }
+                          type="button"
+                          variant="outline"
+                        >
+                          Open webhook
+                        </Button>
+                      ) : null}
+                      {selectedException.linkedLedgerTransactionId ? (
+                        <Button
+                          className="h-9 rounded-full px-3"
+                          onClick={() =>
+                            onOpenLedger(selectedException.linkedLedgerTransactionId ?? '')
+                          }
+                          type="button"
+                          variant="outline"
+                        >
+                          Open ledger
+                        </Button>
+                      ) : null}
+                    </div>
+                  </div>
+                </>
               ) : null}
             </div>
           </div>

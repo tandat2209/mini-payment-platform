@@ -3,6 +3,7 @@ import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import type { AdminWebhookEventItem } from '@/features/admin/api';
@@ -14,10 +15,16 @@ export function AdminWebhooksPage({
   error,
   events,
   isLoading,
+  onOpenPayouts,
+  onOpenReconciliation,
+  onOpenTransactions,
 }: {
   error: string | null;
   events: AdminWebhookEventItem[];
   isLoading: boolean;
+  onOpenPayouts: (query: string) => void;
+  onOpenReconciliation: (query: string) => void;
+  onOpenTransactions: (query: string) => void;
 }): JSX.Element {
   const [selectedWebhookId, setSelectedWebhookId] = useState<string | null>(null);
   const selectedWebhook = useMemo(
@@ -222,6 +229,44 @@ export function AdminWebhooksPage({
                       <pre className="whitespace-pre-wrap break-words text-xs leading-6 text-slate-700">
                         {JSON.stringify(selectedWebhook.payload, null, 2)}
                       </pre>
+                    </div>
+                  </div>
+
+                  <div className="rounded-[24px] border border-slate-200 bg-white p-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                      Related pages
+                    </p>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {selectedWebhook.linkedPayoutId ? (
+                        <Button
+                          className="h-9 rounded-full px-3"
+                          onClick={() => onOpenPayouts(selectedWebhook.linkedPayoutId ?? '')}
+                          type="button"
+                          variant="outline"
+                        >
+                          Open payout
+                        </Button>
+                      ) : null}
+                      {selectedWebhook.linkedTransactionId ? (
+                        <Button
+                          className="h-9 rounded-full px-3"
+                          onClick={() =>
+                            onOpenTransactions(selectedWebhook.linkedTransactionId ?? '')
+                          }
+                          type="button"
+                          variant="outline"
+                        >
+                          Open transaction
+                        </Button>
+                      ) : null}
+                      <Button
+                        className="h-9 rounded-full px-3"
+                        onClick={() => onOpenReconciliation(selectedWebhook.id)}
+                        type="button"
+                        variant="outline"
+                      >
+                        Open reconciliation
+                      </Button>
                     </div>
                   </div>
                 </>
