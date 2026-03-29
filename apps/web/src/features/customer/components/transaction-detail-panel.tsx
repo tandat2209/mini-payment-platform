@@ -84,7 +84,7 @@ export function TransactionDetailPanel({
                   </div>
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                      Net
+                      Wallet impact
                     </p>
                     <p className="mt-1.5 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">
                       {formatSignedTransactionMoney(transaction)}
@@ -105,9 +105,9 @@ export function TransactionDetailPanel({
             </div>
 
             <div className="grid gap-3 sm:grid-cols-3">
-              <DetailMetric label="Gross" value={formatMoney(transaction.amounts.gross)} />
+              <DetailMetric label="Wallet amount" value={formatMoney(transaction.amounts.gross)} />
               <DetailMetric label="Fee" value={formatMoney(transaction.amounts.fee)} />
-              <DetailMetric label="Net" value={formatMoney(transaction.amounts.net)} />
+              <DetailMetric label="Recipient amount" value={formatMoney(transaction.amounts.net)} />
             </div>
 
             <div className="grid gap-3 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">

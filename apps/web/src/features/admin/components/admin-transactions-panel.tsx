@@ -101,7 +101,7 @@ export function AdminTransactionsPanel({
         header: 'Narrative',
       },
       {
-        accessorKey: 'amounts.net.amountMinor',
+        accessorKey: 'amounts.gross.amountMinor',
         cell: ({ row }) => (
           <p
             className={
@@ -110,10 +110,10 @@ export function AdminTransactionsPanel({
                 : 'text-sm font-semibold text-slate-950'
             }
           >
-            {formatMoney(row.original.amounts.net)}
+            {formatMoney(row.original.amounts.gross)}
           </p>
         ),
-        header: 'Net',
+        header: 'Wallet amount',
       },
       {
         accessorKey: 'reference',
@@ -326,8 +326,14 @@ export function AdminTransactionsPanel({
               </div>
 
               <div className="grid gap-3 sm:grid-cols-3">
-                <Metric label="Gross" value={formatMoney(selectedTransaction.amounts.gross)} />
-                <Metric label="Net" value={formatMoney(selectedTransaction.amounts.net)} />
+                <Metric
+                  label="Wallet amount"
+                  value={formatMoney(selectedTransaction.amounts.gross)}
+                />
+                <Metric
+                  label="Recipient amount"
+                  value={formatMoney(selectedTransaction.amounts.net)}
+                />
                 <Metric label="Status" value={toTitleCase(selectedTransaction.status)} />
               </div>
 

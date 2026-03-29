@@ -62,10 +62,10 @@ export function formatUsdAmount(amount: number): string {
 }
 
 export function formatSignedTransactionMoney(item: TransactionItem): string {
-  const amountMinor = BigInt(item.amounts.net.amountMinor);
+  const amountMinor = BigInt(item.amounts.gross.amountMinor);
   const signedMinor = item.direction === 'debit' ? -amountMinor : amountMinor;
 
-  return formatMoneyFromMinor(signedMinor, item.amounts.net.currency);
+  return formatMoneyFromMinor(signedMinor, item.amounts.gross.currency);
 }
 
 export function getCurrencyIcon(currency: string): LucideIcon {
@@ -209,6 +209,6 @@ export function sumTransactionsUsdEquivalent(
       return sum;
     }
 
-    return sum + getUsdEquivalentFromMoney(transaction.amounts.net);
+    return sum + getUsdEquivalentFromMoney(transaction.amounts.gross);
   }, 0);
 }
