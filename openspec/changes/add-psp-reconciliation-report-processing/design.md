@@ -76,26 +76,38 @@ Alternatives considered:
 - Raw JSON only: rejected because matching and admin triage would become ad hoc parsing.
 - Normalized lines only: rejected because we would lose exact provider evidence.
 
-### Decision: Match report lines primarily to payout attempts, then to payouts and ledger context
+### Decision: Match report lines by provider line type, then gather payout or funding context
 
-Matching priority should be:
+Matching should begin from the normalized provider line type:
+
+- `funding`
+- `payout`
+- `return`
+
+For payout and return lines, matching priority should be:
 
 1. provider payout id / external payout id
 2. provider request id / external request id
 3. payout id or internal reference when explicitly carried
 4. fallback operational match on currency, gross, fee, net, report date, and recipient/provider context
 
-Once a payout attempt is matched, the reconciliation processor should also gather:
+For funding lines, matching priority should be:
 
-- payout business record
+1. provider external event id
+2. provider reference
+3. wallet destination identifier plus amount/currency/date fallback
+
+Once a report line is matched, the reconciliation processor should also gather the broader context:
+
+- funding or payout business record
 - customer transaction
 - linked webhook events
 - linked ledger transactions
 
 Why:
 
-- `payout_attempts` are the closest internal mirror of provider execution
-- payout business objects alone are too coarse when retries exist
+- payout attempts are the closest internal mirror of provider execution for outbound flows
+- funding webhooks are the closest internal mirror of provider execution for inbound flows
 - ledger linkage is needed to reason about accounting follow-up
 
 Alternatives considered:
@@ -158,44 +170,55 @@ Alternatives considered:
 
 The following scenarios should be first-class in the design:
 
-1. **Exact payout match**
-   - Provider line matches payout attempt identifiers, currency, gross, fee, net, and terminal status.
+1. **Exact funding match**
+   - Provider funding line matches a known funding webhook and its wallet, amount, and currency.
    - Reconcile as `matched`.
 
-2. **Duplicate provider delivery**
+2. **Exact payout match**
+   - Provider payout line matches payout attempt identifiers, currency, gross, fee, net, and terminal status.
+   - Reconcile as `matched`.
+
+3. **Exact return match**
+   - Provider return line matches a previously paid payout and its returned amount, fee reversal policy, and final returned state.
+   - Reconcile as `matched`.
+
+4. **Duplicate provider delivery**
    - Same report batch id or same report line external identifier is replayed.
    - Deduplicate and do not create duplicate report lines or exceptions.
 
-3. **Provider-only payout line**
-   - Provider reports a payout line, but the platform cannot find a matching payout attempt or payout.
+5. **Provider-only line**
+   - Provider reports a funding, payout, or return line, but the platform cannot find the matching internal record.
    - Reconcile as `provider_only`.
    - Create a high-severity exception for investigation.
 
-4. **Internal payout missing from report**
-   - Platform has an eligible payout attempt for the report window, but no corresponding provider line appears.
+6. **Internal record missing from report**
+   - Platform has an eligible funding event, payout attempt, or returned payout for the report window, but no corresponding provider line appears.
    - Do not create this during initial report ingestion.
-   - A separate scheduled expected-missing sweep should create `internal_only` only after the relevant report window is closed and the payout is still unmatched.
-   - If the payout is still plausibly within provider cut-off timing, keep it out of `internal_only` and treat it as a timing candidate instead.
+   - A separate scheduled expected-missing sweep should create `internal_only` only after the relevant report window is closed and the internal record is still unmatched.
+   - If the record is still plausibly within provider cut-off timing, keep it out of `internal_only` and treat it as a timing candidate instead.
 
-5. **Amount mismatch**
-   - Provider line matches a payout attempt, but gross, fee, or net differs from the internal record.
+7. **Amount mismatch**
+   - Provider line matches a known funding, payout, or return record, but gross, fee, net, or returned amount differs from the internal record.
    - Reconcile as `amount_mismatch`.
    - Keep exception open until resolved manually or by later platform logic.
 
-6. **Status mismatch**
-   - Provider reports `paid`, `failed`, or `returned`, but internal payout state differs materially.
+8. **Status mismatch**
+   - Provider reports `completed`, `paid`, `failed`, or `returned`, but internal state differs materially.
    - Reconcile as `status_mismatch`.
-   - Link payout, attempt, latest webhook, and ledger context into the exception.
+   - Link the matched funding or payout record, latest webhook, and ledger context into the exception.
 
-7. **Ledger follow-up missing**
-   - Provider line and payout attempt match, but the expected ledger follow-up is absent.
+9. **Ledger follow-up missing**
+   - Provider line and internal record match, but the expected ledger follow-up is absent.
    - Example: provider says `paid`, but no settlement ledger is linked.
+   - Example: provider says `completed`, but no funding ledger posting is linked.
+   - Example: provider says `returned`, but no return reversal ledger is linked.
    - Reconcile as `status_mismatch` and open a ledger-linked exception.
 
-8. **Unsupported report line type**
-   - Provider sends a line type the platform does not yet model, such as a return or reserve line not in scope.
-   - Reconcile as `unsupported_report_line`.
-   - Store it, do not discard it.
+10. **Unsupported report line type**
+
+- Provider sends a line type the platform does not yet model, such as reserve movement or fee adjustment not in scope.
+- Reconcile as `unsupported_report_line`.
+- Store it, do not discard it.
 
 These classifications should drive admin labeling, alerting, and later operator actions.
 
@@ -211,7 +234,7 @@ These classifications should drive admin labeling, alerting, and later operator 
 
 1. Add PSP sandbox reconciliation report simulation and webhook contract.
 2. Add API-side report batch and report-line storage plus report webhook ingestion.
-3. Add reconciliation matching service for payout-attempt, payout, webhook, and ledger linkage.
+3. Add reconciliation matching service for funding, payout, return, webhook, and ledger linkage.
 4. Add reconciliation outcomes and exception creation logic for report-present lines.
 5. Add a scheduled expected-missing sweep that creates `internal_only` exceptions only after report windows have closed.
 6. Add admin read APIs and admin UI surfaces for report batches, line outcomes, and unresolved exceptions.

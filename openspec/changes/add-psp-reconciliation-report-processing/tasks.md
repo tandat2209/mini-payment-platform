@@ -1,8 +1,8 @@
 ## 1. PSP Sandbox Report Simulation And Contract
 
-- [ ] 1.1 Define the PSP sandbox reconciliation report webhook payload, including provider report identifiers, report date window, and payout-oriented report line structure.
-- [ ] 1.2 Add PSP sandbox support for generating deterministic daily reconciliation reports and delivering them to the API webhook endpoint.
-- [ ] 1.3 Add automated coverage for report generation, webhook delivery, and duplicate report replay.
+- [x] 1.1 Define the PSP sandbox reconciliation report webhook payload, including provider report identifiers, report date window, and normalized funding, payout, and return report line structure.
+- [x] 1.2 Add PSP sandbox support for generating deterministic daily reconciliation reports and delivering them to the API webhook endpoint.
+- [x] 1.3 Add automated coverage for report generation, webhook delivery, and duplicate report replay.
 
 ## 2. API Report Ingestion And Storage
 
@@ -12,7 +12,7 @@
 
 ## 3. Reconciliation Matching And Exception Classification
 
-- [ ] 3.1 Implement reconciliation matching from report lines to payout attempts, payouts, webhook records, user transactions, and ledger records.
+- [ ] 3.1 Implement reconciliation matching from report lines to funding events, payout attempts, returned payouts, webhook records, user transactions, and ledger records.
 - [ ] 3.2 Implement explicit line-outcome classification for matched, timing-difference, provider-only, amount-mismatch, status-mismatch, duplicate-provider-line, and unsupported-line cases during report processing.
 - [ ] 3.3 Create reconciliation exception records for non-auto-resolved cases and preserve linked operational context for investigation.
 - [ ] 3.4 Add a scheduled expected-missing sweep that marks eligible unmatched payouts as `internal_only` only after report windows have closed.

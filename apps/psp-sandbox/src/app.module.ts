@@ -7,6 +7,7 @@ import { BeneficiariesModule } from './beneficiaries/beneficiaries.module';
 import { DatabaseModule } from './database/database.module';
 import { FundingModule } from './funding/funding.module';
 import { PayoutsModule } from './payouts/payouts.module';
+import { ReconciliationModule } from './reconciliation/reconciliation.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { PayoutsModule } from './payouts/payouts.module';
     FundingModule,
     BeneficiariesModule,
     PayoutsModule,
+    ReconciliationModule,
   ],
   controllers: [AppController],
   providers: [AppService],
