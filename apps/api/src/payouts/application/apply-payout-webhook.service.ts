@@ -165,6 +165,10 @@ export class ApplyPayoutWebhookService {
       return 'failed';
     }
 
+    if (payload.eventType === 'payout.returned') {
+      return await this.handleReturnedOutcome(context, webhookEventId, executionRecord, payload);
+    }
+
     if (payload.data.status === 'processing') {
       return await this.handleProcessingOutcome(context, executionRecord, payload);
     }
@@ -179,7 +183,7 @@ export class ApplyPayoutWebhookService {
   private async handleProcessingOutcome(
     context: TransactionContext,
     executionRecord: PayoutExecutionRecord,
-    payload: PayoutWebhook,
+    payload: Extract<PayoutWebhook, { eventType: 'payout.updated' }>,
   ): Promise<OutcomeProcessingStatus> {
     await this.recordAttemptOutcome(context, {
       attemptId: executionRecord.attemptId,
@@ -198,7 +202,7 @@ export class ApplyPayoutWebhookService {
     context: TransactionContext,
     webhookEventId: string,
     executionRecord: PayoutExecutionRecord,
-    payload: PayoutWebhook,
+    payload: Extract<PayoutWebhook, { eventType: 'payout.updated' }>,
   ): Promise<OutcomeProcessingStatus> {
     const recipientPayableAccountId = await this.ledgerAccountService.ensureRecipientPayableAccount(
       context,
@@ -258,7 +262,7 @@ export class ApplyPayoutWebhookService {
     context: TransactionContext,
     webhookEventId: string,
     executionRecord: PayoutExecutionRecord,
-    payload: PayoutWebhook,
+    payload: Extract<PayoutWebhook, { eventType: 'payout.updated' }>,
   ): Promise<OutcomeProcessingStatus> {
     await this.payoutWalletRepository.creditAvailableBalance(context, {
       amountMinor: executionRecord.grossAmountMinor,
@@ -337,6 +341,107 @@ export class ApplyPayoutWebhookService {
     return 'processed';
   }
 
+  private async handleReturnedOutcome(
+    context: TransactionContext,
+    webhookEventId: string,
+    executionRecord: PayoutExecutionRecord,
+    payload: Extract<PayoutWebhook, { eventType: 'payout.returned' }>,
+  ): Promise<OutcomeProcessingStatus> {
+    const walletRestoreAmountMinor =
+      payload.data.returnedAmountMinor + executionRecord.feeAmountMinor;
+
+    await this.payoutWalletRepository.creditAvailableBalance(context, {
+      amountMinor: walletRestoreAmountMinor,
+      currency: executionRecord.currency,
+      updatedAt: payload.occurredAt,
+      walletId: executionRecord.walletId,
+    });
+
+    const walletLiabilityAccountId = await this.ledgerAccountService.ensureWalletLiabilityAccount(
+      context,
+      executionRecord.walletId,
+      executionRecord.currency,
+      payload.occurredAt,
+    );
+    const platformCashAccountId = await this.ledgerAccountService.ensurePlatformCashAccount(
+      context,
+      executionRecord.currency,
+      payload.occurredAt,
+    );
+    const platformRevenueAccountId = await this.ledgerAccountService.ensurePlatformRevenueAccount(
+      context,
+      executionRecord.currency,
+      payload.occurredAt,
+    );
+    const returnCreditTransactionId = randomUUID();
+
+    await this.payoutWriteRepository.createReturnedPayoutCreditTransaction(context, {
+      amountMinor: walletRestoreAmountMinor,
+      createdAt: payload.occurredAt,
+      currency: executionRecord.currency,
+      description: buildReturnedCreditDescription(executionRecord.payoutReference),
+      occurredAt: payload.occurredAt,
+      payoutId: executionRecord.payoutId,
+      reference: buildReturnedReference(executionRecord.payoutReference),
+      userId: executionRecord.userId,
+      userTransactionId: returnCreditTransactionId,
+      walletId: executionRecord.walletId,
+      webhookEventId,
+    });
+
+    await this.ledgerPostingService.createPostedTransaction(context, {
+      currency: executionRecord.currency,
+      description: buildReturnedLedgerDescription(
+        executionRecord.payoutReference,
+        payload.data.returnReason,
+      ),
+      entries: [
+        {
+          amountMinor: payload.data.returnedAmountMinor,
+          currency: executionRecord.currency,
+          description: 'Platform cash restored from returned payout funds',
+          direction: 'debit',
+          ledgerAccountId: platformCashAccountId,
+        },
+        {
+          amountMinor: executionRecord.feeAmountMinor,
+          currency: executionRecord.currency,
+          description: 'Platform revenue reversed for returned payout',
+          direction: 'debit',
+          ledgerAccountId: platformRevenueAccountId,
+        },
+        {
+          amountMinor: walletRestoreAmountMinor,
+          currency: executionRecord.currency,
+          description: 'Wallet liability restored for returned payout',
+          direction: 'credit',
+          ledgerAccountId: walletLiabilityAccountId,
+        },
+      ],
+      postedAt: payload.occurredAt,
+      reference: buildReturnedReference(executionRecord.payoutReference),
+      transactionType: 'reversal',
+      userTransactionId: returnCreditTransactionId,
+      webhookEventId,
+    });
+
+    await this.recordAttemptOutcome(context, {
+      attemptId: executionRecord.attemptId,
+      payload,
+      status: 'succeeded',
+    });
+    await this.payoutWriteRepository.markPayoutAsReturned(context, {
+      payoutId: executionRecord.payoutId,
+      userTransactionId: executionRecord.userTransactionId,
+      webhookEventId,
+      returnedAmountMinor: payload.data.returnedAmountMinor,
+      returnedAt: payload.occurredAt,
+      updatedAt: payload.occurredAt,
+    });
+
+    return 'processed';
+  }
+
   private async recordAttemptOutcome(
     context: TransactionContext,
     input: {
@@ -360,7 +465,11 @@ function classifyTransition(
   incomingStatus: PayoutOutcomeStatus,
 ): OutcomeTransitionDecision {
   if (incomingStatus === 'processing') {
-    if (executionRecord.payoutStatus === 'paid' || executionRecord.payoutStatus === 'failed') {
+    if (
+      executionRecord.payoutStatus === 'paid' ||
+      executionRecord.payoutStatus === 'failed' ||
+      executionRecord.payoutStatus === 'returned'
+    ) {
       return 'noop';
     }
 
@@ -368,7 +477,11 @@ function classifyTransition(
   }
 
   if (incomingStatus === 'paid') {
-    if (executionRecord.payoutStatus === 'paid' || executionRecord.attemptStatus === 'succeeded') {
+    if (
+      executionRecord.payoutStatus === 'paid' ||
+      executionRecord.payoutStatus === 'returned' ||
+      executionRecord.attemptStatus === 'succeeded'
+    ) {
       return 'noop';
     }
 
@@ -377,6 +490,18 @@ function classifyTransition(
     }
 
     return 'apply';
+  }
+
+  if (incomingStatus === 'returned') {
+    if (executionRecord.payoutStatus === 'returned') {
+      return 'noop';
+    }
+
+    if (executionRecord.payoutStatus === 'paid') {
+      return 'apply';
+    }
+
+    return 'reject';
   }
 
   if (executionRecord.payoutStatus === 'failed' || executionRecord.attemptStatus === 'failed') {
@@ -416,4 +541,36 @@ function buildFailureLedgerDescription(reference: string | null, failureReason?:
   }
 
   return 'Reverse payout';
+}
+
+function buildReturnedReference(reference: string | null): string | null {
+  if (!reference) {
+    return null;
+  }
+
+  return `${reference}-return`;
+}
+
+function buildReturnedCreditDescription(reference: string | null): string {
+  if (reference) {
+    return `Returned payout ${reference}`;
+  }
+
+  return 'Returned payout';
+}
+
+function buildReturnedLedgerDescription(reference: string | null, returnReason?: string): string {
+  if (reference && returnReason) {
+    return `Return payout ${reference} (${returnReason})`;
+  }
+
+  if (reference) {
+    return `Return payout ${reference}`;
+  }
+
+  if (returnReason) {
+    return `Return payout (${returnReason})`;
+  }
+
+  return 'Return payout';
 }

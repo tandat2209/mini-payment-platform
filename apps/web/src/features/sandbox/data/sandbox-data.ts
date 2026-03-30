@@ -1,5 +1,5 @@
 type DestinationType = 'account_number' | 'iban' | 'virtual_account';
-type PayoutUpdateStatus = 'failed' | 'paid' | 'processing';
+type PayoutUpdateStatus = 'failed' | 'paid' | 'processing' | 'returned';
 
 export type SandboxFundingSimulationFormState = {
   amountMinor: string;
@@ -32,6 +32,7 @@ export type SandboxPayoutUpdateFormState = {
   externalEventId: string;
   externalPayoutId: string;
   failureReason: string;
+  returnedAmountMinor: string;
   status: PayoutUpdateStatus;
 };
 
@@ -44,6 +45,7 @@ export type SandboxPayoutUpdateResult = {
   provider: 'psp_sandbox';
   receiverDuplicate: boolean | null;
   receiverProcessingStatus: string | null;
+  returnedAmountMinor: string | null;
   status: PayoutUpdateStatus;
 };
 
@@ -65,5 +67,6 @@ export const initialSandboxPayoutUpdateFormState: SandboxPayoutUpdateFormState =
   externalEventId: 'evt_sandbox_payout_001',
   externalPayoutId: 'ppay_',
   failureReason: 'Beneficiary bank rejected the payout.',
+  returnedAmountMinor: '2503',
   status: 'processing',
 };

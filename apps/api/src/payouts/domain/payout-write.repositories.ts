@@ -14,9 +14,10 @@ export type PayoutExecutionRecord = {
   netAmountMinor: number;
   payoutId: string;
   payoutReference: string | null;
-  payoutStatus: 'failed' | 'paid' | 'processing' | 'submitted';
+  payoutStatus: 'failed' | 'paid' | 'processing' | 'returned' | 'submitted';
   provider: string;
   recipientId: string;
+  userId: string;
   userTransactionId: string;
   walletId: string;
 };
@@ -104,6 +105,33 @@ export interface PayoutWriteRepository {
     input: {
       payoutId: string;
       updatedAt: string;
+    },
+  ): Promise<void>;
+  markPayoutAsReturned(
+    context: TransactionContext,
+    input: {
+      payoutId: string;
+      userTransactionId: string;
+      webhookEventId: string;
+      returnedAmountMinor: number;
+      returnedAt: string;
+      updatedAt: string;
+    },
+  ): Promise<void>;
+  createReturnedPayoutCreditTransaction(
+    context: TransactionContext,
+    input: {
+      amountMinor: number;
+      createdAt: string;
+      currency: string;
+      description: string;
+      occurredAt: string;
+      payoutId: string;
+      reference: string | null;
+      userId: string;
+      userTransactionId: string;
+      walletId: string;
+      webhookEventId: string;
     },
   ): Promise<void>;
   recordSubmissionAttempt(

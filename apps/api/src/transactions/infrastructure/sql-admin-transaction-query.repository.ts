@@ -34,6 +34,10 @@ type AdminTransactionDetailRow = AdminTransactionRow & {
   payout_reference: string | null;
   recipient_id: string | null;
   recipient_name: string | null;
+  payout_returned_amount_minor: string | null;
+  payout_returned_at: Date | string | null;
+  payout_status: string | null;
+  wallet_restored_amount_minor: string | null;
 };
 
 type LinkedLedgerTransactionRow = {
@@ -71,6 +75,14 @@ export class SqlAdminTransactionQueryRepository implements AdminTransactionQuery
           u.external_ref AS customer_external_ref,
           p.id::text AS payout_id,
           p.reference AS payout_reference,
+          p.status AS payout_status,
+          p.returned_at AS payout_returned_at,
+          p.returned_amount_minor::text AS payout_returned_amount_minor,
+          CASE
+            WHEN p.returned_amount_minor IS NOT NULL
+              THEN (p.returned_amount_minor + p.fee_amount_minor)::text
+            ELSE NULL
+          END AS wallet_restored_amount_minor,
           r.id::text AS recipient_id,
           r.name AS recipient_name
         FROM user_transactions ut
@@ -78,6 +90,7 @@ export class SqlAdminTransactionQueryRepository implements AdminTransactionQuery
           ON u.id = ut.user_id
         LEFT JOIN payouts p
           ON p.user_transaction_id = ut.id
+          OR p.id = ut.related_payout_id
         LEFT JOIN recipients r
           ON r.id = p.recipient_id
         WHERE ut.id = $1::uuid
@@ -125,6 +138,10 @@ export class SqlAdminTransactionQueryRepository implements AdminTransactionQuery
             payoutReference: transaction.payout_reference,
             recipientId: transaction.recipient_id,
             recipientName: transaction.recipient_name,
+            returnedAmountMinor: transaction.payout_returned_amount_minor,
+            returnedAt: transaction.payout_returned_at,
+            status: transaction.payout_status ?? 'submitted',
+            walletRestoredAmountMinor: transaction.wallet_restored_amount_minor,
           }
         : null,
     };

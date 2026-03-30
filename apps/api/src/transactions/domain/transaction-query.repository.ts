@@ -31,10 +31,13 @@ export type TransactionDetailView = TransactionListItemView & {
     failedAt: Date | string | null;
     payoutId: string;
     payoutReference: string | null;
-    status: 'failed' | 'paid' | 'pending_submission' | 'processing' | 'submitted';
+    returnedAt: Date | string | null;
+    returnedAmountMinor: string | null;
+    status: 'failed' | 'paid' | 'pending_submission' | 'processing' | 'returned' | 'submitted';
     recipientId: string | null;
     recipientName: string | null;
     submittedAt: Date | string | null;
+    walletRestoredAmountMinor: string | null;
   } | null;
 };
 

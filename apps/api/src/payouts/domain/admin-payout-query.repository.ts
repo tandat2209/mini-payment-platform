@@ -16,10 +16,13 @@ export type AdminPayoutListItemView = {
   recipientId: string;
   recipientName: string;
   reference: string | null;
+  returnedAmountMinor: string | null;
+  returnedAt: Date | string | null;
   status: string;
   submittedAt: Date | string | null;
   userTransactionId: string;
   walletId: string;
+  walletRestoredAmountMinor: string | null;
 };
 
 export interface AdminPayoutQueryRepository {

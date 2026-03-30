@@ -62,7 +62,7 @@ export class SqlStatementQueryRepository implements StatementQueryRepository {
         FROM user_transactions ut
         WHERE ut.user_id = $1
           AND ut.wallet_id = $2
-          AND ut.status IN ('posted', 'completed', 'reversed')
+          AND ut.status IN ('posted', 'completed', 'returned', 'reversed')
         GROUP BY ut.wallet_id, ut.currency, year, month
         ORDER BY year DESC, month DESC, ut.currency ASC
       `,
@@ -112,7 +112,7 @@ export class SqlStatementQueryRepository implements StatementQueryRepository {
         WHERE ut.user_id = $1
           AND ut.wallet_id = $2
           AND ut.currency = $3
-          AND ut.status IN ('posted', 'completed', 'reversed')
+          AND ut.status IN ('posted', 'completed', 'returned', 'reversed')
           AND COALESCE(ut.posted_at, ut.occurred_at) >= $4::timestamptz
           AND COALESCE(ut.posted_at, ut.occurred_at) < $5::timestamptz
         ORDER BY COALESCE(ut.posted_at, ut.occurred_at) ASC, ut.id ASC
@@ -181,7 +181,7 @@ export class SqlStatementQueryRepository implements StatementQueryRepository {
         WHERE ut.user_id = $1
           AND ut.wallet_id = $2
           AND ut.currency = $3
-          AND ut.status IN ('posted', 'completed', 'reversed')
+          AND ut.status IN ('posted', 'completed', 'returned', 'reversed')
       `,
       [customerId, walletId, currency, periodStart.toISOString(), periodEnd.toISOString()],
     );

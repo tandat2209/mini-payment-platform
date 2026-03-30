@@ -68,10 +68,13 @@ type TransactionDetailItem = TransactionItem & {
     failedAt: string | null;
     payoutId: string;
     payoutReference: string | null;
+    returnedAmount: MoneyDto | null;
+    returnedAt: string | null;
     recipientId: string | null;
     recipientName: string | null;
-    status: 'failed' | 'paid' | 'pending_submission' | 'processing' | 'submitted';
+    status: 'failed' | 'paid' | 'pending_submission' | 'processing' | 'returned' | 'submitted';
     submittedAt: string | null;
+    walletRestoredAmount: MoneyDto | null;
   } | null;
 };
 
@@ -288,6 +291,35 @@ type SandboxPayoutUpdateResponse = {
   receiverResponse: Record<string, unknown>;
 };
 
+type SandboxPayoutReturnRequest = {
+  externalEventId?: string;
+  externalPayoutId: string;
+  returnReason?: string;
+  returnedAmountMinor: number;
+};
+
+type SandboxPayoutReturnResponse = {
+  deliveryTarget: string;
+  delivered: true;
+  externalEventId: string;
+  payload: {
+    data: {
+      currency: string;
+      externalPayoutId: string;
+      externalRequestId: string;
+      payoutReference: string;
+      returnReason?: string;
+      returnedAmountMinor: number;
+      status: 'returned';
+    };
+    eventType: 'payout.returned';
+    externalEventId: string;
+    occurredAt: string;
+    provider: 'psp_sandbox';
+  };
+  receiverResponse: Record<string, unknown>;
+};
+
 type AdminTransactionItem = {
   amounts: {
     fee: MoneyDto;
@@ -325,6 +357,10 @@ type AdminTransactionDetailItem = AdminTransactionItem & {
     payoutReference: string | null;
     recipientId: string | null;
     recipientName: string | null;
+    returnedAmount: MoneyDto | null;
+    returnedAt: string | null;
+    status: string;
+    walletRestoredAmount: MoneyDto | null;
   } | null;
 };
 
@@ -496,10 +532,13 @@ type AdminPayoutItem = {
     name: string;
   };
   reference: string | null;
+  returnedAmount: MoneyDto | null;
+  returnedAt: string | null;
   status: string;
   submittedAt: string | null;
   userTransactionId: string;
   walletId: string;
+  walletRestoredAmount: MoneyDto | null;
 };
 
 type AdminPayoutListResponse = {
@@ -784,6 +823,20 @@ export async function triggerSandboxPayoutUpdateSimulation(
   );
 }
 
+export async function triggerSandboxPayoutReturnSimulation(
+  request: SandboxPayoutReturnRequest,
+): Promise<SandboxPayoutReturnResponse> {
+  return await postJsonToBase<SandboxPayoutReturnResponse, SandboxPayoutReturnRequest>(
+    getPspSandboxBaseUrl(),
+    '/simulate/payout-returns',
+    request,
+    {
+      errorLabel: 'PSP sandbox payout return request',
+      includeCustomerContext: false,
+    },
+  );
+}
+
 export async function fetchAdminTransactions(input: {
   cursor?: string | null;
   limit: number;
@@ -935,6 +988,8 @@ export type {
   RecipientSummary,
   SandboxFundingRequest,
   SandboxFundingResponse,
+  SandboxPayoutReturnRequest,
+  SandboxPayoutReturnResponse,
   SandboxPayoutUpdateRequest,
   SandboxPayoutUpdateResponse,
   StatementDetailResponse,

@@ -2,8 +2,10 @@ import { create } from 'zustand';
 
 import {
   type SandboxFundingResponse,
+  type SandboxPayoutReturnResponse,
   type SandboxPayoutUpdateResponse,
   triggerSandboxFundingSimulation,
+  triggerSandboxPayoutReturnSimulation,
   triggerSandboxPayoutUpdateSimulation,
 } from '@/features/sandbox/api';
 import {
@@ -161,14 +163,11 @@ export const useSandboxStore = create<SandboxStore>((set, get) => ({
     set({ isPayoutUpdateSubmitting: true, payoutUpdateSimulationError: null });
 
     const formState = get().payoutUpdateFormState;
-    const request: Parameters<typeof triggerSandboxPayoutUpdateSimulation>[0] = {
-      externalPayoutId: formState.externalPayoutId.trim(),
-      status: formState.status,
-    };
+    const externalPayoutId = formState.externalPayoutId.trim();
     const externalEventId = toOptionalTrimmedString(formState.externalEventId);
     const failureReason = toOptionalTrimmedString(formState.failureReason);
 
-    if (!request.externalPayoutId) {
+    if (!externalPayoutId) {
       set({
         isPayoutUpdateSubmitting: false,
         payoutUpdateSimulationError: 'External payout id is required.',
@@ -176,52 +175,119 @@ export const useSandboxStore = create<SandboxStore>((set, get) => ({
       return;
     }
 
-    if (externalEventId !== undefined) {
-      request.externalEventId = externalEventId;
-    }
-
-    if (request.status === 'failed' && failureReason !== undefined) {
-      request.failureReason = failureReason;
-    }
-
     try {
-      const response: SandboxPayoutUpdateResponse =
-        await triggerSandboxPayoutUpdateSimulation(request);
-      const receiverDuplicate =
-        typeof response.receiverResponse.duplicate === 'boolean'
-          ? response.receiverResponse.duplicate
-          : null;
-      const receiverProcessingStatus =
-        typeof response.receiverResponse === 'object' &&
-        response.receiverResponse !== null &&
-        'event' in response.receiverResponse &&
-        typeof response.receiverResponse.event === 'object' &&
-        response.receiverResponse.event !== null &&
-        'processingStatus' in response.receiverResponse.event &&
-        typeof response.receiverResponse.event.processingStatus === 'string'
-          ? response.receiverResponse.event.processingStatus
-          : null;
+      if (formState.status === 'returned') {
+        const returnedAmountMinor = Number.parseInt(formState.returnedAmountMinor, 10);
 
-      set({
-        isPayoutUpdateSubmitting: false,
-        payoutUpdateSimulationResult: {
-          delivered: response.delivered,
-          deliveryTarget: response.deliveryTarget,
-          externalEventId: response.externalEventId,
-          payoutReference: response.payload.data.payoutReference,
-          postedAt: response.payload.occurredAt,
-          provider: response.payload.provider,
-          receiverDuplicate,
-          receiverProcessingStatus,
-          status: response.payload.data.status,
-        },
-      });
+        if (!Number.isFinite(returnedAmountMinor) || returnedAmountMinor <= 0) {
+          set({
+            isPayoutUpdateSubmitting: false,
+            payoutUpdateSimulationError: 'Returned amount minor must be a positive integer.',
+          });
+          return;
+        }
+
+        const request: Parameters<typeof triggerSandboxPayoutReturnSimulation>[0] = {
+          externalPayoutId,
+          returnedAmountMinor,
+        };
+
+        if (externalEventId !== undefined) {
+          request.externalEventId = externalEventId;
+        }
+
+        if (failureReason !== undefined) {
+          request.returnReason = failureReason;
+        }
+
+        const response: SandboxPayoutReturnResponse =
+          await triggerSandboxPayoutReturnSimulation(request);
+        const receiverDuplicate =
+          typeof response.receiverResponse.duplicate === 'boolean'
+            ? response.receiverResponse.duplicate
+            : null;
+        const receiverProcessingStatus =
+          typeof response.receiverResponse === 'object' &&
+          response.receiverResponse !== null &&
+          'event' in response.receiverResponse &&
+          typeof response.receiverResponse.event === 'object' &&
+          response.receiverResponse.event !== null &&
+          'processingStatus' in response.receiverResponse.event &&
+          typeof response.receiverResponse.event.processingStatus === 'string'
+            ? response.receiverResponse.event.processingStatus
+            : null;
+
+        set({
+          isPayoutUpdateSubmitting: false,
+          payoutUpdateSimulationResult: {
+            delivered: response.delivered,
+            deliveryTarget: response.deliveryTarget,
+            externalEventId: response.externalEventId,
+            payoutReference: response.payload.data.payoutReference,
+            postedAt: response.payload.occurredAt,
+            provider: response.payload.provider,
+            receiverDuplicate,
+            receiverProcessingStatus,
+            returnedAmountMinor: String(response.payload.data.returnedAmountMinor),
+            status: 'returned',
+          },
+        });
+      } else {
+        const request: Parameters<typeof triggerSandboxPayoutUpdateSimulation>[0] = {
+          externalPayoutId,
+          status: formState.status,
+        };
+
+        if (externalEventId !== undefined) {
+          request.externalEventId = externalEventId;
+        }
+
+        if (request.status === 'failed' && failureReason !== undefined) {
+          request.failureReason = failureReason;
+        }
+
+        const response: SandboxPayoutUpdateResponse =
+          await triggerSandboxPayoutUpdateSimulation(request);
+        const receiverDuplicate =
+          typeof response.receiverResponse.duplicate === 'boolean'
+            ? response.receiverResponse.duplicate
+            : null;
+        const receiverProcessingStatus =
+          typeof response.receiverResponse === 'object' &&
+          response.receiverResponse !== null &&
+          'event' in response.receiverResponse &&
+          typeof response.receiverResponse.event === 'object' &&
+          response.receiverResponse.event !== null &&
+          'processingStatus' in response.receiverResponse.event &&
+          typeof response.receiverResponse.event.processingStatus === 'string'
+            ? response.receiverResponse.event.processingStatus
+            : null;
+
+        set({
+          isPayoutUpdateSubmitting: false,
+          payoutUpdateSimulationResult: {
+            delivered: response.delivered,
+            deliveryTarget: response.deliveryTarget,
+            externalEventId: response.externalEventId,
+            payoutReference: response.payload.data.payoutReference,
+            postedAt: response.payload.occurredAt,
+            provider: response.payload.provider,
+            receiverDuplicate,
+            receiverProcessingStatus,
+            returnedAmountMinor: null,
+            status: response.payload.data.status,
+          },
+        });
+      }
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['balances'] }),
         queryClient.invalidateQueries({ queryKey: ['transactions'] }),
         queryClient.invalidateQueries({ queryKey: ['transaction-detail'] }),
         queryClient.invalidateQueries({ queryKey: ['admin-transactions'] }),
         queryClient.invalidateQueries({ queryKey: ['admin-ledgers'] }),
+        queryClient.invalidateQueries({ queryKey: ['admin-payouts'] }),
+        queryClient.invalidateQueries({ queryKey: ['admin-webhooks'] }),
+        queryClient.invalidateQueries({ queryKey: ['admin-reconciliation'] }),
       ]);
     } catch (caughtError) {
       set({

@@ -45,7 +45,16 @@ type AdminTransactionDetailResponse = AdminTransactionResponse & {
     status: string;
     transactionType: string;
   }>;
-  payout: AdminTransactionDetailView['payoutContext'];
+  payout: {
+    payoutId: string;
+    payoutReference: string | null;
+    recipientId: string | null;
+    recipientName: string | null;
+    returnedAmount: ReturnType<typeof toMoneyDto> | null;
+    returnedAt: string | null;
+    status: string;
+    walletRestoredAmount: ReturnType<typeof toMoneyDto> | null;
+  } | null;
 };
 
 @Controller('admin/transactions')
@@ -107,7 +116,25 @@ export class AdminTransactionsController {
         transactionType: ledgerTransaction.transactionType,
       })),
       ...this.toTransactionResponse(transaction),
-      payout: transaction.payoutContext,
+      payout: transaction.payoutContext
+        ? {
+            payoutId: transaction.payoutContext.payoutId,
+            payoutReference: transaction.payoutContext.payoutReference,
+            recipientId: transaction.payoutContext.recipientId,
+            recipientName: transaction.payoutContext.recipientName,
+            returnedAmount: transaction.payoutContext.returnedAmountMinor
+              ? toMoneyDto(transaction.currency, transaction.payoutContext.returnedAmountMinor)
+              : null,
+            returnedAt: toIsoTimestamp(transaction.payoutContext.returnedAt),
+            status: transaction.payoutContext.status,
+            walletRestoredAmount: transaction.payoutContext.walletRestoredAmountMinor
+              ? toMoneyDto(
+                  transaction.currency,
+                  transaction.payoutContext.walletRestoredAmountMinor,
+                )
+              : null,
+          }
+        : null,
     };
   }
 

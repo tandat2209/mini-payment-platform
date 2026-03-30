@@ -239,6 +239,39 @@ export function AdminPayoutsPage({
                           : 'Not yet'
                       }
                     />
+                    {selectedPayout.status === 'returned' ? (
+                      <>
+                        <DetailCard
+                          label="Returned at"
+                          value={
+                            selectedPayout.returnedAt
+                              ? formatDate(selectedPayout.returnedAt, {
+                                  day: '2-digit',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                  month: 'short',
+                                })
+                              : 'Waiting'
+                          }
+                        />
+                        <DetailCard
+                          label="Provider return"
+                          value={
+                            selectedPayout.returnedAmount
+                              ? formatMoney(selectedPayout.returnedAmount)
+                              : 'Not recorded'
+                          }
+                        />
+                        <DetailCard
+                          label="Wallet credit"
+                          value={
+                            selectedPayout.walletRestoredAmount
+                              ? formatMoney(selectedPayout.walletRestoredAmount)
+                              : 'Not recorded'
+                          }
+                        />
+                      </>
+                    ) : null}
                   </div>
 
                   <div className="rounded-[24px] border border-slate-200 bg-white p-4">

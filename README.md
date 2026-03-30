@@ -257,7 +257,7 @@ curl -X POST http://localhost:3002/simulate/funding \
     "destinationType": "account_number",
     "destinationIdentifier": "1234567890",
     "description": "Salary top up",
-    "providerReference": "bank-ref-001",
+  "providerReference": "bank-ref-001",
     "sender": {
       "name": "Alice Nguyen",
       "accountIdentifier": "99887766",
@@ -303,6 +303,18 @@ where ledger_transaction_id in (
   where reference = 'funding-evt_funding_replay_test_001'
 );
 ```
+
+## Local Payout Return Flow
+
+The post-settlement payout return workflow is documented in:
+
+- [Payout Return Workflow](/Users/datnguyen/Projects/mini-payment-platform/docs/payout-return-workflow.md)
+
+That flow covers:
+
+- simulating a `paid` payout callback
+- simulating a later `payout.returned` provider event
+- checking customer status, wallet restoration, admin reads, and ledger effects
 
 ## Recipient Capability Discovery
 

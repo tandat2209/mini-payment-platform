@@ -859,6 +859,45 @@ class ApiFakeDatabaseService {
       return withRows([]);
     }
 
+    if (sql.includes('INSERT INTO user_transactions') && sql.includes("'reversal'")) {
+      const [
+        userTransactionId,
+        userId,
+        walletId,
+        webhookEventId,
+        payoutId,
+        currency,
+        amountMinor,
+        description,
+        reference,
+        occurredAt,
+        createdAt,
+      ] = parameters;
+
+      this.userTransactions.set(String(userTransactionId), {
+        created_at: String(createdAt),
+        currency: String(currency),
+        description: String(description),
+        direction: 'credit',
+        fee_amount_minor: '0',
+        gross_amount_minor: String(amountMinor),
+        id: String(userTransactionId),
+        net_amount_minor: String(amountMinor),
+        occurred_at: String(occurredAt),
+        posted_at: String(occurredAt),
+        reference: reference === null ? null : String(reference),
+        related_payout_id: String(payoutId),
+        status: 'completed',
+        type: 'reversal',
+        updated_at: String(createdAt),
+        user_id: String(userId),
+        wallet_id: String(walletId),
+        webhook_event_id: String(webhookEventId),
+      });
+
+      return withRows([]);
+    }
+
     if (sql.includes('INSERT INTO payouts')) {
       const [
         payoutId,
@@ -891,6 +930,8 @@ class ApiFakeDatabaseService {
         recipient_id: String(recipientId),
         recipient_rail_id: String(recipientRailId),
         reference: String(reference),
+        returned_amount_minor: null,
+        returned_at: null,
         status: 'pending_submission',
         submitted_at: null,
         updated_at: String(createdAt),
@@ -982,6 +1023,7 @@ class ApiFakeDatabaseService {
           payout_status: payout.status,
           provider: attempt.provider,
           recipient_id: payout.recipient_id,
+          user_id: payout.user_id,
           user_transaction_id: payout.user_transaction_id,
           wallet_id: payout.wallet_id,
         },
@@ -1050,6 +1092,37 @@ class ApiFakeDatabaseService {
       payout.updated_at = String(updatedAt);
 
       return withRows([payout]);
+    }
+
+    if (sql.includes('UPDATE payouts') && sql.includes("SET status = 'returned'")) {
+      const [payoutId, returnedAt, returnedAmountMinor, updatedAt] = parameters;
+      const payout = this.payouts.get(String(payoutId));
+
+      if (!payout) {
+        return withRows([]);
+      }
+
+      payout.status = 'returned';
+      payout.returned_at = String(returnedAt);
+      payout.returned_amount_minor = String(returnedAmountMinor);
+      payout.updated_at = String(updatedAt);
+
+      return withRows([payout]);
+    }
+
+    if (sql.includes('UPDATE user_transactions') && sql.includes("SET status = 'returned'")) {
+      const [transactionId, webhookEventId, updatedAt] = parameters;
+      const transaction = this.userTransactions.get(String(transactionId));
+
+      if (!transaction) {
+        return withRows([]);
+      }
+
+      transaction.status = 'returned';
+      transaction.webhook_event_id = String(webhookEventId);
+      transaction.updated_at = String(updatedAt);
+
+      return withRows([transaction]);
     }
 
     if (sql.includes('UPDATE user_transactions') && sql.includes("SET status = 'completed'")) {
@@ -1749,6 +1822,107 @@ test('payout webhook API marks a submitted payout as failed, restores balance, a
       (balancesResponse.body.balances as Array<{ available: { amountMinor: string } }>)[0]
         ?.available.amountMinor,
       '9800',
+    );
+  } finally {
+    await app.close();
+  }
+});
+
+test('payout webhook API marks a paid payout as returned and deduplicates replay', async () => {
+  const app = await createTestApp();
+
+  try {
+    const payoutResponse = await postJson(
+      app,
+      '/customers/me/payouts',
+      'user_demo_alice',
+      {
+        amountMinor: 2500,
+        recipientRailId: PAYOUT_TEST_RECIPIENT_RAIL_ID,
+        reference: 'Invoice 208',
+        sourceCurrency: 'USD',
+        sourceWalletId: PAYOUT_TEST_WALLET_ID,
+      },
+      {
+        headers: {
+          'idempotency-key': 'idem-payout-returned-001',
+        },
+      },
+    );
+
+    const paidCallbackResponse = await postJson(app, '/webhooks/payouts', 'user_demo_alice', {
+      data: {
+        externalPayoutId: 'ppay_test_001',
+        externalRequestId: 'preq_test_001',
+        payoutReference: (payoutResponse.body.payout as { reference: string }).reference,
+        status: 'paid',
+      },
+      eventType: 'payout.updated',
+      externalEventId: 'evt_payout_paid_for_return_001',
+      occurredAt: '2026-03-26T09:35:00.000Z',
+      provider: 'psp_sandbox',
+    });
+
+    assert.equal(paidCallbackResponse.status, 202);
+
+    const returnCallbackBody = {
+      data: {
+        currency: 'USD',
+        externalPayoutId: 'ppay_test_001',
+        externalRequestId: 'preq_test_001',
+        payoutReference: (payoutResponse.body.payout as { reference: string }).reference,
+        returnReason: 'destination_bank_returned',
+        returnedAmountMinor: 2503,
+        status: 'returned',
+      },
+      eventType: 'payout.returned',
+      externalEventId: 'evt_payout_returned_001',
+      occurredAt: '2026-03-27T09:35:00.000Z',
+      provider: 'psp_sandbox',
+    } satisfies Record<string, unknown>;
+
+    const firstCallbackResponse = await postJson(
+      app,
+      '/webhooks/payouts',
+      'user_demo_alice',
+      returnCallbackBody,
+    );
+    const secondCallbackResponse = await postJson(
+      app,
+      '/webhooks/payouts',
+      'user_demo_alice',
+      returnCallbackBody,
+    );
+
+    assert.equal(firstCallbackResponse.status, 202);
+    assert.equal(firstCallbackResponse.body.duplicate, false);
+    assert.equal(
+      (firstCallbackResponse.body.event as { processingStatus: string }).processingStatus,
+      'processed',
+    );
+    assert.equal(secondCallbackResponse.status, 202);
+    assert.equal(secondCallbackResponse.body.duplicate, true);
+
+    const detailResponse = await fetchJson(
+      app,
+      `/customers/me/transactions/${String((payoutResponse.body.transaction as { id: string }).id)}`,
+      'user_demo_alice',
+    );
+
+    assert.equal(detailResponse.status, 200);
+    assert.equal((detailResponse.body.payout as { status: string }).status, 'returned');
+    assert.equal(
+      (detailResponse.body.payout as { returnedAmount: { amountMinor: string } }).returnedAmount
+        .amountMinor,
+      '2503',
+    );
+    assert.equal(
+      (
+        detailResponse.body.payout as {
+          walletRestoredAmount: { amountMinor: string };
+        }
+      ).walletRestoredAmount.amountMinor,
+      '2506',
     );
   } finally {
     await app.close();

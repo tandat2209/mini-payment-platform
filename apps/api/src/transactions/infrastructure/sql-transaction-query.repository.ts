@@ -30,10 +30,20 @@ type TransactionDetailRow = TransactionRow & {
   payout_failed_at: Date | string | null;
   payout_id: string | null;
   payout_reference: string | null;
-  payout_status: 'failed' | 'paid' | 'pending_submission' | 'processing' | 'submitted' | null;
+  payout_returned_amount_minor: string | null;
+  payout_returned_at: Date | string | null;
+  payout_status:
+    | 'failed'
+    | 'paid'
+    | 'pending_submission'
+    | 'processing'
+    | 'returned'
+    | 'submitted'
+    | null;
   recipient_id: string | null;
   recipient_name: string | null;
   payout_submitted_at: Date | string | null;
+  wallet_restored_amount_minor: string | null;
 };
 
 @Injectable()
@@ -151,11 +161,19 @@ export class SqlTransactionQueryRepository implements TransactionQueryRepository
           p.submitted_at AS payout_submitted_at,
           p.completed_at AS payout_completed_at,
           p.failed_at AS payout_failed_at,
+          p.returned_at AS payout_returned_at,
+          p.returned_amount_minor::text AS payout_returned_amount_minor,
+          CASE
+            WHEN p.returned_amount_minor IS NOT NULL
+              THEN (p.returned_amount_minor + p.fee_amount_minor)::text
+            ELSE NULL
+          END AS wallet_restored_amount_minor,
           r.id AS recipient_id,
           r.name AS recipient_name
         FROM user_transactions ut
         LEFT JOIN payouts p
           ON p.user_transaction_id = ut.id
+          OR p.id = ut.related_payout_id
         LEFT JOIN recipients r
           ON r.id = p.recipient_id
         WHERE ut.user_id = $1
@@ -179,10 +197,13 @@ export class SqlTransactionQueryRepository implements TransactionQueryRepository
             failedAt: transaction.payout_failed_at,
             payoutId: transaction.payout_id,
             payoutReference: transaction.payout_reference,
+            returnedAt: transaction.payout_returned_at,
+            returnedAmountMinor: transaction.payout_returned_amount_minor,
             status: transaction.payout_status ?? 'submitted',
             recipientId: transaction.recipient_id,
             recipientName: transaction.recipient_name,
             submittedAt: transaction.payout_submitted_at,
+            walletRestoredAmountMinor: transaction.wallet_restored_amount_minor,
           }
         : null,
     };

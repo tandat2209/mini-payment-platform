@@ -24,10 +24,13 @@ type AdminPayoutRow = {
   recipient_id: string;
   recipient_name: string;
   reference: string | null;
+  returned_amount_minor: string | null;
+  returned_at: Date | string | null;
   status: string;
   submitted_at: Date | string | null;
   user_transaction_id: string;
   wallet_id: string;
+  wallet_restored_amount_minor: string | null;
 };
 
 @Injectable()
@@ -48,6 +51,13 @@ export class SqlAdminPayoutQueryRepository implements AdminPayoutQueryRepository
           p.submitted_at,
           p.completed_at,
           p.failed_at,
+          p.returned_at,
+          p.returned_amount_minor::text AS returned_amount_minor,
+          CASE
+            WHEN p.returned_amount_minor IS NOT NULL
+              THEN (p.returned_amount_minor + p.fee_amount_minor)::text
+            ELSE NULL
+          END AS wallet_restored_amount_minor,
           p.user_transaction_id::text AS user_transaction_id,
           p.wallet_id::text AS wallet_id,
           u.id::text AS customer_id,
@@ -100,10 +110,13 @@ export class SqlAdminPayoutQueryRepository implements AdminPayoutQueryRepository
       recipientId: row.recipient_id,
       recipientName: row.recipient_name,
       reference: row.reference,
+      returnedAmountMinor: row.returned_amount_minor,
+      returnedAt: row.returned_at,
       status: row.status,
       submittedAt: row.submitted_at,
       userTransactionId: row.user_transaction_id,
       walletId: row.wallet_id,
+      walletRestoredAmountMinor: row.wallet_restored_amount_minor,
     }));
   }
 }

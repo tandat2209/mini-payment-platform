@@ -445,6 +445,65 @@ export function AdminTransactionsPanel({
               {'payout' in selectedTransaction && selectedTransaction.payout ? (
                 <div className="rounded-[24px] border border-slate-200 bg-white p-4">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                    Payout context
+                  </p>
+                  <dl className="mt-4 space-y-3 rounded-[18px] border border-slate-200 bg-[#fcfaf6] p-4">
+                    <DetailRow
+                      label="Payout reference"
+                      value={
+                        selectedTransaction.payout.payoutReference ??
+                        shortenIdentifier(selectedTransaction.payout.payoutId)
+                      }
+                    />
+                    <DetailRow
+                      label="Recipient"
+                      value={
+                        selectedTransaction.payout.recipientName ??
+                        selectedTransaction.payout.recipientId ??
+                        'Unknown recipient'
+                      }
+                    />
+                    <DetailRow
+                      label="Payout status"
+                      value={toTitleCase(selectedTransaction.payout.status)}
+                    />
+                    {selectedTransaction.payout.status === 'returned' ? (
+                      <>
+                        <DetailRow
+                          label="Returned"
+                          value={
+                            selectedTransaction.payout.returnedAt
+                              ? formatDate(selectedTransaction.payout.returnedAt, {
+                                  day: '2-digit',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                  month: 'short',
+                                  year: 'numeric',
+                                })
+                              : 'Waiting'
+                          }
+                        />
+                        <DetailRow
+                          label="Provider return"
+                          value={
+                            selectedTransaction.payout.returnedAmount
+                              ? formatMoney(selectedTransaction.payout.returnedAmount)
+                              : 'Not recorded'
+                          }
+                        />
+                        <DetailRow
+                          label="Wallet credit"
+                          value={
+                            selectedTransaction.payout.walletRestoredAmount
+                              ? formatMoney(selectedTransaction.payout.walletRestoredAmount)
+                              : 'Waiting'
+                          }
+                        />
+                      </>
+                    ) : null}
+                  </dl>
+
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                     Related pages
                   </p>
                   <div className="mt-4 flex flex-wrap gap-2">

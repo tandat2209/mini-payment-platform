@@ -19,7 +19,7 @@ export function SandboxPayoutUpdatesRoutePage(): JSX.Element {
       description="Use this page to dispatch provider-style payout status callbacks directly into the payout webhook endpoint."
       eyebrow="PSP sandbox"
       metrics={[
-        { icon: CheckCheck, label: 'Callback states', value: 'Processing, paid, failed' },
+        { icon: CheckCheck, label: 'Callback states', value: 'Processing, paid, failed, returned' },
         { icon: Radar, label: 'Delivery path', value: 'Web -> PSP sandbox -> API' },
         { icon: ArrowLeftRight, label: 'Target', value: 'Payout lifecycle simulation' },
       ]}

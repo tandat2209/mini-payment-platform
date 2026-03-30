@@ -128,6 +128,10 @@ class InMemoryPayoutWriteRepository implements PayoutWriteRepository {
 
   async markPayoutAsProcessing(): Promise<void> {}
 
+  async markPayoutAsReturned(): Promise<void> {}
+
+  async createReturnedPayoutCreditTransaction(): Promise<void> {}
+
   async createPayoutBooking(
     _context: TransactionContext,
     input: {

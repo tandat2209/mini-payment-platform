@@ -39,10 +39,13 @@ type TransactionDetailResponse = TransactionResponse & {
     failedAt: string | null;
     payoutId: string;
     payoutReference: string | null;
+    returnedAt: string | null;
+    returnedAmount: ReturnType<typeof toMoneyDto> | null;
     recipientId: string | null;
     recipientName: string | null;
     status: string;
     submittedAt: string | null;
+    walletRestoredAmount: ReturnType<typeof toMoneyDto> | null;
   } | null;
 };
 
@@ -101,10 +104,20 @@ export class TransactionsController {
             failedAt: toIsoTimestamp(transaction.payoutContext.failedAt),
             payoutId: transaction.payoutContext.payoutId,
             payoutReference: transaction.payoutContext.payoutReference,
+            returnedAt: toIsoTimestamp(transaction.payoutContext.returnedAt),
+            returnedAmount: transaction.payoutContext.returnedAmountMinor
+              ? toMoneyDto(transaction.currency, transaction.payoutContext.returnedAmountMinor)
+              : null,
             recipientId: transaction.payoutContext.recipientId,
             recipientName: transaction.payoutContext.recipientName,
             status: transaction.payoutContext.status,
             submittedAt: toIsoTimestamp(transaction.payoutContext.submittedAt),
+            walletRestoredAmount: transaction.payoutContext.walletRestoredAmountMinor
+              ? toMoneyDto(
+                  transaction.currency,
+                  transaction.payoutContext.walletRestoredAmountMinor,
+                )
+              : null,
           }
         : null,
     };

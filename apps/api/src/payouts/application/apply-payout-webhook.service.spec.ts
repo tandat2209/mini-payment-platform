@@ -139,6 +139,27 @@ class InMemoryPayoutWriteRepository implements PayoutWriteRepository {
     payoutId: string;
     updatedAt: string;
   }> = [];
+  returnedCreditTransactions: Array<{
+    amountMinor: number;
+    createdAt: string;
+    currency: string;
+    description: string;
+    occurredAt: string;
+    payoutId: string;
+    reference: string | null;
+    userId: string;
+    userTransactionId: string;
+    walletId: string;
+    webhookEventId: string;
+  }> = [];
+  returnedUpdates: Array<{
+    payoutId: string;
+    userTransactionId: string;
+    webhookEventId: string;
+    returnedAmountMinor: number;
+    returnedAt: string;
+    updatedAt: string;
+  }> = [];
 
   constructor(executionRecord: PayoutExecutionRecord | null) {
     this.executionRecord = executionRecord;
@@ -186,6 +207,39 @@ class InMemoryPayoutWriteRepository implements PayoutWriteRepository {
     },
   ): Promise<void> {
     this.processingUpdates.push(input);
+  }
+
+  async markPayoutAsReturned(
+    _context: TransactionContext,
+    input: {
+      payoutId: string;
+      userTransactionId: string;
+      webhookEventId: string;
+      returnedAmountMinor: number;
+      returnedAt: string;
+      updatedAt: string;
+    },
+  ): Promise<void> {
+    this.returnedUpdates.push(input);
+  }
+
+  async createReturnedPayoutCreditTransaction(
+    _context: TransactionContext,
+    input: {
+      amountMinor: number;
+      createdAt: string;
+      currency: string;
+      description: string;
+      occurredAt: string;
+      payoutId: string;
+      reference: string | null;
+      userId: string;
+      userTransactionId: string;
+      walletId: string;
+      webhookEventId: string;
+    },
+  ): Promise<void> {
+    this.returnedCreditTransactions.push(input);
   }
 
   async recordSubmissionAttempt(): Promise<void> {
@@ -255,13 +309,16 @@ function createExecutionRecord(
     payoutStatus: 'submitted',
     provider: 'psp_sandbox',
     recipientId: 'recipient-1',
+    userId: 'customer-1',
     userTransactionId: 'txn-1',
     walletId: 'wallet-1',
     ...overrides,
   };
 }
 
-function createWebhookPayload(overrides: Partial<PayoutWebhook> = {}): PayoutWebhook {
+function createWebhookPayload(
+  overrides: Partial<Extract<PayoutWebhook, { eventType: 'payout.updated' }>> = {},
+): Extract<PayoutWebhook, { eventType: 'payout.updated' }> {
   return {
     data: {
       externalPayoutId: 'ppay_123',
@@ -272,6 +329,26 @@ function createWebhookPayload(overrides: Partial<PayoutWebhook> = {}): PayoutWeb
     eventType: 'payout.updated',
     externalEventId: 'evt_payout_001',
     occurredAt: '2026-03-26T10:00:00.000Z',
+    provider: 'psp_sandbox',
+    ...overrides,
+  };
+}
+
+function createReturnedWebhookPayload(
+  overrides: Partial<Extract<PayoutWebhook, { eventType: 'payout.returned' }>> = {},
+): Extract<PayoutWebhook, { eventType: 'payout.returned' }> {
+  return {
+    data: {
+      currency: 'USD',
+      externalPayoutId: 'ppay_123',
+      externalRequestId: 'preq_123',
+      payoutReference: 'payout-001',
+      returnedAmountMinor: 2503,
+      status: 'returned',
+    },
+    eventType: 'payout.returned',
+    externalEventId: 'evt_payout_returned_001',
+    occurredAt: '2026-03-27T10:00:00.000Z',
     provider: 'psp_sandbox',
     ...overrides,
   };
@@ -602,4 +679,109 @@ test('apply payout webhook rejects contradictory failed-after-paid transition', 
   assert.equal(payoutWriteRepository.attemptOutcomeUpdates.length, 0);
   assert.equal(payoutWalletRepository.creditCalls.length, 0);
   assert.equal(ledgerPostingService.createdTransactions.length, 0);
+});
+
+test('apply payout webhook restores wallet, reverses revenue, and records a return credit for returned payout', async () => {
+  const webhookStore = new InMemoryPayoutWebhookStore();
+  const payoutWalletRepository = new InMemoryPayoutWalletRepository();
+  const payoutWriteRepository = new InMemoryPayoutWriteRepository(
+    createExecutionRecord({
+      attemptStatus: 'succeeded',
+      payoutStatus: 'paid',
+    }),
+  );
+  const ledgerPostingService = new StubLedgerPostingService();
+  const service = new ApplyPayoutWebhookService(
+    new ImmediateTransactionManager(),
+    webhookStore,
+    payoutWalletRepository,
+    payoutWriteRepository,
+    new StubLedgerAccountService() as unknown as LedgerAccountService,
+    ledgerPostingService as unknown as LedgerPostingService,
+  );
+
+  const result = await service.execute(createReturnedWebhookPayload());
+
+  assert.equal(result.processingStatus, 'processed');
+  assert.equal(payoutWalletRepository.creditCalls[0]?.amountMinor, 2506);
+  assert.equal(payoutWriteRepository.returnedCreditTransactions.length, 1);
+  assert.equal(payoutWriteRepository.returnedCreditTransactions[0]?.amountMinor, 2506);
+  assert.equal(payoutWriteRepository.returnedUpdates.length, 1);
+  assert.equal(payoutWriteRepository.returnedUpdates[0]?.returnedAmountMinor, 2503);
+  assert.equal(payoutWriteRepository.attemptOutcomeUpdates[0]?.status, 'succeeded');
+  assert.equal(ledgerPostingService.createdTransactions[0]?.transactionType, 'reversal');
+  assert.deepEqual(
+    ledgerPostingService.createdTransactions[0]?.entries.map((entry) => ({
+      amountMinor: entry.amountMinor,
+      direction: entry.direction,
+      ledgerAccountId: entry.ledgerAccountId,
+    })),
+    [
+      {
+        amountMinor: 2503,
+        direction: 'debit',
+        ledgerAccountId: 'platform-cash-account',
+      },
+      {
+        amountMinor: 3,
+        direction: 'debit',
+        ledgerAccountId: 'platform-revenue-account',
+      },
+      {
+        amountMinor: 2506,
+        direction: 'credit',
+        ledgerAccountId: 'wallet-liability-account',
+      },
+    ],
+  );
+});
+
+test('apply payout webhook noops duplicate returned transition', async () => {
+  const webhookStore = new InMemoryPayoutWebhookStore();
+  const payoutWalletRepository = new InMemoryPayoutWalletRepository();
+  const payoutWriteRepository = new InMemoryPayoutWriteRepository(
+    createExecutionRecord({
+      payoutStatus: 'returned',
+    }),
+  );
+  const ledgerPostingService = new StubLedgerPostingService();
+  const service = new ApplyPayoutWebhookService(
+    new ImmediateTransactionManager(),
+    webhookStore,
+    payoutWalletRepository,
+    payoutWriteRepository,
+    new StubLedgerAccountService() as unknown as LedgerAccountService,
+    ledgerPostingService as unknown as LedgerPostingService,
+  );
+
+  const result = await service.execute(createReturnedWebhookPayload());
+
+  assert.equal(result.processingStatus, 'processed');
+  assert.equal(payoutWriteRepository.returnedUpdates.length, 0);
+  assert.equal(payoutWriteRepository.attemptOutcomeUpdates.length, 0);
+});
+
+test('apply payout webhook rejects returned-before-paid transition', async () => {
+  const webhookStore = new InMemoryPayoutWebhookStore();
+  const payoutWalletRepository = new InMemoryPayoutWalletRepository();
+  const payoutWriteRepository = new InMemoryPayoutWriteRepository(
+    createExecutionRecord({
+      payoutStatus: 'submitted',
+    }),
+  );
+  const ledgerPostingService = new StubLedgerPostingService();
+  const service = new ApplyPayoutWebhookService(
+    new ImmediateTransactionManager(),
+    webhookStore,
+    payoutWalletRepository,
+    payoutWriteRepository,
+    new StubLedgerAccountService() as unknown as LedgerAccountService,
+    ledgerPostingService as unknown as LedgerPostingService,
+  );
+
+  const result = await service.execute(createReturnedWebhookPayload());
+
+  assert.equal(result.processingStatus, 'failed');
+  assert.equal(payoutWriteRepository.returnedUpdates.length, 0);
+  assert.equal(payoutWriteRepository.attemptOutcomeUpdates.length, 0);
 });

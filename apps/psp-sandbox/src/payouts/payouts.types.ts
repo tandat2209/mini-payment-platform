@@ -58,3 +58,32 @@ export type PayoutUpdateSimulationResponse = {
   };
   receiverResponse: Record<string, unknown>;
 };
+
+export type PayoutReturnSimulationRequest = {
+  externalEventId?: string;
+  externalPayoutId: string;
+  returnReason?: string;
+  returnedAmountMinor: number;
+};
+
+export type PayoutReturnSimulationResponse = {
+  delivered: true;
+  deliveryTarget: string;
+  externalEventId: string;
+  payload: {
+    data: {
+      currency: string;
+      externalPayoutId: string;
+      externalRequestId: string;
+      payoutReference: string;
+      returnReason?: string;
+      returnedAmountMinor: number;
+      status: 'returned';
+    };
+    eventType: 'payout.returned';
+    externalEventId: string;
+    occurredAt: string;
+    provider: 'psp_sandbox';
+  };
+  receiverResponse: Record<string, unknown>;
+};

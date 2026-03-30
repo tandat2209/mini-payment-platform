@@ -19,6 +19,7 @@ type PayoutExecutionRow = {
   payout_status: PayoutExecutionRecord['payoutStatus'];
   provider: string;
   recipient_id: string;
+  user_id: string;
   user_transaction_id: string;
   wallet_id: string;
 };
@@ -190,6 +191,7 @@ export class SqlPayoutWriteRepository implements PayoutWriteRepository {
           p.status AS payout_status,
           pa.provider,
           p.recipient_id,
+          p.user_id,
           p.user_transaction_id,
           p.wallet_id
         FROM payout_attempts pa
@@ -220,6 +222,7 @@ export class SqlPayoutWriteRepository implements PayoutWriteRepository {
       payoutStatus: row.payout_status,
       provider: row.provider,
       recipientId: row.recipient_id,
+      userId: row.user_id,
       userTransactionId: row.user_transaction_id,
       walletId: row.wallet_id,
     };
@@ -313,6 +316,120 @@ export class SqlPayoutWriteRepository implements PayoutWriteRepository {
         WHERE id = $1::uuid
       `,
       [input.payoutId, input.updatedAt],
+    );
+  }
+
+  async markPayoutAsReturned(
+    context: TransactionContext,
+    input: {
+      payoutId: string;
+      userTransactionId: string;
+      webhookEventId: string;
+      returnedAmountMinor: number;
+      returnedAt: string;
+      updatedAt: string;
+    },
+  ): Promise<void> {
+    const database = getDatabaseQueryable(context);
+
+    await database.query(
+      `
+        UPDATE payouts
+        SET status = 'returned',
+            returned_at = $2::timestamptz,
+            returned_amount_minor = $3,
+            updated_at = $4::timestamptz
+        WHERE id = $1::uuid
+      `,
+      [input.payoutId, input.returnedAt, input.returnedAmountMinor, input.updatedAt],
+    );
+
+    await database.query(
+      `
+        UPDATE user_transactions
+        SET status = 'returned',
+            webhook_event_id = $2::uuid,
+            updated_at = $3::timestamptz
+        WHERE id = $1::uuid
+      `,
+      [input.userTransactionId, input.webhookEventId, input.updatedAt],
+    );
+  }
+
+  async createReturnedPayoutCreditTransaction(
+    context: TransactionContext,
+    input: {
+      amountMinor: number;
+      createdAt: string;
+      currency: string;
+      description: string;
+      occurredAt: string;
+      payoutId: string;
+      reference: string | null;
+      userId: string;
+      userTransactionId: string;
+      walletId: string;
+      webhookEventId: string;
+    },
+  ): Promise<void> {
+    const database = getDatabaseQueryable(context);
+
+    await database.query(
+      `
+        INSERT INTO user_transactions (
+          id,
+          user_id,
+          wallet_id,
+          webhook_event_id,
+          related_payout_id,
+          type,
+          direction,
+          status,
+          currency,
+          gross_amount_minor,
+          fee_amount_minor,
+          net_amount_minor,
+          description,
+          reference,
+          occurred_at,
+          posted_at,
+          created_at,
+          updated_at
+        )
+        VALUES (
+          $1::uuid,
+          $2::uuid,
+          $3::uuid,
+          $4::uuid,
+          $5::uuid,
+          'reversal',
+          'credit',
+          'completed',
+          $6,
+          $7,
+          0,
+          $7,
+          $8,
+          $9,
+          $10::timestamptz,
+          $10::timestamptz,
+          $11::timestamptz,
+          $11::timestamptz
+        )
+      `,
+      [
+        input.userTransactionId,
+        input.userId,
+        input.walletId,
+        input.webhookEventId,
+        input.payoutId,
+        input.currency,
+        input.amountMinor,
+        input.description,
+        input.reference,
+        input.occurredAt,
+        input.createdAt,
+      ],
     );
   }
 

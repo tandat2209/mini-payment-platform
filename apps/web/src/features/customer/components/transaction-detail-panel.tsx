@@ -152,6 +152,7 @@ export function TransactionDetailPanel({
                   <>
                     <p className="text-sm font-semibold text-slate-950">Payout context</p>
                     <dl className="mt-4 space-y-3">
+                      <DetailRow label="Payout status" value={toTitleCase(payout.status)} />
                       <DetailRow
                         label="Payout reference"
                         value={payout.payoutReference ?? payout.payoutId}
@@ -164,6 +165,28 @@ export function TransactionDetailPanel({
                         label="Recipient ID"
                         value={payout.recipientId ?? 'Not available'}
                       />
+                      {payout.status === 'returned' ? (
+                        <>
+                          <DetailRow
+                            label="Returned"
+                            value={formatDate(payout.returnedAt, {
+                              day: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              month: 'short',
+                              year: 'numeric',
+                            })}
+                          />
+                          <DetailRow
+                            label="Credited back"
+                            value={
+                              payout.walletRestoredAmount
+                                ? formatMoney(payout.walletRestoredAmount)
+                                : 'Waiting for wallet credit'
+                            }
+                          />
+                        </>
+                      ) : null}
                     </dl>
                   </>
                 ) : (

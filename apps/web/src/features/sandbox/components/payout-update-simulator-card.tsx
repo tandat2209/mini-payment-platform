@@ -1,4 +1,4 @@
-import { LoaderCircle, Radar, RefreshCcw, Siren } from 'lucide-react';
+import { LoaderCircle, Radar, RefreshCcw, RotateCcw, Siren } from 'lucide-react';
 import type { ChangeEvent, FormEvent, JSX } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -70,6 +70,7 @@ export function PayoutUpdateSimulatorCard({
                 { label: 'Processing', value: 'processing' },
                 { label: 'Paid', value: 'paid' },
                 { label: 'Failed', value: 'failed' },
+                { label: 'Returned', value: 'returned' },
               ]}
               value={formState.status}
             />
@@ -80,30 +81,53 @@ export function PayoutUpdateSimulatorCard({
               value={formState.externalEventId}
             />
             <Field
-              label="Failure reason"
+              label={formState.status === 'returned' ? 'Return reason' : 'Failure reason'}
               onChange={(event) => onChange('failureReason', event.target.value)}
-              placeholder="Beneficiary bank rejected the payout"
+              placeholder={
+                formState.status === 'returned'
+                  ? 'Destination bank returned the payout'
+                  : 'Beneficiary bank rejected the payout'
+              }
               value={formState.failureReason}
             />
+            {formState.status === 'returned' ? (
+              <Field
+                label="Returned amount minor"
+                onChange={(event) => onChange('returnedAmountMinor', event.target.value)}
+                placeholder="2503"
+                value={formState.returnedAmountMinor}
+              />
+            ) : null}
 
             <div className="sm:col-span-2 rounded-[20px] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
               Use the PSP external payout id returned at submission time, like `ppay_...`. Failed
-              updates can carry a provider reason; processing and paid should leave it blank.
+              updates can carry a provider reason. Returned events also need the actual returned
+              amount from the provider.
             </div>
           </div>
 
           <div className="space-y-4">
             <div className="rounded-[26px] border border-slate-200 bg-slate-950 p-4 text-white">
               <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-300">
-                <RefreshCcw className="h-4 w-4" />
+                {formState.status === 'returned' ? (
+                  <RotateCcw className="h-4 w-4" />
+                ) : (
+                  <RefreshCcw className="h-4 w-4" />
+                )}
                 Callback request
               </div>
               <div className="mt-4 space-y-3 text-sm text-slate-300">
                 <p>Status: {toTitleCase(formState.status)}</p>
                 <p>
-                  Failure reason:{' '}
-                  {formState.status === 'failed'
+                  {formState.status === 'returned' ? 'Return reason' : 'Failure reason'}:{' '}
+                  {formState.status === 'failed' || formState.status === 'returned'
                     ? formState.failureReason.trim() || 'Recommended'
+                    : 'Not sent'}
+                </p>
+                <p>
+                  Returned amount:{' '}
+                  {formState.status === 'returned'
+                    ? formState.returnedAmountMinor.trim() || 'Required'
                     : 'Not sent'}
                 </p>
               </div>
@@ -111,8 +135,12 @@ export function PayoutUpdateSimulatorCard({
                 {isSubmitting ? (
                   <>
                     <LoaderCircle className="h-4 w-4 animate-spin" />
-                    Sending payout update...
+                    {formState.status === 'returned'
+                      ? 'Sending payout return...'
+                      : 'Sending payout update...'}
                   </>
+                ) : formState.status === 'returned' ? (
+                  'Send payout return'
                 ) : (
                   'Send payout update'
                 )}
@@ -129,6 +157,9 @@ export function PayoutUpdateSimulatorCard({
                   <ResultRow label="Provider" value={result.provider} />
                   <ResultRow label="Payout reference" value={result.payoutReference} />
                   <ResultRow label="External event" value={result.externalEventId} />
+                  {result.returnedAmountMinor ? (
+                    <ResultRow label="Returned amount minor" value={result.returnedAmountMinor} />
+                  ) : null}
                   <ResultRow label="Delivery target" value={result.deliveryTarget} />
                   <ResultRow
                     label="Receiver duplicate"

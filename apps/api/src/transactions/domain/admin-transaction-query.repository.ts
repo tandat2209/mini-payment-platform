@@ -44,6 +44,10 @@ export type AdminTransactionDetailView = AdminTransactionListItemView & {
     payoutReference: string | null;
     recipientId: string | null;
     recipientName: string | null;
+    returnedAmountMinor: string | null;
+    returnedAt: Date | string | null;
+    status: string;
+    walletRestoredAmountMinor: string | null;
   } | null;
 };
 

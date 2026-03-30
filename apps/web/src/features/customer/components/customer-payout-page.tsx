@@ -176,12 +176,16 @@ export function CustomerPayoutPage({
   const liveSourceBalance =
     currentBalances.find((balance) => balance.currency === payoutBalanceCurrency) ?? null;
   const returnedBalancePreview =
-    payoutLifecycleStatus === 'failed' && liveSourceBalance
+    (payoutLifecycleStatus === 'failed' || payoutLifecycleStatus === 'returned') &&
+    liveSourceBalance
       ? formatMoney(liveSourceBalance.available)
       : null;
 
   useEffect(() => {
-    if (step === 3 && payoutLifecycleStatus === 'failed') {
+    if (
+      step === 3 &&
+      (payoutLifecycleStatus === 'failed' || payoutLifecycleStatus === 'returned')
+    ) {
       void liveBalancesQuery.refetch();
     }
   }, [liveBalancesQuery, payoutLifecycleStatus, step]);
@@ -570,6 +574,26 @@ export function CustomerPayoutPage({
                           label={payoutLifecycleTimestamp.label}
                           value={payoutLifecycleTimestamp.value}
                         />
+                        {payoutLifecycleStatus === 'returned' ? (
+                          <>
+                            <ReviewRow
+                              label="Returned to wallet"
+                              value={
+                                livePayoutDetail?.payout?.walletRestoredAmount
+                                  ? formatMoney(livePayoutDetail.payout.walletRestoredAmount)
+                                  : `${formatMoney(submittedPayout.amounts.gross)} credited back`
+                              }
+                            />
+                            <ReviewRow
+                              label="Balance after return"
+                              value={
+                                returnedBalancePreview
+                                  ? returnedBalancePreview
+                                  : 'Refreshing wallet balance'
+                              }
+                            />
+                          </>
+                        ) : null}
                         {payoutLifecycleStatus === 'failed' ? (
                           <>
                             <ReviewRow
@@ -588,7 +612,9 @@ export function CustomerPayoutPage({
                         ) : null}
                       </div>
 
-                      {livePayoutQuery.isLoading && payoutLifecycleStatus !== 'paid' ? (
+                      {livePayoutQuery.isLoading &&
+                      payoutLifecycleStatus !== 'paid' &&
+                      payoutLifecycleStatus !== 'returned' ? (
                         <div className="rounded-[20px] border border-slate-200 bg-[#fcfaf7] px-3.5 py-3 text-sm text-slate-600">
                           Checking the latest provider update...
                         </div>
@@ -829,13 +855,14 @@ function formatReadinessStatus(value: string | null | undefined): string {
 function resolvePayoutLifecycleStatus(
   submittedPayout: CreatePayoutResponse | null,
   transactionDetail: { payout: { status: string } | null } | undefined,
-): 'failed' | 'paid' | 'processing' | 'submitted' {
+): 'failed' | 'paid' | 'processing' | 'returned' | 'submitted' {
   const liveStatus = transactionDetail?.payout?.status;
 
   if (
     liveStatus === 'failed' ||
     liveStatus === 'paid' ||
     liveStatus === 'processing' ||
+    liveStatus === 'returned' ||
     liveStatus === 'submitted'
   ) {
     return liveStatus;
@@ -846,7 +873,9 @@ function resolvePayoutLifecycleStatus(
   return createdStatus === 'submitted' ? 'submitted' : 'submitted';
 }
 
-function getPayoutLifecycleCopy(status: 'failed' | 'paid' | 'processing' | 'submitted'): {
+function getPayoutLifecycleCopy(
+  status: 'failed' | 'paid' | 'processing' | 'returned' | 'submitted',
+): {
   badgeLabel: string;
   badgeTone: 'default' | 'positive' | 'warning';
   icon: JSX.Element;
@@ -876,6 +905,17 @@ function getPayoutLifecycleCopy(status: 'failed' | 'paid' | 'processing' | 'subm
     };
   }
 
+  if (status === 'returned') {
+    return {
+      badgeLabel: 'Returned',
+      badgeTone: 'default',
+      icon: <RefreshCcw className="h-5 w-5" />,
+      iconTone: 'bg-slate-100 text-slate-700',
+      message: 'The payout was returned after settlement and the funds are back in your wallet.',
+      title: 'Payout returned',
+    };
+  }
+
   if (status === 'processing') {
     return {
       badgeLabel: 'Processing',
@@ -898,13 +938,14 @@ function getPayoutLifecycleCopy(status: 'failed' | 'paid' | 'processing' | 'subm
 }
 
 function getPayoutLifecycleTimestamp(
-  status: 'failed' | 'paid' | 'processing' | 'submitted',
+  status: 'failed' | 'paid' | 'processing' | 'returned' | 'submitted',
   submittedPayout: CreatePayoutResponse | null,
   transactionDetail:
     | {
         payout: {
           completedAt: string | null;
           failedAt: string | null;
+          returnedAt: string | null;
           submittedAt: string | null;
         } | null;
       }
@@ -921,6 +962,13 @@ function getPayoutLifecycleTimestamp(
     return {
       label: 'Failed',
       value: formatDate(transactionDetail?.payout?.failedAt ?? null),
+    };
+  }
+
+  if (status === 'returned') {
+    return {
+      label: 'Returned',
+      value: formatDate(transactionDetail?.payout?.returnedAt ?? null),
     };
   }
 

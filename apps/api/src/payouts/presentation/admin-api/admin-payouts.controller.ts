@@ -33,10 +33,13 @@ export class AdminPayoutsController {
         name: string;
       };
       reference: string | null;
+      returnedAmount: ReturnType<typeof toMoneyDto> | null;
+      returnedAt: string | null;
       status: string;
       submittedAt: string | null;
       userTransactionId: string;
       walletId: string;
+      walletRestoredAmount: ReturnType<typeof toMoneyDto> | null;
     }>;
   }> {
     const items = await this.getAdminPayoutsQuery.list();
@@ -66,10 +69,17 @@ export class AdminPayoutsController {
           name: item.recipientName,
         },
         reference: item.reference,
+        returnedAmount: item.returnedAmountMinor
+          ? toMoneyDto(item.currency, item.returnedAmountMinor)
+          : null,
+        returnedAt: toIsoTimestamp(item.returnedAt),
         status: item.status,
         submittedAt: toIsoTimestamp(item.submittedAt),
         userTransactionId: item.userTransactionId,
         walletId: item.walletId,
+        walletRestoredAmount: item.walletRestoredAmountMinor
+          ? toMoneyDto(item.currency, item.walletRestoredAmountMinor)
+          : null,
       })),
     };
   }
