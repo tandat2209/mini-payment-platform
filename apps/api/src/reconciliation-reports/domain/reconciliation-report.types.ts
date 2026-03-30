@@ -1,3 +1,15 @@
+export type ReconciliationLineOutcome =
+  | 'amount_mismatch'
+  | 'duplicate_provider_line'
+  | 'internal_only'
+  | 'matched'
+  | 'provider_only'
+  | 'status_mismatch'
+  | 'timing_difference'
+  | 'unsupported_report_line';
+
+export type ReconciliationExceptionSeverity = 'high' | 'medium';
+
 export type ReconciliationReportLine =
   | {
       currency: string;
@@ -74,4 +86,56 @@ export type RecordedReconciliationReportEvent = {
   provider: string;
   providerReportId: string | null;
   receivedAt: Date | string | null;
+};
+
+export type StoredReconciliationReportLine = {
+  batchId: string;
+  currency: string;
+  customerExternalRef: string;
+  eventTimestamp: Date | string;
+  externalEventId: string | null;
+  externalPayoutId: string | null;
+  externalRequestId: string | null;
+  feeAmountMinor: number;
+  grossAmountMinor: number;
+  id: string;
+  internalReference: string | null;
+  lineIndex: number;
+  lineStatus: string;
+  lineType: ReconciliationReportLine['lineType'];
+  netAmountMinor: number;
+  payoutId: string | null;
+  providerLineId: string;
+  returnedAmountMinor: number | null;
+  walletId: string | null;
+};
+
+export type FundingReconciliationMatchCandidate = {
+  currency: string | null;
+  feeAmountMinor: number | null;
+  grossAmountMinor: number | null;
+  ledgerTransactionId: string | null;
+  ledgerTransactionStatus: string | null;
+  netAmountMinor: number | null;
+  userTransactionId: string | null;
+  userTransactionStatus: string | null;
+  webhookEventId: string;
+  webhookProcessingStatus: string;
+};
+
+export type PayoutReconciliationMatchCandidate = {
+  attemptStatus: string | null;
+  currency: string;
+  feeAmountMinor: number;
+  grossAmountMinor: number;
+  netAmountMinor: number;
+  payoutAttemptId: string;
+  payoutId: string;
+  payoutStatus: string;
+  returnCreditTransactionId: string | null;
+  returnedAmountMinor: number | null;
+  reversalLedgerTransactionId: string | null;
+  settlementLedgerTransactionId: string | null;
+  userTransactionId: string;
+  webhookEventId: string | null;
 };

@@ -12,9 +12,9 @@
 
 ## 3. Reconciliation Matching And Exception Classification
 
-- [ ] 3.1 Implement reconciliation matching from report lines to funding events, payout attempts, returned payouts, webhook records, user transactions, and ledger records.
-- [ ] 3.2 Implement explicit line-outcome classification for matched, timing-difference, provider-only, amount-mismatch, status-mismatch, duplicate-provider-line, and unsupported-line cases during report processing.
-- [ ] 3.3 Create reconciliation exception records for non-auto-resolved cases and preserve linked operational context for investigation.
+- [x] 3.1 Implement reconciliation matching from report lines to funding events, payout attempts, returned payouts, webhook records, user transactions, and ledger records.
+- [x] 3.2 Implement explicit line-outcome classification for matched, timing-difference, provider-only, amount-mismatch, status-mismatch, duplicate-provider-line, and unsupported-line cases during report processing.
+- [x] 3.3 Create reconciliation exception records for non-auto-resolved cases and preserve linked operational context for investigation.
 - [ ] 3.4 Add a scheduled expected-missing sweep that marks eligible unmatched payouts as `internal_only` only after report windows have closed.
 - [ ] 3.5 Add automated coverage for the core reconciliation scenarios, delayed `internal_only` detection, and repeatable reconciliation runs.
 

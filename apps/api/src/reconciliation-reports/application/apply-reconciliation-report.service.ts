@@ -15,6 +15,7 @@ import {
   type ReconciliationReportWebhook,
   type RecordedReconciliationReportEvent,
 } from '../domain/reconciliation-report.types';
+import { ReconciliationLineClassifierService } from './reconciliation-line-classifier.service';
 
 @Injectable()
 export class ApplyReconciliationReportService {
@@ -25,6 +26,7 @@ export class ApplyReconciliationReportService {
     private readonly transactionManager: TransactionManager,
     @Inject(RECONCILIATION_REPORT_STORE)
     private readonly reconciliationReportStore: ReconciliationReportStore,
+    private readonly reconciliationLineClassifierService: ReconciliationLineClassifierService,
   ) {}
 
   async execute(payload: ReconciliationReportWebhook): Promise<RecordedReconciliationReportEvent> {
@@ -130,6 +132,12 @@ export class ApplyReconciliationReportService {
         context,
         storedBatch.id,
         payload.data.lines,
+        now,
+      );
+      await this.reconciliationLineClassifierService.classifyBatch(
+        context,
+        storedBatch.id,
+        payload.provider,
         now,
       );
       await this.reconciliationReportStore.markBatchAndLinesProcessed(context, storedBatch.id, now);
