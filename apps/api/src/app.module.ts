@@ -11,6 +11,7 @@ import { OperationsModule } from './operations/operations.module';
 import { PayoutWebhooksModule } from './payout-webhooks/payout-webhooks.module';
 import { PayoutsModule } from './payouts/payouts.module';
 import { RecipientsModule } from './recipients/recipients.module';
+import { ReconciliationReportsModule } from './reconciliation-reports/reconciliation-reports.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { WalletsModule } from './wallets/wallets.module';
 
@@ -29,6 +30,7 @@ import { WalletsModule } from './wallets/wallets.module';
     OperationsModule,
     PayoutsModule,
     PayoutWebhooksModule,
+    ReconciliationReportsModule,
     WalletsModule,
     TransactionsModule,
     RecipientsModule,

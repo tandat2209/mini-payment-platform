@@ -6,9 +6,9 @@
 
 ## 2. API Report Ingestion And Storage
 
-- [ ] 2.1 Add API-side reconciliation report webhook ingestion, deduplication, and raw payload persistence.
-- [ ] 2.2 Add durable storage for reconciliation report batches and normalized reconciliation report lines, including processing status and provider identifiers.
-- [ ] 2.3 Add automated coverage for accepted report ingestion, rejected invalid reports, and duplicate report deduplication.
+- [x] 2.1 Add API-side reconciliation report webhook ingestion, deduplication, and raw payload persistence.
+- [x] 2.2 Add durable storage for reconciliation report batches and normalized reconciliation report lines, including processing status and provider identifiers.
+- [x] 2.3 Add automated coverage for accepted report ingestion, rejected invalid reports, and duplicate report deduplication.
 
 ## 3. Reconciliation Matching And Exception Classification
 

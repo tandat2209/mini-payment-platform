@@ -8,6 +8,7 @@ It is intended as a working reference for:
 - user-facing transaction history and statements
 - payout and recipient relationships
 - provider webhook and idempotency handling
+- provider reconciliation report ingestion and storage
 - double-entry ledger design
 
 ## ER Diagram
@@ -28,13 +29,19 @@ erDiagram
     RECIPIENTS ||--o{ PAYOUTS : targets
     RECIPIENT_RAILS ||--o{ PAYOUTS : uses
     PAYOUTS ||--o{ PAYOUT_ATTEMPTS : retries
+    PAYOUTS ||--o{ USER_TRANSACTIONS : links_return_credits
 
     WEBHOOK_EVENTS ||--o{ PAYOUTS : updates
     WEBHOOK_EVENTS ||--o{ USER_TRANSACTIONS : explains
     WEBHOOK_EVENTS ||--o{ LEDGER_TRANSACTIONS : triggers
+    WEBHOOK_EVENTS ||--o| RECONCILIATION_REPORT_BATCHES : envelopes
 
     IDEMPOTENCY_KEYS ||--o{ PAYOUTS : protects
     IDEMPOTENCY_KEYS ||--o{ PAYOUT_ATTEMPTS : reuses
+
+    RECONCILIATION_REPORT_BATCHES ||--o{ RECONCILIATION_REPORT_LINES : contains
+    WALLETS ||--o{ RECONCILIATION_REPORT_LINES : provides_wallet_context
+    PAYOUTS ||--o{ RECONCILIATION_REPORT_LINES : reported_as_payout_or_return
 
     WALLETS ||--o{ LEDGER_ACCOUNTS : owns_wallet_account
     RECIPIENTS ||--o{ LEDGER_ACCOUNTS : owns_payable_account
@@ -92,6 +99,7 @@ erDiagram
         string reference
         datetime occurred_at
         datetime posted_at
+        uuid related_payout_id FK
     }
 
     RECIPIENTS {
@@ -141,6 +149,8 @@ erDiagram
         datetime submitted_at
         datetime completed_at
         datetime failed_at
+        datetime returned_at
+        bigint returned_amount_minor
     }
 
     PAYOUT_ATTEMPTS {
@@ -218,6 +228,50 @@ erDiagram
         bigint amount_minor
         datetime created_at
     }
+
+    RECONCILIATION_REPORT_BATCHES {
+        uuid id PK
+        uuid webhook_event_id FK
+        string provider
+        string provider_report_id
+        date report_date
+        datetime report_window_start
+        datetime report_window_end
+        int line_count
+        string processing_status
+        jsonb raw_payload
+        datetime received_at
+        datetime processed_at
+        datetime created_at
+        datetime updated_at
+    }
+
+    RECONCILIATION_REPORT_LINES {
+        uuid id PK
+        uuid batch_id FK
+        int line_index
+        string provider_line_id
+        string line_type
+        string line_status
+        string currency
+        bigint gross_amount_minor
+        bigint fee_amount_minor
+        bigint net_amount_minor
+        bigint returned_amount_minor
+        string external_event_id
+        string external_payout_id
+        string external_request_id
+        string provider_reference
+        string internal_reference
+        string customer_external_ref
+        uuid wallet_id
+        datetime event_timestamp
+        string processing_status
+        jsonb raw_payload
+        datetime processed_at
+        datetime created_at
+        datetime updated_at
+    }
 ```
 
 ## Notes
@@ -226,7 +280,12 @@ erDiagram
 - `ledger_transactions` and `ledger_entries` are the internal financial source of truth.
 - `payouts` represents the business payout object.
 - `payout_attempts` stores PSP execution and retry history.
+- returned payouts stay attached to the original `payouts` row through `status`, `returned_at`, and `returned_amount_minor`.
+- `user_transactions.related_payout_id` links return-credit transactions back to the original payout they compensate.
 - `webhook_events` stores raw provider callbacks for deduplication, replay, and auditability.
+- `reconciliation_report_batches` stores each provider report delivery as its own durable batch envelope.
+- `reconciliation_report_lines` stores normalized provider observations for funding, payout, and return lines before reconciliation matching/classification.
+- reconciliation report lines intentionally keep provider identifiers and wallet context without hard foreign keys to payouts or user transactions, because they may arrive before internal matching is resolved.
 - `ledger_accounts` currently uses a generic ownership model with `owner_type` and `owner_id`.
 - In practice, wallet liability accounts point at wallets, recipient payable accounts point at recipients, and platform accounts have no domain owner row.
 - `wallet_balances` is a balance read model and must stay consistent with ledger posting.
