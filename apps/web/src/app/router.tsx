@@ -132,6 +132,9 @@ const adminReportsRoute = createRoute({
   component: AdminReportsRoutePage,
   getParentRoute: () => rootRoute,
   path: '/admin/reports',
+  validateSearch: (search: Record<string, unknown>) => ({
+    query: typeof search.query === 'string' ? search.query : undefined,
+  }),
 });
 
 const adminAuditLogsRoute = createRoute({
