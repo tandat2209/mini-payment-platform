@@ -238,6 +238,7 @@ export class ApplyPayoutWebhookService {
       postedAt: payload.occurredAt,
       reference: executionRecord.payoutReference,
       transactionType: 'payout_settlement',
+      userTransactionId: executionRecord.userTransactionId,
       webhookEventId,
     });
 
@@ -321,6 +322,7 @@ export class ApplyPayoutWebhookService {
       postedAt: payload.occurredAt,
       reference: executionRecord.payoutReference,
       transactionType: 'reversal',
+      userTransactionId: executionRecord.userTransactionId,
       webhookEventId,
     });
 

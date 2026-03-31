@@ -94,7 +94,7 @@ INSERT INTO ledger_accounts (id, code, name, account_type, owner_type, owner_id,
 INSERT INTO ledger_transactions (id, user_transaction_id, webhook_event_id, transaction_type, status, currency, reference, description, created_at, posted_at, reversed_at) VALUES
   ('16161616-1616-1616-1616-161616161611', '12121212-1212-1212-1212-121212121211', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee1', 'funding', 'posted', 'USD', 'funding-001', 'Inbound funding recognized from provider webhook', '2026-03-22T01:10:30Z', '2026-03-22T01:10:30Z', NULL),
   ('16161616-1616-1616-1616-161616161612', '12121212-1212-1212-1212-121212121212', NULL, 'payout', 'posted', 'USD', 'payout-001', 'Deduct wallet and allocate fee plus payable', '2026-03-22T01:20:00Z', '2026-03-22T01:20:00Z', NULL),
-  ('16161616-1616-1616-1616-161616161613', NULL, 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee2', 'payout_settlement', 'posted', 'USD', 'payout-001-settlement', 'Settle payable to platform cash after PSP confirmation', '2026-03-22T01:21:20Z', '2026-03-22T01:21:20Z', NULL);
+  ('16161616-1616-1616-1616-161616161613', '12121212-1212-1212-1212-121212121212', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee2', 'payout_settlement', 'posted', 'USD', 'payout-001-settlement', 'Settle payable to platform cash after PSP confirmation', '2026-03-22T01:21:20Z', '2026-03-22T01:21:20Z', NULL);
 
 INSERT INTO ledger_entries (id, ledger_transaction_id, ledger_account_id, direction, currency, amount_minor, description, created_at) VALUES
   ('17171717-1717-1717-1717-171717171711', '16161616-1616-1616-1616-161616161611', '15151515-1515-1515-1515-151515151512', 'debit', 'USD', 10000, 'PSP cash received', '2026-03-22T01:10:30Z'),

@@ -320,6 +320,32 @@ type SandboxPayoutReturnResponse = {
   receiverResponse: Record<string, unknown>;
 };
 
+type SandboxReconciliationReportRequest = {
+  externalEventId?: string;
+  providerReportId?: string;
+  reportDate: string;
+};
+
+type SandboxReconciliationReportResponse = {
+  deliveryTarget: string;
+  delivered: true;
+  externalEventId: string;
+  payload: {
+    data: {
+      lineCount: number;
+      providerReportId: string;
+      reportDate: string;
+      reportWindowEnd: string;
+      reportWindowStart: string;
+    };
+    eventType: 'reconciliation.report.generated';
+    externalEventId: string;
+    occurredAt: string;
+    provider: 'psp_sandbox';
+  };
+  receiverResponse: Record<string, unknown>;
+};
+
 type AdminTransactionItem = {
   amounts: {
     fee: MoneyDto;
@@ -603,6 +629,58 @@ type AdminReconciliationExceptionListResponse = {
   items: AdminReconciliationExceptionItem[];
 };
 
+type AdminReconciliationReportItem = {
+  exceptionCount: number;
+  id: string;
+  lineCount: number;
+  matchedCount: number;
+  processedAt: string | null;
+  processingStatus: string;
+  provider: string;
+  providerReportId: string;
+  receivedAt: string | null;
+  reportDate: string | null;
+  reportWindowEnd: string | null;
+  reportWindowStart: string | null;
+};
+
+type AdminReconciliationReportListResponse = {
+  items: AdminReconciliationReportItem[];
+};
+
+type AdminReconciliationLineItem = {
+  amounts: {
+    fee: MoneyDto;
+    gross: MoneyDto;
+    net: MoneyDto;
+    returned: MoneyDto | null;
+  };
+  batchId: string;
+  customerExternalRef: string;
+  eventTimestamp: string | null;
+  externalEventId: string | null;
+  externalPayoutId: string | null;
+  externalRequestId: string | null;
+  id: string;
+  internalMatchPayload: Record<string, unknown> | null;
+  linkedLedgerTransactionId: string | null;
+  linkedPayoutId: string | null;
+  linkedTransactionId: string | null;
+  linkedWebhookEventId: string | null;
+  outcome: string | null;
+  outcomeSummary: string | null;
+  providerLineId: string;
+  providerReportId: string;
+  rawReportPayload: Record<string, unknown>;
+  severity: string | null;
+  status: string;
+  type: string;
+};
+
+type AdminReconciliationLineListResponse = {
+  items: AdminReconciliationLineItem[];
+};
+
 function getErrorMessage(caughtError: unknown): string {
   return caughtError instanceof Error ? caughtError.message : 'Unknown error';
 }
@@ -837,6 +915,18 @@ export async function triggerSandboxPayoutReturnSimulation(
   );
 }
 
+export async function triggerSandboxReconciliationReportSimulation(
+  request: SandboxReconciliationReportRequest,
+): Promise<SandboxReconciliationReportResponse> {
+  return await postJsonToBase<
+    SandboxReconciliationReportResponse,
+    SandboxReconciliationReportRequest
+  >(getPspSandboxBaseUrl(), '/simulate/reconciliation-reports', request, {
+    errorLabel: 'PSP sandbox reconciliation report request',
+    includeCustomerContext: false,
+  });
+}
+
 export async function fetchAdminTransactions(input: {
   cursor?: string | null;
   limit: number;
@@ -956,6 +1046,20 @@ export async function fetchAdminReconciliationExceptions(): Promise<AdminReconci
   );
 }
 
+export async function fetchAdminReconciliationReports(): Promise<AdminReconciliationReportListResponse> {
+  return await getJson<AdminReconciliationReportListResponse>('/admin/reconciliation/reports', {
+    errorLabel: 'Admin reconciliation reports request',
+    includeCustomerContext: false,
+  });
+}
+
+export async function fetchAdminReconciliationLines(): Promise<AdminReconciliationLineListResponse> {
+  return await getJson<AdminReconciliationLineListResponse>('/admin/reconciliation/lines', {
+    errorLabel: 'Admin reconciliation lines request',
+    includeCustomerContext: false,
+  });
+}
+
 export type {
   AdminBalanceSummaryItem,
   AdminBalanceSummaryResponse,
@@ -968,6 +1072,10 @@ export type {
   AdminRecipientListResponse,
   AdminReconciliationExceptionItem,
   AdminReconciliationExceptionListResponse,
+  AdminReconciliationLineItem,
+  AdminReconciliationLineListResponse,
+  AdminReconciliationReportItem,
+  AdminReconciliationReportListResponse,
   AdminTransactionDetailItem,
   AdminTransactionItem,
   AdminTransactionListResponse,
@@ -992,6 +1100,8 @@ export type {
   SandboxPayoutReturnResponse,
   SandboxPayoutUpdateRequest,
   SandboxPayoutUpdateResponse,
+  SandboxReconciliationReportRequest,
+  SandboxReconciliationReportResponse,
   StatementDetailResponse,
   StatementOverviewData,
   StatementPeriod,

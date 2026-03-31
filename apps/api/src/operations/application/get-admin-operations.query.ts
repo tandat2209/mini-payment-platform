@@ -4,6 +4,8 @@ import {
   ADMIN_OPERATIONS_QUERY_REPOSITORY,
   type AdminOperationsQueryRepository,
   type AdminReconciliationExceptionView,
+  type AdminReconciliationReportBatchView,
+  type AdminReconciliationReportLineView,
   type AdminWebhookEventView,
 } from '../domain/admin-operations-query.repository';
 
@@ -16,6 +18,14 @@ export class GetAdminOperationsQuery {
 
   async listReconciliationExceptions(): Promise<AdminReconciliationExceptionView[]> {
     return await this.adminOperationsQueryRepository.listReconciliationExceptions();
+  }
+
+  async listReconciliationReportBatches(): Promise<AdminReconciliationReportBatchView[]> {
+    return await this.adminOperationsQueryRepository.listReconciliationReportBatches();
+  }
+
+  async listReconciliationReportLines(): Promise<AdminReconciliationReportLineView[]> {
+    return await this.adminOperationsQueryRepository.listReconciliationReportLines();
   }
 
   async listWebhookEvents(): Promise<AdminWebhookEventView[]> {

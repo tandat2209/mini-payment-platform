@@ -1,36 +1,33 @@
-import { ReceiptText, Rows3, ShieldCheck } from 'lucide-react';
 import type { JSX } from 'react';
 
-import { SandboxPlaceholderPage } from '@/features/sandbox/components/sandbox-placeholder-page';
+import { ReconciliationReportSimulatorCard } from '@/features/sandbox/components/reconciliation-report-simulator-card';
+import { SandboxPageShell } from '@/features/sandbox/components/sandbox-page-shell';
+import { useSandboxStore } from '@/features/sandbox/store/sandbox-store';
 
 export function SandboxReconciliationReportsRoutePage(): JSX.Element {
+  const {
+    isReconciliationReportSubmitting,
+    reconciliationReportFormState,
+    reconciliationReportSimulationError,
+    reconciliationReportSimulationResult,
+    setReconciliationReportFormField,
+    simulateReconciliationReport,
+  } = useSandboxStore();
+
   return (
-    <SandboxPlaceholderPage
-      cards={[
-        {
-          icon: ReceiptText,
-          text: 'Simulate daily report intake for settled activity, returns, and provider-side adjustments.',
-          title: 'Report payload',
-        },
-        {
-          icon: Rows3,
-          text: 'Map each report line into reconciliation matches, breaks, and operator follow-up paths.',
-          title: 'Line matching',
-        },
-        {
-          icon: ShieldCheck,
-          text: 'Confirm ledger, webhook, and provider evidence all agree before a report closes cleanly.',
-          title: 'Reconciliation status',
-        },
-      ]}
-      description="This placeholder page is for daily reconciliation reports and report-style provider webhooks. It gives us a dedicated home for end-of-day matching and exception review."
+    <SandboxPageShell
+      description="Generate provider-style end-of-day reconciliation batches and send them straight into the API reconciliation webhook."
       eyebrow="PSP sandbox"
-      metrics={[
-        { icon: ReceiptText, label: 'Cadence', value: 'Daily report intake' },
-        { icon: Rows3, label: 'Granularity', value: 'Line-by-line matching' },
-        { icon: ShieldCheck, label: 'Outcome', value: 'Reconciled or exception' },
-      ]}
       title="Reconciliation reports"
-    />
+    >
+      <ReconciliationReportSimulatorCard
+        error={reconciliationReportSimulationError}
+        formState={reconciliationReportFormState}
+        isSubmitting={isReconciliationReportSubmitting}
+        onChange={setReconciliationReportFormField}
+        onSubmit={simulateReconciliationReport}
+        result={reconciliationReportSimulationResult}
+      />
+    </SandboxPageShell>
   );
 }

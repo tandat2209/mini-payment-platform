@@ -5,9 +5,12 @@ export type {
   SandboxPayoutReturnResponse,
   SandboxPayoutUpdateRequest,
   SandboxPayoutUpdateResponse,
+  SandboxReconciliationReportRequest,
+  SandboxReconciliationReportResponse,
 } from '@/api';
 export {
   triggerSandboxFundingSimulation,
   triggerSandboxPayoutReturnSimulation,
   triggerSandboxPayoutUpdateSimulation,
+  triggerSandboxReconciliationReportSimulation,
 } from '@/api';

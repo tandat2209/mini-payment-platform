@@ -7,6 +7,8 @@ import {
   type AdminPayoutListResponse,
   type AdminRecipientListResponse,
   type AdminReconciliationExceptionListResponse,
+  type AdminReconciliationLineListResponse,
+  type AdminReconciliationReportListResponse,
   type AdminTransactionDetailItem,
   type AdminTransactionListResponse,
   type AdminWalletListResponse,
@@ -17,6 +19,8 @@ import {
   fetchAdminPayouts,
   fetchAdminRecipients,
   fetchAdminReconciliationExceptions,
+  fetchAdminReconciliationLines,
+  fetchAdminReconciliationReports,
   fetchAdminTransactionDetail,
   fetchAdminTransactions,
   fetchAdminWallets,
@@ -127,5 +131,25 @@ export function useAdminReconciliationExceptionsQuery(): UseQueryResult<
   return useQuery({
     queryFn: async () => await fetchAdminReconciliationExceptions(),
     queryKey: ['admin-reconciliation-exceptions'],
+  });
+}
+
+export function useAdminReconciliationReportsQuery(): UseQueryResult<
+  AdminReconciliationReportListResponse,
+  Error
+> {
+  return useQuery({
+    queryFn: async () => await fetchAdminReconciliationReports(),
+    queryKey: ['admin-reconciliation-reports'],
+  });
+}
+
+export function useAdminReconciliationLinesQuery(): UseQueryResult<
+  AdminReconciliationLineListResponse,
+  Error
+> {
+  return useQuery({
+    queryFn: async () => await fetchAdminReconciliationLines(),
+    queryKey: ['admin-reconciliation-lines'],
   });
 }

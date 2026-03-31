@@ -49,6 +49,25 @@ export type SandboxPayoutUpdateResult = {
   status: PayoutUpdateStatus;
 };
 
+export type SandboxReconciliationReportFormState = {
+  externalEventId: string;
+  providerReportId: string;
+  reportDate: string;
+};
+
+export type SandboxReconciliationReportResult = {
+  delivered: true;
+  deliveryTarget: string;
+  externalEventId: string;
+  lineCount: string;
+  postedAt: string;
+  provider: 'psp_sandbox';
+  providerReportId: string;
+  receiverDuplicate: boolean | null;
+  receiverProcessingStatus: string | null;
+  reportDate: string;
+};
+
 export const initialSandboxFundingSimulationFormState: SandboxFundingSimulationFormState = {
   amountMinor: '2500',
   currency: 'USD',
@@ -69,4 +88,10 @@ export const initialSandboxPayoutUpdateFormState: SandboxPayoutUpdateFormState =
   failureReason: 'Beneficiary bank rejected the payout.',
   returnedAmountMinor: '2503',
   status: 'processing',
+};
+
+export const initialSandboxReconciliationReportFormState: SandboxReconciliationReportFormState = {
+  externalEventId: 'evt_sandbox_reconciliation_001',
+  providerReportId: 'rpt_20260329_psp_sandbox',
+  reportDate: '2026-03-29',
 };

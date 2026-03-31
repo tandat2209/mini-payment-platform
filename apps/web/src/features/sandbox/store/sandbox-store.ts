@@ -4,17 +4,22 @@ import {
   type SandboxFundingResponse,
   type SandboxPayoutReturnResponse,
   type SandboxPayoutUpdateResponse,
+  type SandboxReconciliationReportResponse,
   triggerSandboxFundingSimulation,
   triggerSandboxPayoutReturnSimulation,
   triggerSandboxPayoutUpdateSimulation,
+  triggerSandboxReconciliationReportSimulation,
 } from '@/features/sandbox/api';
 import {
   initialSandboxFundingSimulationFormState,
   initialSandboxPayoutUpdateFormState,
+  initialSandboxReconciliationReportFormState,
   type SandboxFundingSimulationFormState,
   type SandboxFundingSimulationResult,
   type SandboxPayoutUpdateFormState,
   type SandboxPayoutUpdateResult,
+  type SandboxReconciliationReportFormState,
+  type SandboxReconciliationReportResult,
 } from '@/features/sandbox/data/sandbox-data';
 import { queryClient } from '@/lib/query-client';
 
@@ -24,13 +29,22 @@ type SandboxStore = {
   fundingSimulationResult: SandboxFundingSimulationResult | null;
   isFundingSubmitting: boolean;
   isPayoutUpdateSubmitting: boolean;
+  isReconciliationReportSubmitting: boolean;
   payoutUpdateFormState: SandboxPayoutUpdateFormState;
   payoutUpdateSimulationError: string | null;
   payoutUpdateSimulationResult: SandboxPayoutUpdateResult | null;
+  reconciliationReportFormState: SandboxReconciliationReportFormState;
+  reconciliationReportSimulationError: string | null;
+  reconciliationReportSimulationResult: SandboxReconciliationReportResult | null;
   setFundingFormField: (field: keyof SandboxFundingSimulationFormState, value: string) => void;
   setPayoutUpdateFormField: (field: keyof SandboxPayoutUpdateFormState, value: string) => void;
+  setReconciliationReportFormField: (
+    field: keyof SandboxReconciliationReportFormState,
+    value: string,
+  ) => void;
   simulateFunding: () => Promise<void>;
   simulatePayoutUpdate: () => Promise<void>;
+  simulateReconciliationReport: () => Promise<void>;
 };
 
 export const useSandboxStore = create<SandboxStore>((set, get) => ({
@@ -39,9 +53,13 @@ export const useSandboxStore = create<SandboxStore>((set, get) => ({
   fundingSimulationResult: null,
   isFundingSubmitting: false,
   isPayoutUpdateSubmitting: false,
+  isReconciliationReportSubmitting: false,
   payoutUpdateFormState: initialSandboxPayoutUpdateFormState,
   payoutUpdateSimulationError: null,
   payoutUpdateSimulationResult: null,
+  reconciliationReportFormState: initialSandboxReconciliationReportFormState,
+  reconciliationReportSimulationError: null,
+  reconciliationReportSimulationResult: null,
   setFundingFormField: (field, value) =>
     set((state) => ({
       fundingFormState: {
@@ -53,6 +71,13 @@ export const useSandboxStore = create<SandboxStore>((set, get) => ({
     set((state) => ({
       payoutUpdateFormState: {
         ...state.payoutUpdateFormState,
+        [field]: value,
+      },
+    })),
+  setReconciliationReportFormField: (field, value) =>
+    set((state) => ({
+      reconciliationReportFormState: {
+        ...state.reconciliationReportFormState,
         [field]: value,
       },
     })),
@@ -294,6 +319,90 @@ export const useSandboxStore = create<SandboxStore>((set, get) => ({
         isPayoutUpdateSubmitting: false,
         payoutUpdateSimulationError:
           caughtError instanceof Error ? caughtError.message : 'PSP sandbox payout update failed.',
+      });
+    }
+  },
+  simulateReconciliationReport: async () => {
+    if (get().isReconciliationReportSubmitting) {
+      return;
+    }
+
+    set({
+      isReconciliationReportSubmitting: true,
+      reconciliationReportSimulationError: null,
+    });
+
+    const formState = get().reconciliationReportFormState;
+    const reportDate = formState.reportDate.trim();
+
+    if (!reportDate) {
+      set({
+        isReconciliationReportSubmitting: false,
+        reconciliationReportSimulationError: 'Report date is required.',
+      });
+      return;
+    }
+
+    try {
+      const request: Parameters<typeof triggerSandboxReconciliationReportSimulation>[0] = {
+        reportDate,
+      };
+      const externalEventId = toOptionalTrimmedString(formState.externalEventId);
+      const providerReportId = toOptionalTrimmedString(formState.providerReportId);
+
+      if (externalEventId !== undefined) {
+        request.externalEventId = externalEventId;
+      }
+
+      if (providerReportId !== undefined) {
+        request.providerReportId = providerReportId;
+      }
+
+      const response: SandboxReconciliationReportResponse =
+        await triggerSandboxReconciliationReportSimulation(request);
+      const receiverDuplicate =
+        typeof response.receiverResponse.duplicate === 'boolean'
+          ? response.receiverResponse.duplicate
+          : null;
+      const receiverProcessingStatus =
+        typeof response.receiverResponse === 'object' &&
+        response.receiverResponse !== null &&
+        'event' in response.receiverResponse &&
+        typeof response.receiverResponse.event === 'object' &&
+        response.receiverResponse.event !== null &&
+        'processingStatus' in response.receiverResponse.event &&
+        typeof response.receiverResponse.event.processingStatus === 'string'
+          ? response.receiverResponse.event.processingStatus
+          : null;
+
+      set({
+        isReconciliationReportSubmitting: false,
+        reconciliationReportSimulationResult: {
+          delivered: response.delivered,
+          deliveryTarget: response.deliveryTarget,
+          externalEventId: response.externalEventId,
+          lineCount: String(response.payload.data.lineCount),
+          postedAt: response.payload.occurredAt,
+          provider: response.payload.provider,
+          providerReportId: response.payload.data.providerReportId,
+          receiverDuplicate,
+          receiverProcessingStatus,
+          reportDate: response.payload.data.reportDate,
+        },
+      });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['admin-reconciliation-exceptions'] }),
+        queryClient.invalidateQueries({ queryKey: ['admin-reconciliation-lines'] }),
+        queryClient.invalidateQueries({ queryKey: ['admin-reconciliation-reports'] }),
+        queryClient.invalidateQueries({ queryKey: ['admin-webhooks'] }),
+      ]);
+    } catch (caughtError) {
+      set({
+        isReconciliationReportSubmitting: false,
+        reconciliationReportSimulationError:
+          caughtError instanceof Error
+            ? caughtError.message
+            : 'PSP sandbox reconciliation report failed.',
       });
     }
   },
