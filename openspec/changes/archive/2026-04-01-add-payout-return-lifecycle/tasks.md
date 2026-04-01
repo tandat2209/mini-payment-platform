@@ -21,5 +21,5 @@
 
 - [x] 4.1 Update customer payout and transaction reads to surface returned payouts clearly.
 - [x] 4.2 Update admin payout, webhook, and investigation reads to expose returned payout context and cross-links.
-- [ ] 4.3 Verify locally that a payout can progress from paid to returned with matching provider event, payout state, wallet effect, and ledger records.
+- [x] 4.3 Verify locally that a payout can progress from paid to returned with matching provider event, payout state, wallet effect, and ledger records.
 - [x] 4.4 Document the local payout-return workflow across PSP sandbox, API, customer app, and admin app.

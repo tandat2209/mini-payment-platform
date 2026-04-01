@@ -20,7 +20,7 @@
 
 ## 4. Customer Flow And Verification
 
-- [ ] 4.1 Update the customer payout experience to surface submitted, processing, paid, and failed lifecycle states instead of stopping at booking only.
-- [ ] 4.2 Verify locally that one payout can be booked, submitted to the PSP sandbox, and completed successfully with matching payout, transaction, attempt, and ledger records.
-- [ ] 4.3 Verify locally that one payout can be booked, submitted, and failed with restored wallet balance and compensating records.
-- [ ] 4.4 Document the local payout submission workflow across web, API, and PSP sandbox.
+- [x] 4.1 Update the customer payout experience to surface submitted, processing, paid, and failed lifecycle states instead of stopping at booking only.
+- [x] 4.2 Verify locally that one payout can be booked, submitted to the PSP sandbox, and completed successfully with matching payout, transaction, attempt, and ledger records.
+- [x] 4.3 Verify locally that one payout can be booked, submitted, and failed with restored wallet balance and compensating records.
+- [x] 4.4 Document the local payout submission workflow across web, API, and PSP sandbox.

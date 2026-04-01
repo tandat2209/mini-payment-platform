@@ -3,7 +3,7 @@
 - [x] 1.1 Add PSP sandbox funding invocation support for web-triggered sandbox requests.
 - [x] 1.2 Add admin API routes and query/repository support for listing platform-wide user transactions with filters and pagination.
 - [x] 1.3 Add admin API routes and query/repository support for transaction detail, ledger transaction list, and ledger entry detail views.
-- [ ] 1.4 Add API-level coverage for admin transaction reads and admin ledger reads.
+- [x] 1.4 Add API-level coverage for admin transaction reads and admin ledger reads.
 
 ## 2. Admin Web Experience
 
@@ -16,4 +16,4 @@
 
 - [x] 3.1 Connect the admin web pages to the new admin APIs with loading, empty, and error states.
 - [x] 3.2 Verify that a PSP sandbox funding event appears in admin transactions and the ledger view after processing.
-- [ ] 3.3 Document the local workflow for opening the PSP sandbox area, triggering funding, and inspecting resulting transaction and ledger records.
+- [x] 3.3 Document the local workflow for opening the PSP sandbox area, triggering funding, and inspecting resulting transaction and ledger records.

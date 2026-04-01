@@ -1,52 +1,15 @@
-# ledger Specification
+## ADDED Requirements
 
-## Purpose
+### Requirement: Returned payouts create post-settlement compensating ledger postings
 
-Define the append-only double-entry ledger requirements that underpin wallet balance changes and financial accounting records.
+The system SHALL create balanced compensating ledger postings when a previously paid payout is later returned, reversing the settled payout impact in an append-only manner. Those postings SHALL use the actual returned amount and SHALL NOT assume the customer always receives the original gross amount back.
 
-## Requirements
+#### Scenario: Paid payout is returned
 
-### Requirement: Ledger uses append-only double-entry posting
+- **WHEN** a payout that was already settled as paid later transitions to returned
+- **THEN** the system posts balanced ledger transactions that reverse the post-settlement payout effects without mutating the original settlement history
 
-The system SHALL store accounting truth in append-only ledger transactions and ledger entries using double-entry accounting.
+#### Scenario: Paid payout is returned after fee deduction
 
-#### Scenario: Ledger transaction posts debit and credit entries
-
-- **WHEN** the platform records a funding or payout-related financial movement
-- **THEN** the schema stores the movement as a ledger transaction with corresponding debit and credit entries rather than mutating prior entries
-
-### Requirement: Ledger balances per currency
-
-The system SHALL require ledger postings to balance within the same currency and SHALL store all monetary values in integer minor units with explicit currency codes.
-
-#### Scenario: Multi-currency posting is recorded
-
-- **WHEN** the platform records ledger entries for a USD transaction
-- **THEN** the debit and credit totals balance within USD and the amounts are stored as integer minor units
-
-### Requirement: Wallet balance updates are linked to ledger posting
-
-The system SHALL support atomic updates where wallet balance changes and related ledger postings can be committed together.
-
-#### Scenario: Funding credits a wallet
-
-- **WHEN** inbound funding is recognized for a wallet
-- **THEN** the schema supports recording the wallet balance change and the related ledger transaction within the same database transaction
-
-### Requirement: Successful funding processing creates one balanced ledger posting
-
-The system SHALL create exactly one posted ledger transaction for each successfully processed funding webhook and SHALL record balanced debit and credit ledger entries in the funded currency linked to that webhook event.
-
-#### Scenario: Funding webhook posts ledger entries
-
-- **WHEN** a valid funding webhook is processed for the first time
-- **THEN** the system creates one posted ledger transaction linked to the webhook and stores balanced debit and credit entries for the funded amount
-
-### Requirement: Duplicate funding deliveries do not duplicate ledger postings
-
-The system SHALL NOT create additional ledger transactions or ledger entries when a previously processed provider event is delivered again.
-
-#### Scenario: Duplicate funding webhook is replayed after posting
-
-- **WHEN** the same provider event is delivered again after a successful funding posting already exists
-- **THEN** the system keeps the original ledger posting as the only accounting result for that provider event
+- **WHEN** a payout that was already settled as paid later returns for less than the original gross amount
+- **THEN** the system posts balanced ledger transactions based on the actual returned amount and reverses fee revenue in full for the first slice

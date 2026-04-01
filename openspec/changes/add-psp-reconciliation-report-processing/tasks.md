@@ -20,7 +20,7 @@
 
 ## 4. Admin Read Models And Verification
 
-- [ ] 4.1 Add admin read APIs for reconciliation report batches, report-line outcomes, and unresolved reconciliation exceptions.
-- [ ] 4.2 Update the admin reconciliation workspace to surface report history, line-level outcomes, and linked investigation paths into payouts, webhooks, transactions, and ledger.
+- [x] 4.1 Add admin read APIs for reconciliation report batches, report-line outcomes, and unresolved reconciliation exceptions.
+- [x] 4.2 Update the admin reconciliation workspace to surface report history, line-level outcomes, and linked investigation paths into payouts, webhooks, transactions, and ledger.
 - [ ] 4.3 Verify locally that a simulated PSP reconciliation report can be delivered, stored, reconciled, and inspected through the admin app.
 - [ ] 4.4 Document the local reconciliation-report workflow across PSP sandbox, API, and admin operations.

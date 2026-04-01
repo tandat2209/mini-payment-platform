@@ -1,52 +1,47 @@
-# user-transactions-and-statements Specification
+## MODIFIED Requirements
 
-## Purpose
+### Requirement: Customer-visible payout transactions reflect provider lifecycle state
 
-Define the schema requirements for customer-visible transaction history and statement generation support.
+The system SHALL update customer-visible payout transactions as provider submission and terminal outcomes are received so payout history reflects whether a payout is submitted, processing, paid, failed, or returned. When a payout is returned after settlement, the original payout debit SHALL remain in history and move to a `returned` final status rather than being rewritten into an inbound funding event.
 
-## Requirements
+#### Scenario: Provider later returns a paid payout
 
-### Requirement: User-facing transactions are stored separately from ledger postings
+- **WHEN** a payout that was previously shown as paid later receives a provider return event
+- **THEN** the linked customer-visible payout transaction reflects a returned terminal state instead of remaining paid or being rewritten as failed
 
-The system SHALL store customer-visible transaction history in `user_transactions` separately from internal ledger transactions and ledger entries.
+### Requirement: Failed payout outcomes restore customer-visible net position
 
-#### Scenario: Payout creates one user-visible row
+The system SHALL reverse the customer-visible effect of a booked payout when the payout later fails before settlement, including restoring the available wallet balance and reflecting the failed terminal state in payout history. The system SHALL treat returned payouts separately from failed payouts because returned payouts occur after settlement.
 
-- **WHEN** a payout with internal fee and settlement postings is recorded
-- **THEN** the schema supports one `user_transactions` record for the customer view without exposing the internal accounting lines directly
+#### Scenario: Provider reports payout failure after booking
 
-### Requirement: User transactions capture gross, fee, and net amounts
+- **WHEN** a previously booked payout later fails before settlement
+- **THEN** the linked customer-visible payout transaction reflects failure and the customer's available wallet funds are restored
 
-The system SHALL allow a user-facing transaction to store gross amount, fee amount, and net amount in minor units with explicit currency.
+#### Scenario: Provider reports payout return after settlement
 
-#### Scenario: User views payout with fee split
+- **WHEN** a previously paid payout later returns
+- **THEN** the linked customer-visible payout transaction reflects a returned outcome and the wallet restoration follows the return policy rather than the failed-payout path
 
-- **WHEN** a payout deducts a fee before net settlement
-- **THEN** the user transaction can represent the gross payout amount, the fee amount, and the net amount in one record
+### Requirement: Returned payouts create a separate customer-visible return credit
 
-### Requirement: User transactions support statement generation
+The system SHALL create a separate customer-visible credit transaction for the actual amount returned to the wallet after a post-settlement payout return. That credit transaction SHALL be linked to the original payout so customers can reconcile wallet balance changes directly from transaction history.
 
-The system SHALL provide the fields needed for downloadable user statements to be generated from `user_transactions`.
+#### Scenario: Full payout return is credited back to wallet
 
-#### Scenario: Statement is generated from user history
+- **WHEN** a previously paid payout later returns in full
+- **THEN** the system records a separate return credit transaction for the full returned amount and links it to the original payout debit
 
-- **WHEN** the platform generates a statement for a user wallet over a date range
-- **THEN** the statement can be derived from `user_transactions` using transaction timestamps, descriptions, statuses, and monetary fields
+#### Scenario: Partial payout return is credited back to wallet
 
-### Requirement: Successful funding processing creates one customer-visible funding transaction
+- **WHEN** a previously paid payout later returns for less than the original gross amount
+- **THEN** the system records a separate return credit transaction for the actual returned amount and leaves the original payout debit visible with a `returned` final status
 
-The system SHALL create one completed credit `user_transactions` record for each successfully processed funding webhook. The transaction SHALL be linked to the active wallet and webhook event and SHALL store statement-ready gross, fee, and net amount fields for the funded currency.
+### Requirement: Returned payouts reverse fee revenue in the first slice
 
-#### Scenario: Funding webhook creates customer transaction history
+The system SHALL reverse fee revenue in full for returned payouts in the first slice, even when the actual returned wallet amount is less than the original gross amount.
 
-- **WHEN** a valid funding webhook is processed successfully
-- **THEN** the system creates one completed customer-visible funding transaction for that funded amount
+#### Scenario: Returned payout reverses fee revenue
 
-### Requirement: Duplicate funding deliveries do not duplicate customer history
-
-The system SHALL NOT create more than one customer-visible funding transaction for the same provider external event.
-
-#### Scenario: Duplicate funding webhook is replayed after transaction creation
-
-- **WHEN** the same provider event is delivered again after the funding transaction already exists
-- **THEN** the system keeps the original funding transaction as the only customer-visible history entry for that provider event
+- **WHEN** a previously paid payout later returns
+- **THEN** the system reverses the payout fee revenue in full as part of the returned-payout handling
