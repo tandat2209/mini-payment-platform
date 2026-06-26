@@ -1,0 +1,15 @@
+.git
+.claude
+node_modules
+**/node_modules
+dist
+**/dist
+.turbo
+**/.turbo
+coverage
+**/coverage
+.env
+.env.local
+.env.*.local
+*.log
+.DS_Store

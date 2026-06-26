@@ -1,3 +1,16 @@
+x-node-dev-service: &node-dev-service
+  build:
+    context: .
+    dockerfile: Dockerfile.dev
+  volumes:
+    - .:/workspace
+    - pnpm_store:/pnpm/store
+    - root_node_modules:/workspace/node_modules
+    - api_node_modules:/workspace/apps/api/node_modules
+    - web_node_modules:/workspace/apps/web/node_modules
+    - psp_sandbox_node_modules:/workspace/apps/psp-sandbox/node_modules
+    - db_node_modules:/workspace/packages/db/node_modules
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -16,5 +29,68 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  db-setup:
+    <<: *node-dev-service
+    command: pnpm --filter @payment-platform-mini/db run setup
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/payment_platform_mini
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    <<: *node-dev-service
+    command: pnpm dev:api
+    environment:
+      PORT: 3001
+      FRONTEND_ORIGIN: http://localhost:5173
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/payment_platform_mini
+      PSP_SANDBOX_BASE_URL: http://psp-sandbox:3002
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+    ports:
+      - '3001:3001'
+
+  psp-sandbox:
+    <<: *node-dev-service
+    command: pnpm dev:psp-sandbox
+    environment:
+      PORT: 3002
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/payment_platform_mini
+      PSP_SANDBOX_TARGET_API_BASE_URL: http://api:3001
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+      api:
+        condition: service_started
+    ports:
+      - '3002:3002'
+
+  web:
+    <<: *node-dev-service
+    command: pnpm dev:web
+    environment:
+      VITE_API_BASE_URL: http://localhost:3001
+      VITE_PSP_SANDBOX_BASE_URL: http://localhost:3002
+      VITE_CUSTOMER_EXTERNAL_REF: user_demo_alice
+    depends_on:
+      api:
+        condition: service_started
+      psp-sandbox:
+        condition: service_started
+    ports:
+      - '5173:5173'
+
 volumes:
   postgres_data:
+  pnpm_store:
+  root_node_modules:
+  api_node_modules:
+  web_node_modules:
+  psp_sandbox_node_modules:
+  db_node_modules:

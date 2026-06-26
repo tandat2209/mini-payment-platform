@@ -4,7 +4,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Common commands
 
-Install and start the local stack:
+Start the full Docker development stack:
+
+```bash
+pnpm dev:docker
+```
+
+This builds and starts Postgres, runs migrations/seeds through `db-setup`, and launches the API, web app, and PSP sandbox. Use these helpers for detached mode, logs, shutdown, and a full volume reset:
+
+```bash
+pnpm dev:docker:detached
+pnpm dev:docker:logs
+pnpm dev:docker:down
+pnpm dev:docker:reset
+```
+
+If dependency changes are not picked up by containers, rebuild with `docker compose build --no-cache`. Browser-facing Vite env values intentionally use `localhost`; backend-to-backend Docker env values use Compose service names such as `postgres`, `api`, and `psp-sandbox`.
+
+Host-based local stack:
 
 ```bash
 pnpm install

@@ -11,7 +11,9 @@ This package contains the financial schema foundation for the payment platform m
 - `seeds/001_financial_scenarios.sql`
   Deterministic seed scenarios covering wallet lifecycle, inbound funding recognition, and payout attempts.
 - `scripts/apply-sql-file.mjs`
-  Runtime SQL executor for applying migrations and seeds to a real PostgreSQL database via `DATABASE_URL`.
+  Runtime SQL executor for applying migrations to a real PostgreSQL database via `DATABASE_URL`.
+- `scripts/seed-if-needed.mjs`
+  Applies deterministic seed data only when it is not already present, so repeated local or Docker setup runs can reuse a persistent database volume.
 - `scripts/verify-schema.mjs`
   In-memory verification script that applies the migration and seed data, then checks the schema invariants and representative queries.
 

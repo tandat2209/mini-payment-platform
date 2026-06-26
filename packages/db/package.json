@@ -3,12 +3,12 @@
   "private": true,
   "scripts": {
     "migrate": "node scripts/apply-sql-file.mjs migrations",
-    "seed": "node scripts/apply-sql-file.mjs seeds/001_financial_scenarios.sql",
+    "seed": "node scripts/seed-if-needed.mjs",
     "setup": "pnpm run migrate && pnpm run seed",
     "build": "node -e \"const fs=require('node:fs'); fs.mkdirSync('dist',{recursive:true}); fs.writeFileSync('dist/.build-stamp','financial-schema-foundation\\n'); console.log('Prepared db build artifacts')\"",
     "lint": "eslint \"scripts/**/*.mjs\"",
-    "typecheck": "node --check scripts/verify-schema.mjs && node --check scripts/apply-sql-file.mjs",
-    "test": "node scripts/verify-schema.mjs",
+    "typecheck": "node --check scripts/verify-schema.mjs && node --check scripts/apply-sql-file.mjs && node --check scripts/seed-if-needed.mjs",
+    "test": "node scripts/verify-schema.mjs && node --test scripts/*.spec.mjs",
     "verify": "node scripts/verify-schema.mjs"
   },
   "devDependencies": {

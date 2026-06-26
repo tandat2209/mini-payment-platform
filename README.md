@@ -8,6 +8,29 @@ Reference: [Designing a Payment System](https://newsletter.pragmaticengineer.com
 
 ## Development Setup
 
+One-command Docker development stack:
+
+```bash
+pnpm dev:docker
+```
+
+This builds and starts Postgres, runs migrations/seeds, and launches the API, web app, and PSP sandbox. The app is available at the default local ports below.
+
+Useful Docker helpers:
+
+```bash
+pnpm dev:docker:detached
+pnpm dev:docker:logs
+pnpm dev:docker:down
+pnpm dev:docker:reset
+```
+
+Use `pnpm dev:docker:reset` to remove Compose volumes and rebuild the seeded database from scratch. If dependencies change and containers do not pick them up, run `docker compose build --no-cache` before starting again.
+
+The Docker stack intentionally uses Compose service names for backend-to-backend URLs, such as `postgres`, `api`, and `psp-sandbox`. Browser-facing Vite variables intentionally keep `localhost` because they run in the host browser.
+
+Host-based development setup:
+
 ```bash
 pnpm install
 pnpm db:up
