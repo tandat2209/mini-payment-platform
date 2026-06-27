@@ -22,7 +22,7 @@ export function AddMoneyPage({
 
   return (
     <section className="space-y-4" id="section-add-money">
-      <Card className="rounded-[26px] border border-[#e7e1d8] bg-[#fffdf9] shadow-[0_10px_40px_rgba(15,23,42,0.03)]">
+      <Card className="rounded-[26px] border border-[#dfe5ff] bg-white shadow-[0_18px_50px_rgba(37,87,255,0.07)]">
         <CardContent className="space-y-5 p-4 sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <Button className="rounded-xl px-3.5" onClick={onBack} variant="ghost">
@@ -36,25 +36,25 @@ export function AddMoneyPage({
 
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_320px] lg:items-start">
             <div className="space-y-2">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#a6b0d2]">
                 Add money
               </p>
               <h1 className="text-[2rem] font-semibold tracking-tight text-slate-950 sm:text-4xl">
                 Funding details
               </h1>
-              <p className="max-w-xl text-sm text-slate-500">
+              <p className="max-w-xl text-sm text-[#9aa6ca]">
                 Use these details to receive funds into this wallet.
               </p>
             </div>
 
-            <div className="rounded-[22px] border border-[#e7e1d8] bg-[#fcfaf6] p-3.5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+            <div className="rounded-[22px] border border-[#dfe5ff] bg-[#f7f9ff] p-3.5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#a6b0d2]">
                 Wallet
               </p>
               <p className="mt-3 text-lg font-semibold text-slate-950">
                 {fundingDetailsQuery.data?.wallet.id ?? 'Loading wallet'}
               </p>
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-[#9aa6ca]">
                 Active funding instructions for the current customer account.
               </p>
             </div>

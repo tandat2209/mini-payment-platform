@@ -138,28 +138,10 @@ export function includesSearchMatch(
   return values.some((value) => value?.toLowerCase().includes(query));
 }
 
-export function getCurrencyChipClasses(currency: string, isActive: boolean): string {
-  if (currency === 'all') {
-    return isActive
-      ? 'border-slate-900 bg-slate-900 text-white'
-      : 'border-slate-200 bg-white text-slate-700';
-  }
-
-  if (currency === 'USD') {
-    return isActive
-      ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
-      : 'border-slate-200 bg-white text-slate-700';
-  }
-
-  if (currency === 'EUR') {
-    return isActive
-      ? 'border-sky-300 bg-sky-50 text-sky-700'
-      : 'border-slate-200 bg-white text-slate-700';
-  }
-
+export function getCurrencyChipClasses(_currency: string, isActive: boolean): string {
   return isActive
-    ? 'border-slate-300 bg-slate-100 text-slate-900'
-    : 'border-slate-200 bg-white text-slate-700';
+    ? 'border-[#2557ff] bg-[#2557ff] text-white shadow-[0_10px_22px_rgba(37,87,255,0.18)]'
+    : 'border-[#dfe5ff] bg-white text-[#7f8bb2] hover:border-[#bfc9ff] hover:bg-[#eef2ff] hover:text-[#173184]';
 }
 
 export function getAvailableCurrencies(

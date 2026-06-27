@@ -31,7 +31,7 @@ export function AppShell({
 
   return (
     <div className="min-h-screen bg-transparent" style={mobileLayoutStyle}>
-      <div className="mx-auto flex min-h-screen max-w-[1480px] gap-5 px-4 py-4 lg:px-6">
+      <div className="mx-auto flex min-h-screen max-w-[1520px] gap-7 px-4 py-4 sm:px-5 lg:px-8 lg:py-7">
         <SidebarNavigation
           activeNavigationId={activeNavigationId}
           activeWorkspace={activeWorkspace}
@@ -50,7 +50,7 @@ export function AppShell({
                 onNavigationSelect={onNavigationSelect}
               />
 
-              <div className="space-y-5 py-2 pb-[var(--customer-mobile-nav-offset)] lg:pb-2">
+              <div className="space-y-5 py-2 pb-[var(--customer-mobile-nav-offset)] lg:py-0 lg:pb-0">
                 {children}
               </div>
             </>

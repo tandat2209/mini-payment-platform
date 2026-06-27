@@ -44,8 +44,21 @@ export function shortenIdentifier(value: string): string {
   return value.length <= 14 ? value : `${value.slice(0, 8)}...${value.slice(-4)}`;
 }
 
-export function getToneFromStatus(value: string): 'default' | 'positive' | 'warning' {
+export function getToneFromStatus(value: string): 'danger' | 'default' | 'positive' | 'warning' {
   const normalizedValue = value.toLowerCase();
+
+  if (
+    normalizedValue.includes('failed') ||
+    normalizedValue.includes('failure') ||
+    normalizedValue.includes('returned') ||
+    normalizedValue.includes('rejected') ||
+    normalizedValue.includes('cancelled') ||
+    normalizedValue.includes('canceled') ||
+    normalizedValue.includes('declined') ||
+    normalizedValue.includes('error')
+  ) {
+    return 'danger';
+  }
 
   if (
     normalizedValue.includes('ok') ||

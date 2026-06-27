@@ -30,26 +30,26 @@ export function SidebarNavigation({
     <aside className="hidden w-72 shrink-0 lg:block">
       <div
         className={cn(
-          'sticky top-4 flex h-[calc(100vh-2rem)] flex-col rounded-[30px] border p-5 text-slate-900 shadow-[0_10px_40px_rgba(15,23,42,0.03)] backdrop-blur',
-          isOpsWorkspace ? 'border-slate-200 bg-white/95' : 'border-[#e7e1d8] bg-[#faf7f2]/95',
+          'sticky top-7 flex h-[calc(100vh-3.5rem)] flex-col rounded-[34px] border p-6 text-slate-900 shadow-[0_24px_70px_rgba(37,87,255,0.10)] backdrop-blur-xl',
+          isOpsWorkspace ? 'border-slate-200 bg-white/95' : 'border-white/80 bg-white/96',
         )}
       >
         <div>
-          <p className="text-[36px] leading-none text-slate-950 [font-family:var(--font-display)]">
-            {activeWorkspace === 'sandbox' ? 'PSP' : 'Pay'}
+          <p className="text-[30px] font-extrabold tracking-[-0.04em] text-[#2557ff]">
+            {activeWorkspace === 'sandbox' ? 'PSP' : 'Mini-pay'}
           </p>
-          <div className="mt-3 inline-flex items-center rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+          <div className="mt-4 inline-flex items-center rounded-full border border-[#dfe5ff] bg-[#f7f9ff] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-[#8f9bc3]">
             {workspaceHeadline.title}
           </div>
         </div>
 
         <div
           className={cn(
-            'mt-8 flex-1 rounded-[24px] border p-4',
-            isOpsWorkspace ? 'border-slate-200 bg-slate-50/70' : 'border-[#e7e1d8] bg-white/90',
+            'mt-9 flex-1 rounded-[28px] border p-4',
+            isOpsWorkspace ? 'border-slate-200 bg-slate-50/70' : 'border-[#e4e9ff] bg-[#f8faff]',
           )}
         >
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#aab4d6]">
             {workspaceHeadline.navLabel}
           </p>
           <nav aria-label="Primary" className="mt-3 space-y-1">
@@ -89,10 +89,10 @@ function NavigationButton({
     <button
       aria-current={isActive ? 'page' : undefined}
       className={cn(
-        'flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm font-medium transition-colors',
+        'flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm font-bold transition-colors',
         isActive
-          ? 'bg-slate-950 text-white shadow-sm'
-          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950',
+          ? 'bg-[#2557ff] text-white shadow-[0_14px_30px_rgba(37,87,255,0.24)]'
+          : 'text-[#9ba7ca] hover:bg-white hover:text-[#173184]',
       )}
       onClick={onClick}
       type="button"

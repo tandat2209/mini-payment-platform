@@ -211,7 +211,7 @@ function StatusBadge({
 
 function ValueCard({ label, value }: { label: string; value: string }): JSX.Element {
   return (
-    <div className="rounded-[22px] border border-slate-200 bg-[#fcfaf6] px-4 py-4">
+    <div className="rounded-[22px] border border-slate-200 bg-[#f7f9ff] px-4 py-4">
       <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
         {label}
       </p>
@@ -237,7 +237,7 @@ function IntegrityCard({
     <div
       className={
         tone === 'positive'
-          ? 'rounded-[22px] border border-emerald-200 bg-emerald-50/50 px-4 py-4'
+          ? 'rounded-[22px] border border-emerald-200 bg-[#f4f7ff] px-4 py-4'
           : 'rounded-[22px] border border-amber-200 bg-amber-50/50 px-4 py-4'
       }
     >

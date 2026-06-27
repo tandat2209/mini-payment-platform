@@ -115,7 +115,7 @@ export function FundingSimulatorCard({
                 Description
               </label>
               <textarea
-                className="mt-2 min-h-28 w-full rounded-[22px] border border-slate-200 bg-[#fcfaf6] px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+                className="mt-2 min-h-28 w-full rounded-[22px] border border-slate-200 bg-[#f7f9ff] px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400"
                 onChange={(event) => onChange('description', event.target.value)}
                 placeholder="Funding description or remittance"
                 value={formState.description}
@@ -124,7 +124,7 @@ export function FundingSimulatorCard({
           </div>
 
           <div className="space-y-4">
-            <div className="rounded-[26px] border border-[#d7d3cc] bg-slate-950 p-4 text-white">
+            <div className="rounded-[26px] border border-[#d7d3cc] bg-[#2557ff] p-4 text-white">
               <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-300">
                 <Radar className="h-4 w-4" />
                 Dispatch request
@@ -203,7 +203,7 @@ function Field({
         {label}
       </span>
       <input
-        className="mt-2 h-12 w-full rounded-[18px] border border-slate-200 bg-[#fcfaf6] px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400"
+        className="mt-2 h-12 w-full rounded-[18px] border border-slate-200 bg-[#f7f9ff] px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400"
         onChange={onChange}
         value={value}
       />
@@ -228,7 +228,7 @@ function SelectField({
         {label}
       </span>
       <select
-        className="mt-2 h-12 w-full rounded-[18px] border border-slate-200 bg-[#fcfaf6] px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+        className="mt-2 h-12 w-full rounded-[18px] border border-slate-200 bg-[#f7f9ff] px-4 text-sm text-slate-900 outline-none transition focus:border-slate-400"
         onChange={onChange}
         value={value}
       >

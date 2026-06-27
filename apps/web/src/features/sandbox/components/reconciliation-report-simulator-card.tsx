@@ -83,7 +83,7 @@ export function ReconciliationReportSimulatorCard({
           </div>
 
           <div className="space-y-4">
-            <div className="rounded-[26px] border border-slate-200 bg-slate-950 p-4 text-white">
+            <div className="rounded-[26px] border border-slate-200 bg-[#2557ff] p-4 text-white">
               <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-300">
                 <CalendarDays className="h-4 w-4" />
                 Report request

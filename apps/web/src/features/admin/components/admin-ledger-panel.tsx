@@ -179,7 +179,7 @@ export function AdminLedgerPanel({
           </div>
         ) : null}
 
-        <div className="overflow-hidden rounded-[24px] border border-slate-200 bg-[#fcfaf6]">
+        <div className="overflow-hidden rounded-[24px] border border-slate-200 bg-[#f7f9ff]">
           <div className="overflow-x-auto">
             <table className="min-w-full border-collapse">
               <thead className="bg-[#f4efe7] text-left">
@@ -234,7 +234,7 @@ export function AdminLedgerPanel({
             </table>
           </div>
 
-          <div className="flex flex-col gap-3 border-t border-slate-200 bg-[#faf7f2] px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 border-t border-slate-200 bg-[#f7f9ff] px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs text-slate-500">Page {pageIndex}</p>
             <div className="flex items-center gap-2">
               <Button
@@ -269,7 +269,7 @@ export function AdminLedgerPanel({
         open={selectedLedgerTransactionId !== null}
       >
         <SheetContent
-          className="grid h-screen w-[min(560px,100vw)] overflow-y-auto border-y-0 border-r-0 border-l border-slate-200 bg-[#fffdf9] p-0"
+          className="grid h-screen w-[min(560px,100vw)] overflow-y-auto border-y-0 border-r-0 border-l border-slate-200 bg-[#ffffff] p-0"
           hideOverlay
           side="right"
         >
@@ -354,7 +354,7 @@ export function AdminLedgerPanel({
               </dl>
 
               {selectedLedgerTransaction.userTransactionId ? (
-                <div className="rounded-[20px] border border-slate-200 bg-[#fcfaf6] px-4 py-4">
+                <div className="rounded-[20px] border border-slate-200 bg-[#f7f9ff] px-4 py-4">
                   <Button
                     className="h-10 rounded-full px-4"
                     onClick={() => onOpenTransaction(selectedLedgerTransaction.userTransactionId!)}

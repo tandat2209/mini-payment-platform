@@ -66,7 +66,7 @@ export function TransactionDetailPanel({
 
         {transaction ? (
           <>
-            <div className="rounded-[24px] border border-[#e7e1d8] bg-[#fcfaf6] p-4">
+            <div className="rounded-[24px] border border-[#dfe5ff] bg-[#f7f9ff] p-4">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="space-y-2.5">
                   <div
@@ -83,13 +83,13 @@ export function TransactionDetailPanel({
                     )}
                   </div>
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#a6b0d2]">
                       Wallet impact
                     </p>
                     <p className="mt-1.5 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">
                       {formatSignedTransactionMoney(transaction)}
                     </p>
-                    <p className="mt-1.5 max-w-xl text-sm leading-5 text-slate-500">
+                    <p className="mt-1.5 max-w-xl text-sm leading-5 text-[#9aa6ca]">
                       {transaction.description}
                     </p>
                   </div>
@@ -111,9 +111,9 @@ export function TransactionDetailPanel({
             </div>
 
             <div className="grid gap-3 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
-              <div className="rounded-[20px] border border-slate-200 bg-white p-4">
+              <div className="rounded-[20px] border border-[#dfe5ff] bg-white p-4">
                 <div className="flex items-center gap-2">
-                  <ReceiptText className="h-4 w-4 text-slate-500" />
+                  <ReceiptText className="h-4 w-4 text-[#9aa6ca]" />
                   <p className="text-sm font-semibold text-slate-950">Overview</p>
                 </div>
                 <dl className="mt-4 space-y-3">
@@ -147,7 +147,7 @@ export function TransactionDetailPanel({
                 </dl>
               </div>
 
-              <div className="rounded-[20px] border border-slate-200 bg-white p-4">
+              <div className="rounded-[20px] border border-[#dfe5ff] bg-white p-4">
                 {payout ? (
                   <>
                     <p className="text-sm font-semibold text-slate-950">Payout context</p>
@@ -190,7 +190,7 @@ export function TransactionDetailPanel({
                     </dl>
                   </>
                 ) : (
-                  <div className="rounded-[18px] bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                  <div className="rounded-[18px] bg-[#f7f9ff] px-4 py-3 text-sm text-[#9aa6ca]">
                     No payout-specific context for this transaction.
                   </div>
                 )}
@@ -205,8 +205,8 @@ export function TransactionDetailPanel({
 
 function DetailMetric({ label, value }: { label: string; value: string }): JSX.Element {
   return (
-    <div className="rounded-[18px] border border-slate-200 bg-white px-3.5 py-3">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+    <div className="rounded-[18px] border border-[#dfe5ff] bg-white px-3.5 py-3">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#a6b0d2]">
         {label}
       </p>
       <p className="mt-1.5 text-base font-semibold text-slate-950 sm:text-lg">{value}</p>
@@ -216,8 +216,8 @@ function DetailMetric({ label, value }: { label: string; value: string }): JSX.E
 
 function DetailRow({ label, value }: { label: string; value: string }): JSX.Element {
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-3 last:border-b-0 last:pb-0">
-      <dt className="text-sm text-slate-500">{label}</dt>
+    <div className="flex items-start justify-between gap-4 border-b border-[#dfe5ff] pb-3 last:border-b-0 last:pb-0">
+      <dt className="text-sm text-[#9aa6ca]">{label}</dt>
       <dd className="max-w-[60%] text-right text-sm font-medium text-slate-900">{value}</dd>
     </div>
   );

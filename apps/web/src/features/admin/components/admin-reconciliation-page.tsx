@@ -105,7 +105,7 @@ export function AdminReconciliationPage({
               <tr
                 className={cn(
                   'cursor-pointer transition hover:bg-slate-50',
-                  selection?.kind === 'report' && selection.id === report.id && 'bg-emerald-50/50',
+                  selection?.kind === 'report' && selection.id === report.id && 'bg-[#f4f7ff]',
                 )}
                 key={report.id}
                 onClick={() => setSelection({ id: report.id, kind: 'report' })}
@@ -152,7 +152,7 @@ export function AdminReconciliationPage({
               <tr
                 className={cn(
                   'cursor-pointer transition hover:bg-slate-50',
-                  selection?.kind === 'line' && selection.id === line.id && 'bg-emerald-50/50',
+                  selection?.kind === 'line' && selection.id === line.id && 'bg-[#f4f7ff]',
                 )}
                 key={line.id}
                 onClick={() => setSelection({ id: line.id, kind: 'line' })}
@@ -205,7 +205,7 @@ export function AdminReconciliationPage({
                   'cursor-pointer transition hover:bg-slate-50',
                   selection?.kind === 'exception' &&
                     selection.id === item.sourceId &&
-                    'bg-emerald-50/50',
+                    'bg-[#f4f7ff]',
                 )}
                 key={item.sourceId}
                 onClick={() => setSelection({ id: item.sourceId, kind: 'exception' })}
@@ -410,7 +410,7 @@ function TableCard({
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-lg font-semibold text-slate-950">{title}</h2>
         </div>
-        <div className="overflow-hidden rounded-[24px] border border-slate-200 bg-[#fcfaf6]">
+        <div className="overflow-hidden rounded-[24px] border border-slate-200 bg-[#f7f9ff]">
           <div className="overflow-x-auto">
             <table className="min-w-full border-collapse">
               <thead className="bg-[#f4efe7] text-left">

@@ -62,7 +62,7 @@ export function AdminRecipientsPage({
             </div>
           ) : null}
 
-          <div className="overflow-hidden rounded-[24px] border border-slate-200 bg-[#fcfaf6]">
+          <div className="overflow-hidden rounded-[24px] border border-slate-200 bg-[#f7f9ff]">
             <div className="overflow-x-auto">
               <table className="min-w-full border-collapse">
                 <thead className="bg-[#f4efe7] text-left">
@@ -95,7 +95,7 @@ export function AdminRecipientsPage({
                       <tr
                         className={cn(
                           'cursor-pointer transition hover:bg-slate-50',
-                          selectedRecipientId === recipient.id && 'bg-emerald-50/50',
+                          selectedRecipientId === recipient.id && 'bg-[#f4f7ff]',
                         )}
                         key={recipient.id}
                         onClick={() =>

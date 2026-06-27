@@ -72,7 +72,7 @@ export function AdminDashboardPage({
           <button className="text-left" key={label} onClick={() => onNavigate(path)} type="button">
             <Card className="rounded-[28px] border border-slate-200 bg-white/95 transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(15,23,42,0.06)]">
               <CardContent className="flex items-start gap-4 p-5">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#2557ff] text-white">
                   <Icon className="h-5 w-5" />
                 </div>
                 <div>

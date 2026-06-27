@@ -84,11 +84,11 @@ export function RecipientOnboardingPanel({
   const selectedRailDescription = selectedRail?.description ?? null;
 
   return (
-    <Card className="rounded-[30px] border border-[#e7e1d8] bg-[#fcfaf6] shadow-[0_10px_40px_rgba(15,23,42,0.03)]">
+    <Card className="rounded-[30px] border border-[#dfe5ff] bg-[#f7f9ff] shadow-[0_18px_50px_rgba(37,87,255,0.07)]">
       <CardContent className="space-y-5 p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#a6b0d2]">
               {mode === 'create' ? 'Create recipient' : 'Add rail'}
             </p>
             <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
@@ -195,13 +195,13 @@ export function RecipientOnboardingPanel({
           ) : null}
 
           {selectedRailDescription ? (
-            <p className="text-sm text-slate-500">{selectedRailDescription}</p>
+            <p className="text-sm text-[#9aa6ca]">{selectedRailDescription}</p>
           ) : null}
         </div>
 
-        <div className="rounded-[24px] border border-white bg-white p-4">
+        <div className="rounded-[24px] border border-[#dfe5ff] bg-white p-4">
           <div className="flex items-center gap-2">
-            <WandSparkles className="h-4 w-4 text-slate-400" />
+            <WandSparkles className="h-4 w-4 text-[#a6b0d2]" />
             <p className="text-sm font-semibold text-slate-900">Required rail details</p>
           </div>
 
@@ -279,7 +279,7 @@ export function RecipientOnboardingPanel({
         </div>
 
         <div className="flex items-center justify-between gap-3">
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-[#9aa6ca]">
             {mode === 'create'
               ? 'Save the recipient now, then reuse the saved rail in payout flows.'
               : 'This adds another payout method without duplicating the recipient identity.'}
@@ -343,7 +343,7 @@ function RecipientFieldInput({
         placeholder={field.placeholder ?? field.label}
         value={value}
       />
-      {field.helpText ? <p className="text-xs text-slate-500">{field.helpText}</p> : null}
+      {field.helpText ? <p className="text-xs text-[#9aa6ca]">{field.helpText}</p> : null}
     </div>
   );
 }

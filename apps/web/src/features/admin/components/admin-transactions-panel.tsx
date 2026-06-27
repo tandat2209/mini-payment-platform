@@ -191,7 +191,7 @@ export function AdminTransactionsPanel({
                 className={cn(
                   'rounded-full border px-3 py-2 text-sm font-medium transition-colors',
                   typeFilter === filter
-                    ? 'border-slate-950 bg-slate-950 text-white'
+                    ? 'border-[#2557ff] bg-[#2557ff] text-white'
                     : 'border-slate-200 bg-white text-slate-700',
                 )}
                 key={filter}
@@ -210,7 +210,7 @@ export function AdminTransactionsPanel({
           </div>
         ) : null}
 
-        <div className="overflow-hidden rounded-[24px] border border-slate-200 bg-[#fcfaf6]">
+        <div className="overflow-hidden rounded-[24px] border border-slate-200 bg-[#f7f9ff]">
           <div className="overflow-x-auto">
             <table className="min-w-full border-collapse">
               <thead className="bg-[#f4efe7] text-left">
@@ -247,7 +247,7 @@ export function AdminTransactionsPanel({
                     <tr
                       className={cn(
                         'cursor-pointer transition hover:bg-slate-50',
-                        selectedTransactionId === row.original.id && 'bg-emerald-50/50',
+                        selectedTransactionId === row.original.id && 'bg-[#f4f7ff]',
                       )}
                       key={row.id}
                       onClick={() => onSelect(row.original.id)}
@@ -264,7 +264,7 @@ export function AdminTransactionsPanel({
             </table>
           </div>
 
-          <div className="flex flex-col gap-3 border-t border-slate-200 bg-[#faf7f2] px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 border-t border-slate-200 bg-[#f7f9ff] px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs text-slate-500">Page {pageIndex}</p>
             <div className="flex items-center gap-2">
               <Button
@@ -299,7 +299,7 @@ export function AdminTransactionsPanel({
         open={selectedTransactionId !== null}
       >
         <SheetContent
-          className="grid h-screen overflow-y-auto border-y-0 border-r-0 border-l border-slate-200 bg-[#fffdf9] p-0"
+          className="grid h-screen overflow-y-auto border-y-0 border-r-0 border-l border-slate-200 bg-[#ffffff] p-0"
           hideOverlay
           side="right"
         >
@@ -405,7 +405,7 @@ export function AdminTransactionsPanel({
                     ) : (
                       selectedTransaction.linkedLedgers.map((ledgerTransaction) => (
                         <div
-                          className="flex items-center justify-between gap-4 rounded-[18px] border border-slate-200 bg-[#fcfaf6] px-4 py-3"
+                          className="flex items-center justify-between gap-4 rounded-[18px] border border-slate-200 bg-[#f7f9ff] px-4 py-3"
                           key={ledgerTransaction.id}
                         >
                           <div className="min-w-0">
@@ -447,7 +447,7 @@ export function AdminTransactionsPanel({
                   <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                     Payout context
                   </p>
-                  <dl className="mt-4 space-y-3 rounded-[18px] border border-slate-200 bg-[#fcfaf6] p-4">
+                  <dl className="mt-4 space-y-3 rounded-[18px] border border-slate-200 bg-[#f7f9ff] p-4">
                     <DetailRow
                       label="Payout reference"
                       value={

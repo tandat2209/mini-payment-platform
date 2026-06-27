@@ -252,7 +252,7 @@ export function CustomerPayoutPage({
       className="space-y-4 pb-[calc(var(--customer-mobile-payout-action-offset)+1rem)] lg:pb-0"
       id="section-payout"
     >
-      <Card className="overflow-hidden rounded-[26px] border border-[#e7e1d8] bg-[#fffdf9] shadow-[0_16px_55px_rgba(15,23,42,0.06)]">
+      <Card className="overflow-hidden rounded-[26px] border border-[#dfe5ff] bg-white shadow-[0_20px_60px_rgba(37,87,255,0.08)]">
         <CardContent className="space-y-6 p-4 sm:p-5 lg:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <Button className="rounded-xl px-3.5" onClick={handleBackStep} variant="ghost">
@@ -284,9 +284,9 @@ export function CustomerPayoutPage({
                   <div
                     className={cn(
                       'rounded-[18px] border px-3 py-2.5 transition',
-                      isActive && 'border-slate-950 bg-slate-950 text-white',
+                      isActive && 'border-[#2557ff] bg-[#2557ff] text-white',
                       isComplete && 'border-emerald-200 bg-emerald-50 text-emerald-800',
-                      !isActive && !isComplete && 'border-slate-200 bg-white text-slate-500',
+                      !isActive && !isComplete && 'border-[#dfe5ff] bg-white text-[#8f9bc3]',
                     )}
                     key={stepItem.id}
                   >
@@ -301,7 +301,7 @@ export function CustomerPayoutPage({
           </div>
 
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
-            <div className="rounded-[22px] border border-[#ebe4d8] bg-white p-4 shadow-[0_10px_30px_rgba(15,23,42,0.03)] sm:p-5">
+            <div className="rounded-[22px] border border-[#dfe5ff] bg-white p-4 shadow-[0_10px_30px_rgba(15,23,42,0.03)] sm:p-5">
               {isRecipientsLoading ? (
                 <div className="space-y-4">
                   <LoadingBlock className="h-12" />
@@ -343,8 +343,8 @@ export function CustomerPayoutPage({
                               className={cn(
                                 'w-full rounded-[20px] border px-3.5 py-3.5 text-left transition',
                                 isSelected
-                                  ? 'border-slate-950 bg-slate-950 text-white shadow-[0_12px_32px_rgba(15,23,42,0.14)]'
-                                  : 'border-slate-200 bg-[#fcfaf7] hover:border-slate-300',
+                                  ? 'border-[#2557ff] bg-[#2557ff] text-white shadow-[0_12px_32px_rgba(15,23,42,0.14)]'
+                                  : 'border-[#dfe5ff] bg-[#f7f9ff] hover:border-[#bfc9ff]',
                               )}
                               key={rail.id}
                               onClick={() => {
@@ -401,7 +401,7 @@ export function CustomerPayoutPage({
                         <h2 className="text-xl font-semibold text-slate-950">Payout details</h2>
                       </div>
 
-                      <div className="rounded-[20px] border border-emerald-100 bg-emerald-50/70 p-3.5">
+                      <div className="rounded-[20px] border border-[#dfe5ff] bg-[#f7f9ff] p-3.5">
                         <div className="flex flex-wrap items-center gap-2">
                           <CountryFlag
                             countryCode={selectedRail?.countryCode ?? 'US'}
@@ -528,7 +528,7 @@ export function CustomerPayoutPage({
                         </div>
                       ) : null}
 
-                      <div className="rounded-[20px] border border-slate-200 bg-[#fcfaf7] p-3.5 text-sm text-slate-600">
+                      <div className="rounded-[20px] border border-[#dfe5ff] bg-[#f7f9ff] p-3.5 text-sm text-slate-600">
                         This submits a real payout request and debits the wallet immediately. The
                         next step follows the provider status live.
                       </div>
@@ -615,7 +615,7 @@ export function CustomerPayoutPage({
                       {livePayoutQuery.isLoading &&
                       payoutLifecycleStatus !== 'paid' &&
                       payoutLifecycleStatus !== 'returned' ? (
-                        <div className="rounded-[20px] border border-slate-200 bg-[#fcfaf7] px-3.5 py-3 text-sm text-slate-600">
+                        <div className="rounded-[20px] border border-[#dfe5ff] bg-[#f7f9ff] px-3.5 py-3 text-sm text-slate-600">
                           Checking the latest provider update...
                         </div>
                       ) : null}
@@ -655,7 +655,7 @@ export function CustomerPayoutPage({
             </div>
 
             <div className="space-y-4">
-              <Card className="rounded-[22px] border border-[#e7e1d8] bg-[#fcfaf6] shadow-none">
+              <Card className="rounded-[22px] border border-[#dfe5ff] bg-[#f7f9ff] shadow-none">
                 <CardContent className="space-y-3.5 p-4">
                   <div className="flex items-center gap-2 text-slate-900">
                     <Landmark className="h-4 w-4" />
@@ -690,7 +690,7 @@ export function CustomerPayoutPage({
                 </CardContent>
               </Card>
 
-              <Card className="rounded-[22px] border border-[#e7e1d8] bg-white shadow-none">
+              <Card className="rounded-[22px] border border-[#dfe5ff] bg-white shadow-none">
                 <CardContent className="space-y-3.5 p-4">
                   <div className="flex items-center gap-2 text-slate-900">
                     <ShieldCheck className="h-4 w-4" />
@@ -740,7 +740,7 @@ export function CustomerPayoutPage({
           </div>
 
           {step < 3 ? (
-            <div className="hidden items-center justify-between gap-3 border-t border-[#ece6dd] pt-6 lg:flex">
+            <div className="hidden items-center justify-between gap-3 border-t border-[#dfe5ff] pt-6 lg:flex">
               <Button className="rounded-xl px-4" onClick={handleBackStep} variant="ghost">
                 <ArrowLeft className="h-4 w-4" />
                 {step === 0 ? 'Back to overview' : 'Previous'}
@@ -763,7 +763,7 @@ export function CustomerPayoutPage({
 
       {step < 3 ? (
         <div className="fixed inset-x-0 bottom-[var(--customer-mobile-payout-action-offset)] z-30 px-4 lg:hidden">
-          <div className="mx-auto max-w-[680px] rounded-[22px] border border-slate-200/90 bg-white/96 p-2 shadow-[0_18px_45px_rgba(15,23,42,0.12)] backdrop-blur-xl">
+          <div className="mx-auto max-w-[680px] rounded-[22px] border border-[#dfe5ff] bg-white/96 p-2 shadow-[0_18px_45px_rgba(15,23,42,0.12)] backdrop-blur-xl">
             <div className="grid grid-cols-[auto_1fr] gap-2">
               <Button
                 className="min-h-11 rounded-xl px-3.5"
@@ -804,7 +804,7 @@ function SummaryMetric({ label, value }: { label: string; value: string }): JSX.
 
 function ReviewRow({ label, value }: { label: string; value: string }): JSX.Element {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-slate-200 bg-[#fcfaf7] px-3.5 py-3">
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-[#dfe5ff] bg-[#f7f9ff] px-3.5 py-3">
       <p className="text-sm text-slate-500">{label}</p>
       <p className="text-sm font-semibold text-slate-950">{value}</p>
     </div>

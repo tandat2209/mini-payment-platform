@@ -26,7 +26,7 @@ export function WorkspaceSwitcher({
     <div className={cn(isSidebar ? 'mt-4' : 'fixed bottom-4 left-4 z-40 lg:hidden')}>
       <div
         className={cn(
-          'rounded-[22px] border border-slate-200/90 bg-white/95 p-2 backdrop-blur-xl',
+          'rounded-[22px] border border-[#dfe5ff] bg-white/95 p-2 backdrop-blur-xl',
           isSidebar ? 'shadow-none' : 'shadow-[0_18px_45px_rgba(15,23,42,0.14)]',
         )}
       >
@@ -37,7 +37,7 @@ export function WorkspaceSwitcher({
           <SelectTrigger
             aria-label="Switch workspace"
             className={cn(
-              'border-slate-200 bg-white shadow-none',
+              'border-[#dfe5ff] bg-white shadow-none',
               isSidebar ? 'w-full' : 'min-w-[220px]',
             )}
           >
@@ -50,7 +50,7 @@ export function WorkspaceSwitcher({
               return (
                 <SelectItem key={workspace.id} value={workspace.id}>
                   <span className="flex items-center gap-3">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-[#eef2ff] text-[#2557ff]">
                       <Icon className="h-4 w-4" />
                     </span>
                     <span>{workspace.label}</span>

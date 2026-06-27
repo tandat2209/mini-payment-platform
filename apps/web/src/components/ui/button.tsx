@@ -17,13 +17,14 @@ export function Button({
     <button
       className={cn(
         'inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-colors',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 disabled:pointer-events-none disabled:opacity-50',
-        variant === 'default' && 'border-slate-950 bg-slate-950 text-white hover:bg-slate-800',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#bfc9ff] disabled:pointer-events-none disabled:opacity-50',
+        variant === 'default' && 'border-[#2557ff] bg-[#2557ff] text-white hover:bg-[#173fe6]',
         variant === 'secondary' &&
-          'border-transparent bg-slate-100 text-slate-900 hover:bg-slate-200',
-        variant === 'outline' && 'border-slate-200 bg-white text-slate-900 hover:bg-slate-50',
+          'border-transparent bg-[#eef2ff] text-[#173184] hover:bg-[#dfe5ff]',
+        variant === 'outline' &&
+          'border-[#dfe5ff] bg-white text-[#173184] hover:bg-[#eef2ff] hover:text-[#173184]',
         variant === 'ghost' &&
-          'border-transparent bg-transparent text-slate-600 hover:bg-slate-100',
+          'border-transparent bg-transparent text-[#657196] hover:bg-[#eef2ff] hover:text-[#173184]',
         className,
       )}
       type={type}
