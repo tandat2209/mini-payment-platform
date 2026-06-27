@@ -140,8 +140,8 @@ export function includesSearchMatch(
 
 export function getCurrencyChipClasses(_currency: string, isActive: boolean): string {
   return isActive
-    ? 'border-[#2557ff] bg-[#2557ff] text-white shadow-[0_10px_22px_rgba(37,87,255,0.18)]'
-    : 'border-[#dfe5ff] bg-white text-[#7f8bb2] hover:border-[#bfc9ff] hover:bg-[#eef2ff] hover:text-[#173184]';
+    ? 'border-primary bg-primary text-primary-foreground shadow-primary-chip'
+    : 'border-primary-border bg-surface text-muted-foreground-chip hover:border-primary-border-strong hover:bg-primary-muted hover:text-foreground-accent';
 }
 
 export function getAvailableCurrencies(

@@ -90,17 +90,17 @@ export function DashboardHomePage({
       <section className="space-y-5" id="section-overview">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-sm font-extrabold text-[#9da8ca]">Hi Nanas,</p>
-            <h1 className="mt-1 text-[2.15rem] font-extrabold leading-tight tracking-[-0.055em] text-[#171b26] sm:text-5xl">
+            <p className="text-sm font-extrabold text-muted-foreground-soft">Hi Nanas,</p>
+            <h1 className="mt-1 text-[2.15rem] font-extrabold leading-tight tracking-[-0.055em] text-foreground sm:text-5xl">
               Welcome to Mini-pay
             </h1>
           </div>
 
-          <label className="hidden h-13 min-w-[330px] items-center gap-3 rounded-full bg-white px-5 text-[#9da8ca] shadow-[0_18px_46px_rgba(37,87,255,0.08)] ring-1 ring-white/80 transition focus-within:ring-[#bfc9ff] lg:flex">
+          <label className="hidden h-13 min-w-[330px] items-center gap-3 rounded-full bg-surface px-5 text-muted-foreground-soft shadow-search ring-1 ring-surface/80 transition focus-within:ring-primary-border-strong lg:flex">
             <Search className="h-5 w-5" />
             <input
               aria-label="Search transactions"
-              className="w-full border-0 bg-transparent text-sm font-semibold text-slate-900 outline-none placeholder:text-[#b3bddb]"
+              className="w-full border-0 bg-transparent text-sm font-semibold text-foreground outline-none placeholder:text-placeholder"
               onChange={(event) => onTransactionSearchQueryChange(event.target.value)}
               placeholder="Search"
               type="search"
@@ -117,30 +117,30 @@ export function DashboardHomePage({
                   <BalanceStatCard balance={balance} key={balance.currency} />
                 ))
               ) : (
-                <div className="rounded-[28px] border border-dashed border-[#dfe5ff] bg-white/82 p-5 text-sm font-semibold text-[#8f9bc3] shadow-[0_18px_50px_rgba(37,87,255,0.06)] md:col-span-3">
+                <div className="rounded-[28px] border border-dashed border-primary-border bg-surface/82 p-5 text-sm font-semibold text-muted-foreground-strong shadow-primary-subtle md:col-span-3">
                   No wallet balances yet
                 </div>
               )}
             </div>
 
-            <Card className="overflow-hidden rounded-[34px] border-0 bg-white shadow-[0_24px_70px_rgba(37,87,255,0.10)]">
+            <Card className="overflow-hidden rounded-[34px] border-0 bg-surface shadow-primary-soft">
               <CardContent className="grid gap-8 p-5 sm:p-7 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-center">
                 <div className="relative z-10 space-y-5">
                   <div className="space-y-3">
-                    <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#a6b0d2]">
+                    <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-muted-foreground-subtle">
                       Universal wallet
                     </p>
-                    <h2 className="max-w-sm text-3xl font-extrabold leading-tight tracking-[-0.045em] text-[#171b26] sm:text-4xl">
+                    <h2 className="max-w-sm text-3xl font-extrabold leading-tight tracking-[-0.045em] text-foreground sm:text-4xl">
                       Reach financial goals faster
                     </h2>
-                    <p className="max-w-md text-sm font-medium leading-6 text-[#9aa6ca]">
+                    <p className="max-w-md text-sm font-medium leading-6 text-muted-foreground">
                       Check balances, add funds, and send payouts from one clean payment workspace.
                     </p>
                   </div>
 
                   <div className="flex flex-wrap gap-2.5">
                     <Button
-                      className="min-h-12 rounded-full border-transparent bg-[#2557ff] px-6 text-white shadow-[0_16px_34px_rgba(37,87,255,0.24)] hover:bg-[#173fe6]"
+                      className="min-h-12 rounded-full border-transparent bg-primary px-6 text-primary-foreground shadow-primary-button hover:bg-primary-hover"
                       onClick={onAddMoney}
                       variant="default"
                     >
@@ -148,7 +148,7 @@ export function DashboardHomePage({
                       Add money
                     </Button>
                     <Button
-                      className="min-h-12 rounded-full border-[#dfe5ff] bg-[#f7f9ff] px-6 text-[#173184] hover:bg-[#eef2ff] hover:text-[#173184]"
+                      className="min-h-12 rounded-full border-primary-border bg-primary-surface px-6 text-foreground-accent hover:bg-primary-muted hover:text-foreground-accent"
                       onClick={onStartPayout}
                       variant="outline"
                     >
@@ -159,9 +159,9 @@ export function DashboardHomePage({
                 </div>
 
                 <div className="relative min-h-[190px]">
-                  <div className="absolute inset-x-7 top-4 h-40 rounded-[30px] bg-[#d8def7] opacity-70" />
-                  <div className="absolute inset-x-4 top-2 h-44 rounded-[30px] bg-[#c7d0f4] opacity-75" />
-                  <div className="relative overflow-hidden rounded-[30px] bg-[linear-gradient(135deg,#8f9bff_0%,#2557ff_100%)] p-6 text-white shadow-[0_24px_48px_rgba(37,87,255,0.22)]">
+                  <div className="absolute inset-x-7 top-4 h-40 rounded-[30px] bg-card-layer-muted opacity-70" />
+                  <div className="absolute inset-x-4 top-2 h-44 rounded-[30px] bg-card-layer-strong opacity-75" />
+                  <div className="relative overflow-hidden rounded-[30px] bg-wallet-card p-6 text-white shadow-wallet-card">
                     <div className="absolute -right-12 -top-16 h-44 w-44 rounded-full border border-white/18" />
                     <div className="absolute right-8 top-5 flex -space-x-2">
                       <span className="h-6 w-6 rounded-full bg-white/32" />
@@ -189,32 +189,32 @@ export function DashboardHomePage({
             </Card>
           </div>
 
-          <Card className="overflow-hidden rounded-[34px] border-0 bg-white shadow-[0_24px_70px_rgba(37,87,255,0.10)]">
+          <Card className="overflow-hidden rounded-[34px] border-0 bg-surface shadow-primary-soft">
             <CardContent className="space-y-7 p-6 sm:p-8">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#a6b0d2]">
+                  <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-muted-foreground-subtle">
                     Recent activity
                   </p>
-                  <h2 className="mt-2 text-2xl font-extrabold tracking-[-0.045em] text-[#171b26]">
+                  <h2 className="mt-2 text-2xl font-extrabold tracking-[-0.045em] text-foreground">
                     Flow overview
                   </h2>
                 </div>
-                <span className="rounded-2xl bg-[#eef2ff] p-3 text-[#2557ff]">
+                <span className="rounded-2xl bg-primary-muted p-3 text-primary">
                   <Activity className="h-5 w-5" />
                 </span>
               </div>
 
               <div
-                className="mx-auto grid h-44 w-44 place-items-center rounded-full bg-[conic-gradient(#2557ff_var(--activity-progress),#e9edff_0)] p-4 [--activity-progress:0%]"
+                className="mx-auto grid h-44 w-44 place-items-center rounded-full bg-[conic-gradient(var(--color-primary)_var(--activity-progress),var(--color-progress-track)_0)] p-4 [--activity-progress:0%]"
                 style={{ '--activity-progress': `${activityPercent}%` } as CSSProperties}
               >
-                <div className="grid h-full w-full place-items-center rounded-full bg-white text-center shadow-inner shadow-[#dfe5ff]/70">
+                <div className="grid h-full w-full place-items-center rounded-full bg-surface text-center shadow-inner shadow-primary-border/70">
                   <div>
-                    <p className="text-4xl font-extrabold tracking-[-0.05em] text-[#173184]">
+                    <p className="text-4xl font-extrabold tracking-[-0.05em] text-foreground-accent">
                       {activityPercent}%
                     </p>
-                    <p className="mt-1 text-xs font-bold uppercase tracking-[0.14em] text-[#a6b0d2]">
+                    <p className="mt-1 text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground-subtle">
                       Inflow
                     </p>
                   </div>
@@ -227,8 +227,8 @@ export function DashboardHomePage({
                 <MiniMetric label="Out" value={String(outflowCount)} />
               </div>
 
-              <div className="rounded-[24px] bg-[#f7f9ff] p-4">
-                <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#a6b0d2]">
+              <div className="rounded-[24px] bg-primary-surface p-4">
+                <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground-subtle">
                   Latest movement
                 </p>
                 {latestTransaction ? (
@@ -238,8 +238,8 @@ export function DashboardHomePage({
                         className={cn(
                           'grid h-10 w-10 shrink-0 place-items-center rounded-2xl',
                           latestTransaction.direction === 'credit'
-                            ? 'bg-emerald-100 text-emerald-700'
-                            : 'bg-rose-100 text-rose-600',
+                            ? 'bg-success-muted text-success'
+                            : 'bg-danger-muted text-danger',
                         )}
                       >
                         {latestTransaction.direction === 'credit' ? (
@@ -249,11 +249,11 @@ export function DashboardHomePage({
                         )}
                       </span>
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-extrabold text-[#171b26]">
+                        <p className="truncate text-sm font-extrabold text-foreground">
                           {latestTransaction.description.split(':')[0]?.trim() ||
                             latestTransaction.type}
                         </p>
-                        <p className="text-xs font-semibold text-[#9aa6ca]">
+                        <p className="text-xs font-semibold text-muted-foreground">
                           {latestTransaction.currency}
                         </p>
                       </div>
@@ -261,16 +261,16 @@ export function DashboardHomePage({
                     <p
                       className={cn(
                         'shrink-0 text-sm font-extrabold',
-                        latestTransaction.direction === 'credit'
-                          ? 'text-emerald-700'
-                          : 'text-rose-600',
+                        latestTransaction.direction === 'credit' ? 'text-success' : 'text-danger',
                       )}
                     >
                       {formatSignedTransactionMoney(latestTransaction)}
                     </p>
                   </div>
                 ) : (
-                  <p className="mt-2 text-sm font-medium text-[#9aa6ca]">No recent movement yet.</p>
+                  <p className="mt-2 text-sm font-medium text-muted-foreground">
+                    No recent movement yet.
+                  </p>
                 )}
               </div>
             </CardContent>
@@ -279,28 +279,28 @@ export function DashboardHomePage({
       </section>
 
       <section className="grid gap-4" id="section-transactions">
-        <Card className="rounded-[34px] border-0 bg-white/96 shadow-[0_24px_70px_rgba(37,87,255,0.09)]">
+        <Card className="rounded-[34px] border-0 bg-surface/96 shadow-primary-soft">
           <CardContent className="space-y-5 p-4 sm:p-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <h2 className="text-2xl font-extrabold tracking-[-0.045em] text-[#171b26]">
+                <h2 className="text-2xl font-extrabold tracking-[-0.045em] text-foreground">
                   Recent transactions
                 </h2>
-                <p className="mt-1 text-sm font-medium text-[#9aa6ca]">
+                <p className="mt-1 text-sm font-medium text-muted-foreground">
                   Review money movement across your active currencies.
                 </p>
               </div>
-              <span className="w-fit rounded-full bg-[#f1f4ff] px-3.5 py-1.5 text-sm font-extrabold text-[#2557ff]">
+              <span className="w-fit rounded-full bg-surface-muted px-3.5 py-1.5 text-sm font-extrabold text-primary">
                 {filteredTransactions.length} shown
               </span>
             </div>
 
             <div className="grid gap-3 lg:hidden">
-              <label className="flex h-12 items-center gap-3 rounded-full border border-[#dfe5ff] bg-[#f7f9ff] px-4 text-[#9da8ca] ring-[#c7d0ff]/70 transition focus-within:ring-2">
+              <label className="flex h-12 items-center gap-3 rounded-full border border-primary-border bg-primary-surface px-4 text-muted-foreground-soft ring-primary-border-strong/70 transition focus-within:ring-2">
                 <Search className="h-4 w-4" />
                 <input
                   aria-label="Search transactions"
-                  className="w-full border-0 bg-transparent text-sm font-semibold text-slate-900 outline-none placeholder:text-[#b3bddb]"
+                  className="w-full border-0 bg-transparent text-sm font-semibold text-foreground outline-none placeholder:text-placeholder"
                   onChange={(event) => onTransactionSearchQueryChange(event.target.value)}
                   placeholder="Search transactions"
                   type="search"
@@ -309,9 +309,9 @@ export function DashboardHomePage({
               </label>
             </div>
 
-            <div className="grid gap-4 rounded-[28px] bg-[#f8faff] p-3 sm:p-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+            <div className="grid gap-4 rounded-[28px] bg-primary-surface-strong p-3 sm:p-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
               <div className="space-y-2">
-                <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#a6b0d2]">
+                <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground-subtle">
                   Direction
                 </p>
                 <div className="flex flex-wrap items-center gap-2">
@@ -320,8 +320,8 @@ export function DashboardHomePage({
                       className={cn(
                         'h-10 rounded-full px-4 shadow-none',
                         transactionFilter === filter.value
-                          ? 'border-[#2557ff] bg-[#2557ff] text-white hover:bg-[#173fe6]'
-                          : 'border-[#dfe5ff] bg-white text-[#7f8bb2] hover:bg-[#eef2ff] hover:text-[#173184]',
+                          ? 'border-primary bg-primary text-primary-foreground hover:bg-primary-hover'
+                          : 'border-primary-border bg-surface text-muted-foreground-chip hover:bg-primary-muted hover:text-foreground-accent',
                       )}
                       key={filter.value}
                       onClick={() => onTransactionFilterChange(filter.value)}
@@ -334,7 +334,7 @@ export function DashboardHomePage({
               </div>
 
               <div className="space-y-2 lg:text-right">
-                <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#a6b0d2]">
+                <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground-subtle">
                   Currency
                 </p>
                 <div className="flex flex-wrap items-center gap-2 lg:justify-end">
@@ -366,7 +366,7 @@ export function DashboardHomePage({
             </div>
 
             {transactionsQuery.isError ? (
-              <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              <div className="rounded-2xl border border-danger-muted bg-danger-surface px-4 py-3 text-sm text-danger">
                 {transactionsQuery.error instanceof Error
                   ? transactionsQuery.error.message
                   : 'Transaction feed unavailable'}
@@ -383,7 +383,7 @@ export function DashboardHomePage({
 
             {filteredTransactions.length > 0 ? (
               <div className="space-y-2.5">
-                <div className="hidden rounded-[20px] border border-[#dfe5ff] bg-[#f7f9ff] px-4 py-3 text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#8f9bc3] md:grid md:grid-cols-[minmax(0,1.6fr)_120px_160px_120px_120px]">
+                <div className="hidden rounded-[20px] border border-primary-border bg-primary-surface px-4 py-3 text-[11px] font-extrabold uppercase tracking-[0.14em] text-muted-foreground-strong md:grid md:grid-cols-[minmax(0,1.6fr)_120px_160px_120px_120px]">
                   <span>Transaction</span>
                   <span>Currency</span>
                   <span className="text-right">Amount</span>
@@ -430,24 +430,24 @@ export function DashboardHomePage({
 
 function BalanceStatCard({ balance }: { balance: WalletBalance }): JSX.Element {
   return (
-    <div className="rounded-[28px] border border-white/80 bg-white p-5 shadow-[0_18px_50px_rgba(37,87,255,0.08)]">
+    <div className="rounded-[28px] border border-surface/80 bg-surface p-5 shadow-primary-hover">
       <div className="flex items-center justify-between gap-3">
-        <span className="rounded-2xl bg-[#eef2ff] p-2.5 text-[#6679ff]">
+        <span className="rounded-2xl bg-primary-muted p-2.5 text-card-icon">
           <CurrencyIcon currency={balance.currency} />
         </span>
         <div className="flex items-center gap-2">
-          <span className="text-sm font-extrabold text-[#9aa6ca]">{balance.currency}</span>
+          <span className="text-sm font-extrabold text-muted-foreground">{balance.currency}</span>
           <CountryFlag
             className="h-4 w-6 rounded-sm"
             countryCode={getCurrencyFlag(balance.currency)}
           />
         </div>
       </div>
-      <p className="mt-5 text-2xl font-extrabold tracking-[-0.05em] text-[#171b26]">
+      <p className="mt-5 text-2xl font-extrabold tracking-[-0.05em] text-foreground">
         {formatMoney(balance.available)}
       </p>
-      <p className="mt-1.5 text-sm font-semibold text-[#9aa6ca]">
-        Pending <span className="text-[#657196]">{formatMoney(balance.pending)}</span>
+      <p className="mt-1.5 text-sm font-semibold text-muted-foreground">
+        Pending <span className="text-foreground-muted">{formatMoney(balance.pending)}</span>
       </p>
     </div>
   );
@@ -455,9 +455,9 @@ function BalanceStatCard({ balance }: { balance: WalletBalance }): JSX.Element {
 
 function MiniMetric({ label, value }: { label: string; value: string }): JSX.Element {
   return (
-    <div className="rounded-[20px] bg-[#f7f9ff] px-3 py-3 text-center">
-      <p className="text-xl font-extrabold tracking-[-0.04em] text-[#171b26]">{value}</p>
-      <p className="mt-0.5 text-[11px] font-bold uppercase tracking-[0.12em] text-[#a6b0d2]">
+    <div className="rounded-[20px] bg-primary-surface px-3 py-3 text-center">
+      <p className="text-xl font-extrabold tracking-[-0.04em] text-foreground">{value}</p>
+      <p className="mt-0.5 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground-subtle">
         {label}
       </p>
     </div>

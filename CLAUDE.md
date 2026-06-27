@@ -85,6 +85,11 @@ pnpm db:up
 pnpm db:setup
 ```
 
+## Frontend styling
+
+- Do not hardcode product colors directly in JSX or component class strings. Define reusable semantic palette tokens in `apps/web/src/styles.css` (`@theme`) such as `primary`, `secondary`, `surface`, `border`, `muted`, `success`, `danger`, and `warning`, then reuse the generated Tailwind utilities in components.
+- Preserve existing component APIs and behavior when refactoring styles; prefer tokenizing colors and shadows over changing layout, spacing, or data flow.
+
 ## Architecture overview
 
 This is a pnpm/Turborepo TypeScript monorepo for a miniature payment platform. It demonstrates multi-currency wallets, double-entry ledger posting, payout orchestration, PSP webhooks, and reconciliation workflows.

@@ -4,12 +4,72 @@
 @theme {
   --font-sans: 'Manrope', 'IBM Plex Sans', 'Segoe UI', sans-serif;
   --font-display: 'Cormorant Garamond', Georgia, serif;
+
+  --color-background: #f8fafc;
+  --color-background-app: #eef2ff;
+  --color-foreground: #171b26;
+  --color-foreground-accent: #173184;
+  --color-foreground-muted: #657196;
+
+  --color-primary: #2557ff;
+  --color-primary-hover: #173fe6;
+  --color-primary-foreground: #ffffff;
+  --color-primary-muted: #eef2ff;
+  --color-primary-muted-hover: #dfe5ff;
+  --color-primary-surface: #f7f9ff;
+  --color-primary-surface-strong: #f8faff;
+  --color-primary-border: #dfe5ff;
+  --color-primary-border-strong: #bfc9ff;
+  --color-primary-border-selected: #8fa0ff;
+
+  --color-surface: #ffffff;
+  --color-surface-selected: #f4f7ff;
+  --color-surface-muted: #f1f4ff;
+  --color-muted-foreground: #9aa6ca;
+  --color-muted-foreground-strong: #8f9bc3;
+  --color-muted-foreground-subtle: #a6b0d2;
+  --color-muted-foreground-soft: #9da8ca;
+  --color-muted-foreground-light: #aab4d6;
+  --color-muted-foreground-chip: #7f8bb2;
+  --color-placeholder: #b3bddb;
+  --color-card-gradient-start: #8f9bff;
+  --color-card-layer-muted: #d8def7;
+  --color-card-layer-strong: #c7d0f4;
+  --color-card-icon: #6679ff;
+  --color-progress-track: #e9edff;
+
+  --color-success: #047857;
+  --color-success-muted: #d1fae5;
+  --color-success-surface: #ecfdf5;
+  --color-danger: #e11d48;
+  --color-danger-muted: #ffe4e6;
+  --color-danger-surface: #fff1f2;
+  --color-warning: #b45309;
+  --color-warning-muted: #fffbeb;
+  --color-warning-border: #fde68a;
+
+  --shadow-primary-soft: 0 24px 70px rgba(37, 87, 255, 0.1);
+  --shadow-primary-subtle: 0 18px 50px rgba(37, 87, 255, 0.06);
+  --shadow-primary-card: 0 16px 38px rgba(37, 87, 255, 0.12);
+  --shadow-primary-hover: 0 16px 34px rgba(37, 87, 255, 0.08);
+  --shadow-primary-button: 0 16px 34px rgba(37, 87, 255, 0.24);
+  --shadow-primary-button-small: 0 14px 30px rgba(37, 87, 255, 0.24);
+  --shadow-primary-chip: 0 10px 22px rgba(37, 87, 255, 0.18);
+  --shadow-wallet-card: 0 24px 48px rgba(37, 87, 255, 0.22);
+  --shadow-search: 0 18px 46px rgba(37, 87, 255, 0.08);
+  --shadow-mobile-nav: 0 -14px 34px rgba(37, 87, 255, 0.12);
+
+  --background-image-wallet-card: linear-gradient(
+    135deg,
+    var(--color-card-gradient-start) 0%,
+    var(--color-primary) 100%
+  );
 }
 
 @layer base {
   :root {
-    color: #0f172a;
-    background-color: #f8fafc;
+    color: var(--color-foreground);
+    background-color: var(--color-background);
     font-family: var(--font-sans);
   }
 
@@ -24,7 +84,7 @@
       radial-gradient(circle at 80% 6%, rgba(37, 87, 255, 0.08), transparent 30%),
       radial-gradient(circle at 18% 24%, rgba(132, 148, 255, 0.1), transparent 34%),
       linear-gradient(180deg, #f7f9ff 0%, #eef2ff 48%, #e9eeff 100%);
-    color: #101827;
+    color: var(--color-foreground);
   }
 
   button,

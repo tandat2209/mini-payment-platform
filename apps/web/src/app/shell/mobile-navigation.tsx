@@ -20,15 +20,15 @@ export function MobileNavigation({
   }
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[#dfe5ff] bg-white/96 px-3 pb-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] pt-2 shadow-[0_-14px_34px_rgba(37,87,255,0.12)] backdrop-blur-xl lg:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-primary-border bg-surface/96 px-3 pb-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] pt-2 shadow-mobile-nav backdrop-blur-xl lg:hidden">
       <div className="grid grid-cols-4 gap-1">
         {navigationItems.map((item) => (
           <button
             className={cn(
               'flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center transition-colors',
               item.id === activeNavigationId
-                ? 'bg-[#2557ff] text-white shadow-[0_10px_24px_rgba(37,87,255,0.24)]'
-                : 'text-[#8f9bc3] hover:bg-[#f1f4ff] hover:text-[#173184]',
+                ? 'bg-primary text-primary-foreground shadow-primary-button'
+                : 'text-muted-foreground-strong hover:bg-surface-muted hover:text-foreground-accent',
             )}
             key={item.id}
             onClick={() => onNavigationSelect(item.path)}

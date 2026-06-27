@@ -35,10 +35,10 @@ export function TransactionRow({
   return (
     <button
       className={cn(
-        'w-full rounded-[22px] border bg-white px-3.5 py-3 text-left transition hover:border-[#bfc9ff] hover:bg-[#f8faff] hover:shadow-[0_16px_34px_rgba(37,87,255,0.08)] md:grid md:grid-cols-[minmax(0,1.6fr)_120px_160px_120px_120px] md:items-center md:gap-3 md:px-4',
+        'w-full rounded-[22px] border bg-surface px-3.5 py-3 text-left transition hover:border-primary-border-strong hover:bg-primary-surface-strong hover:shadow-primary-hover md:grid md:grid-cols-[minmax(0,1.6fr)_120px_160px_120px_120px] md:items-center md:gap-3 md:px-4',
         isSelected
-          ? 'border-[#8fa0ff] bg-[#f4f7ff] shadow-[0_16px_38px_rgba(37,87,255,0.12)]'
-          : 'border-[#dfe5ff]',
+          ? 'border-primary-border-selected bg-surface-selected shadow-primary-card'
+          : 'border-primary-border',
       )}
       onClick={() => onSelect(transaction.id)}
       type="button"
@@ -48,22 +48,22 @@ export function TransactionRow({
           <div
             className={
               transaction.direction === 'credit'
-                ? 'flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-100'
-                : 'flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-rose-100'
+                ? 'flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-success-muted'
+                : 'flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-danger-muted'
             }
           >
             {transaction.direction === 'credit' ? (
-              <ArrowDownLeft className="h-4 w-4 text-emerald-700" />
+              <ArrowDownLeft className="h-4 w-4 text-success" />
             ) : (
-              <ArrowUpRight className="h-4 w-4 text-rose-600" />
+              <ArrowUpRight className="h-4 w-4 text-danger" />
             )}
           </div>
 
           <div className="min-w-0 flex-1 md:max-w-none">
             <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 md:block">
               <div className="min-w-0">
-                <p className="truncate text-sm font-extrabold text-[#171b26]">{displayTitle}</p>
-                <p className="mt-1 truncate text-xs font-medium text-[#9aa6ca] md:text-sm">
+                <p className="truncate text-sm font-extrabold text-foreground">{displayTitle}</p>
+                <p className="mt-1 truncate text-xs font-medium text-muted-foreground md:text-sm">
                   {displaySubtitle}
                 </p>
               </div>
@@ -71,8 +71,8 @@ export function TransactionRow({
               <p
                 className={
                   transaction.direction === 'credit'
-                    ? 'shrink-0 text-sm font-semibold text-emerald-700 md:hidden'
-                    : 'shrink-0 text-sm font-semibold text-rose-700 md:hidden'
+                    ? 'shrink-0 text-sm font-semibold text-success md:hidden'
+                    : 'shrink-0 text-sm font-semibold text-danger md:hidden'
                 }
               >
                 {formatSignedTransactionMoney(transaction)}
@@ -83,19 +83,21 @@ export function TransactionRow({
 
         <div className="flex items-center justify-between gap-3 md:hidden">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-2 rounded-full bg-[#eef2ff] px-2.5 py-1 text-xs font-bold text-[#173184]">
-              <span className="h-2 w-2 rounded-full bg-[#2557ff]" />
+            <span className="inline-flex items-center gap-2 rounded-full bg-primary-muted px-2.5 py-1 text-xs font-bold text-foreground-accent">
+              <span className="h-2 w-2 rounded-full bg-primary" />
               {transaction.currency}
             </span>
             <Badge tone={getToneFromStatus(transaction.status)}>
               {toTitleCase(transaction.status)}
             </Badge>
           </div>
-          <span className="shrink-0 text-xs font-semibold text-[#9aa6ca]">{mobilePostedDate}</span>
+          <span className="shrink-0 text-xs font-semibold text-muted-foreground">
+            {mobilePostedDate}
+          </span>
         </div>
 
-        <div className="hidden items-center gap-2 text-sm font-bold text-[#657196] md:flex">
-          <span className="h-2 w-2 rounded-full bg-[#2557ff]" />
+        <div className="hidden items-center gap-2 text-sm font-bold text-foreground-muted md:flex">
+          <span className="h-2 w-2 rounded-full bg-primary" />
           <span>{transaction.currency}</span>
         </div>
 
@@ -103,15 +105,15 @@ export function TransactionRow({
           <p
             className={
               transaction.direction === 'credit'
-                ? 'text-sm font-semibold text-emerald-700'
-                : 'text-sm font-semibold text-rose-700'
+                ? 'text-sm font-semibold text-success'
+                : 'text-sm font-semibold text-danger'
             }
           >
             {formatSignedTransactionMoney(transaction)}
           </p>
         </div>
 
-        <div className="hidden text-sm font-semibold text-[#9aa6ca] md:block md:text-right">
+        <div className="hidden text-sm font-semibold text-muted-foreground md:block md:text-right">
           <p>{postedDate}</p>
         </div>
 
