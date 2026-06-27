@@ -1,18 +1,6 @@
 import type { UseQueryResult } from '@tanstack/react-query';
-import {
-  Activity,
-  ArrowDownLeft,
-  ArrowUpRight,
-  CreditCard,
-  DollarSign,
-  Euro,
-  Plus,
-  PoundSterling,
-  Search,
-  Send,
-  Wallet,
-} from 'lucide-react';
-import type { CSSProperties, JSX } from 'react';
+import { Activity, AlertCircle, Clock3, Plus, Search, Send } from 'lucide-react';
+import type { JSX } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -26,8 +14,10 @@ import type {
 import {
   formatMoney,
   formatSignedTransactionMoney,
+  formatUsdAmount,
   getCurrencyChipClasses,
   getCurrencyFlag,
+  sumBalanceUsdEquivalent,
   transactionFilters,
 } from '@/features/customer/lib/utils';
 import type { CurrencyFilter, TransactionFilter } from '@/features/customer/store/dashboard-store';
@@ -72,17 +62,11 @@ export function DashboardHomePage({
   transactionsQuery: UseQueryResult<TransactionListResponse, Error>;
   visibleBalances: WalletBalance[];
 }): JSX.Element {
-  const primaryBalance = visibleBalances[0];
-  const inflowCount = filteredTransactions.filter(
-    (transaction) => transaction.direction === 'credit',
-  ).length;
-  const outflowCount = filteredTransactions.filter(
-    (transaction) => transaction.direction === 'debit',
-  ).length;
-  const activityPercent =
-    filteredTransactions.length > 0
-      ? Math.round((inflowCount / filteredTransactions.length) * 100)
-      : 0;
+  const availableEstimate = sumBalanceUsdEquivalent(visibleBalances, 'available');
+  const pendingEstimate = sumBalanceUsdEquivalent(visibleBalances, 'pending');
+  const totalEstimate = availableEstimate + pendingEstimate;
+  const inMotionTransactions = filteredTransactions.filter(isTransactionInMotion);
+  const attentionTransactions = filteredTransactions.filter(isTransactionNeedsAttention);
   const latestTransaction = filteredTransactions[0];
 
   return (
@@ -90,7 +74,7 @@ export function DashboardHomePage({
       <section className="space-y-5" id="section-overview">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-sm font-extrabold text-muted-foreground-soft">Hi Nanas,</p>
+            <p className="text-sm font-extrabold text-muted-foreground-soft">Hi Dat Nguyen,</p>
             <h1 className="mt-1 text-[2.15rem] font-extrabold leading-tight tracking-[-0.055em] text-foreground sm:text-5xl">
               Welcome to Mini-pay
             </h1>
@@ -109,95 +93,67 @@ export function DashboardHomePage({
           </label>
         </div>
 
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_minmax(340px,0.85fr)]">
-          <div className="space-y-5">
-            <div className="grid gap-4 md:grid-cols-3">
-              {visibleBalances.length > 0 ? (
-                visibleBalances.map((balance) => (
-                  <BalanceStatCard balance={balance} key={balance.currency} />
-                ))
-              ) : (
-                <div className="rounded-[28px] border border-dashed border-primary-border bg-surface/82 p-5 text-sm font-semibold text-muted-foreground-strong shadow-primary-subtle md:col-span-3">
-                  No wallet balances yet
-                </div>
-              )}
-            </div>
-
-            <Card className="overflow-hidden rounded-[34px] border-0 bg-surface shadow-primary-soft">
-              <CardContent className="grid gap-8 p-5 sm:p-7 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-center">
-                <div className="relative z-10 space-y-5">
-                  <div className="space-y-3">
-                    <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-muted-foreground-subtle">
-                      Universal wallet
-                    </p>
-                    <h2 className="max-w-sm text-3xl font-extrabold leading-tight tracking-[-0.045em] text-foreground sm:text-4xl">
-                      Reach financial goals faster
-                    </h2>
-                    <p className="max-w-md text-sm font-medium leading-6 text-muted-foreground">
-                      Check balances, add funds, and send payouts from one clean payment workspace.
-                    </p>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2.5">
-                    <Button
-                      className="min-h-12 rounded-full border-transparent bg-primary px-6 text-primary-foreground shadow-primary-button hover:bg-primary-hover"
-                      onClick={onAddMoney}
-                      variant="default"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Add money
-                    </Button>
-                    <Button
-                      className="min-h-12 rounded-full border-primary-border bg-primary-surface px-6 text-foreground-accent hover:bg-primary-muted hover:text-foreground-accent"
-                      onClick={onStartPayout}
-                      variant="outline"
-                    >
-                      <Send className="h-4 w-4" />
-                      Send payout
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="relative min-h-[190px]">
-                  <div className="absolute inset-x-7 top-4 h-40 rounded-[30px] bg-card-layer-muted opacity-70" />
-                  <div className="absolute inset-x-4 top-2 h-44 rounded-[30px] bg-card-layer-strong opacity-75" />
-                  <div className="relative overflow-hidden rounded-[30px] bg-wallet-card p-6 text-white shadow-wallet-card">
-                    <div className="absolute -right-12 -top-16 h-44 w-44 rounded-full border border-white/18" />
-                    <div className="absolute right-8 top-5 flex -space-x-2">
-                      <span className="h-6 w-6 rounded-full bg-white/32" />
-                      <span className="h-6 w-6 rounded-full bg-white/46" />
-                    </div>
-                    <div className="relative space-y-8">
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-sm font-extrabold text-white/82">Mini-pay Card</span>
-                        <CreditCard className="h-5 w-5 text-white/80" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-white/72">Available balance</p>
-                        <p className="mt-1 text-2xl font-extrabold tracking-[-0.04em]">
-                          {primaryBalance ? formatMoney(primaryBalance.available) : '$0.00'}
-                        </p>
-                      </div>
-                      <div className="flex items-end justify-between gap-3 text-xs font-bold text-white/78">
-                        <span>{primaryBalance?.currency ?? 'USD'} Wallet</span>
-                        <span>12/26</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.75fr)]">
           <Card className="overflow-hidden rounded-[34px] border-0 bg-surface shadow-primary-soft">
-            <CardContent className="space-y-7 p-6 sm:p-8">
-              <div className="flex items-start justify-between gap-4">
+            <CardContent className="space-y-6 p-5 sm:p-8">
+              <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
                 <div>
                   <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-muted-foreground-subtle">
-                    Recent activity
+                    Estimated total balance
+                  </p>
+                  <p className="mt-3 text-5xl font-extrabold tracking-[-0.07em] text-foreground sm:text-6xl">
+                    {formatUsdAmount(totalEstimate)}
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap gap-2.5">
+                  <Button
+                    className="min-h-12 rounded-full border-transparent bg-primary px-6 text-primary-foreground shadow-primary-button hover:bg-primary-hover"
+                    onClick={onAddMoney}
+                    variant="default"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add money
+                  </Button>
+                  <Button
+                    className="min-h-12 rounded-full border-primary-border bg-primary-surface px-6 text-foreground-accent hover:bg-primary-muted hover:text-foreground-accent"
+                    onClick={onStartPayout}
+                    variant="outline"
+                  >
+                    <Send className="h-4 w-4" />
+                    Send payout
+                  </Button>
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <SimpleMetric label="Available" value={formatUsdAmount(availableEstimate)} />
+                <SimpleMetric label="Pending" value={formatUsdAmount(pendingEstimate)} />
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                {visibleBalances.length > 0 ? (
+                  visibleBalances.map((balance) => (
+                    <BalanceWalletPill balance={balance} key={balance.currency} />
+                  ))
+                ) : (
+                  <div className="rounded-full border border-dashed border-primary-border bg-primary-surface px-4 py-2 text-sm font-bold text-muted-foreground-strong">
+                    No wallet balances yet
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="overflow-hidden rounded-[34px] border-0 bg-surface shadow-primary-soft">
+            <CardContent className="space-y-5 p-5 sm:p-6">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-muted-foreground-subtle">
+                    Money in motion
                   </p>
                   <h2 className="mt-2 text-2xl font-extrabold tracking-[-0.045em] text-foreground">
-                    Flow overview
+                    Today
                   </h2>
                 </div>
                 <span className="rounded-2xl bg-primary-muted p-3 text-primary">
@@ -205,58 +161,34 @@ export function DashboardHomePage({
                 </span>
               </div>
 
-              <div
-                className="mx-auto grid h-44 w-44 place-items-center rounded-full bg-[conic-gradient(var(--color-primary)_var(--activity-progress),var(--color-progress-track)_0)] p-4 [--activity-progress:0%]"
-                style={{ '--activity-progress': `${activityPercent}%` } as CSSProperties}
-              >
-                <div className="grid h-full w-full place-items-center rounded-full bg-surface text-center shadow-inner shadow-primary-border/70">
-                  <div>
-                    <p className="text-4xl font-extrabold tracking-[-0.05em] text-foreground-accent">
-                      {activityPercent}%
-                    </p>
-                    <p className="mt-1 text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground-subtle">
-                      Inflow
-                    </p>
-                  </div>
-                </div>
+              <div className="grid grid-cols-2 gap-3">
+                <MotionCount
+                  icon={AlertCircle}
+                  label="Attention"
+                  tone={attentionTransactions.length > 0 ? 'danger' : 'success'}
+                  value={String(attentionTransactions.length)}
+                />
+                <MotionCount
+                  icon={Clock3}
+                  label="Processing"
+                  tone="primary"
+                  value={String(inMotionTransactions.length)}
+                />
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
-                <MiniMetric label="Total" value={String(filteredTransactions.length)} />
-                <MiniMetric label="In" value={String(inflowCount)} />
-                <MiniMetric label="Out" value={String(outflowCount)} />
-              </div>
-
-              <div className="rounded-[24px] bg-primary-surface p-4">
-                <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground-subtle">
-                  Latest movement
-                </p>
-                {latestTransaction ? (
+              {latestTransaction ? (
+                <div className="rounded-[24px] bg-primary-surface p-4">
+                  <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground-subtle">
+                    Latest
+                  </p>
                   <div className="mt-3 flex items-center justify-between gap-3">
-                    <div className="flex min-w-0 items-center gap-3">
-                      <span
-                        className={cn(
-                          'grid h-10 w-10 shrink-0 place-items-center rounded-2xl',
-                          latestTransaction.direction === 'credit'
-                            ? 'bg-success-muted text-success'
-                            : 'bg-danger-muted text-danger',
-                        )}
-                      >
-                        {latestTransaction.direction === 'credit' ? (
-                          <ArrowDownLeft className="h-4 w-4" />
-                        ) : (
-                          <ArrowUpRight className="h-4 w-4" />
-                        )}
-                      </span>
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-extrabold text-foreground">
-                          {latestTransaction.description.split(':')[0]?.trim() ||
-                            latestTransaction.type}
-                        </p>
-                        <p className="text-xs font-semibold text-muted-foreground">
-                          {latestTransaction.currency}
-                        </p>
-                      </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-extrabold text-foreground">
+                        {getTransactionListTitle(latestTransaction.description)}
+                      </p>
+                      <p className="text-xs font-semibold text-muted-foreground">
+                        {latestTransaction.currency}
+                      </p>
                     </div>
                     <p
                       className={cn(
@@ -267,12 +199,8 @@ export function DashboardHomePage({
                       {formatSignedTransactionMoney(latestTransaction)}
                     </p>
                   </div>
-                ) : (
-                  <p className="mt-2 text-sm font-medium text-muted-foreground">
-                    No recent movement yet.
-                  </p>
-                )}
-              </div>
+                </div>
+              ) : null}
             </CardContent>
           </Card>
         </div>
@@ -287,7 +215,7 @@ export function DashboardHomePage({
                   Recent transactions
                 </h2>
                 <p className="mt-1 text-sm font-medium text-muted-foreground">
-                  Review money movement across your active currencies.
+                  Search and inspect wallet movements.
                 </p>
               </div>
               <span className="w-fit rounded-full bg-surface-muted px-3.5 py-1.5 text-sm font-extrabold text-primary">
@@ -428,51 +356,83 @@ export function DashboardHomePage({
   );
 }
 
-function BalanceStatCard({ balance }: { balance: WalletBalance }): JSX.Element {
+function BalanceWalletPill({ balance }: { balance: WalletBalance }): JSX.Element {
   return (
-    <div className="rounded-[28px] border border-surface/80 bg-surface p-5 shadow-primary-hover">
-      <div className="flex items-center justify-between gap-3">
-        <span className="rounded-2xl bg-primary-muted p-2.5 text-card-icon">
-          <CurrencyIcon currency={balance.currency} />
-        </span>
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-extrabold text-muted-foreground">{balance.currency}</span>
-          <CountryFlag
-            className="h-4 w-6 rounded-sm"
-            countryCode={getCurrencyFlag(balance.currency)}
-          />
-        </div>
+    <div className="flex min-w-[180px] items-center justify-between gap-4 rounded-full border border-primary-border bg-primary-surface px-4 py-3">
+      <div className="flex items-center gap-2">
+        <CountryFlag
+          className="h-4 w-6 rounded-sm"
+          countryCode={getCurrencyFlag(balance.currency)}
+        />
+        <span className="text-sm font-extrabold text-foreground">{balance.currency}</span>
       </div>
-      <p className="mt-5 text-2xl font-extrabold tracking-[-0.05em] text-foreground">
-        {formatMoney(balance.available)}
-      </p>
-      <p className="mt-1.5 text-sm font-semibold text-muted-foreground">
-        Pending <span className="text-foreground-muted">{formatMoney(balance.pending)}</span>
-      </p>
+      <span className="text-sm font-extrabold text-primary">{formatMoney(balance.available)}</span>
     </div>
   );
 }
 
-function MiniMetric({ label, value }: { label: string; value: string }): JSX.Element {
+function SimpleMetric({ label, value }: { label: string; value: string }): JSX.Element {
   return (
-    <div className="rounded-[20px] bg-primary-surface px-3 py-3 text-center">
-      <p className="text-xl font-extrabold tracking-[-0.04em] text-foreground">{value}</p>
-      <p className="mt-0.5 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground-subtle">
+    <div className="rounded-[22px] bg-primary-surface px-4 py-3">
+      <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground-subtle">
+        {label}
+      </p>
+      <p className="mt-1 text-xl font-extrabold tracking-[-0.04em] text-foreground">{value}</p>
+    </div>
+  );
+}
+
+function MotionCount({
+  icon: Icon,
+  label,
+  tone,
+  value,
+}: {
+  icon: typeof AlertCircle;
+  label: string;
+  tone: 'danger' | 'primary' | 'success';
+  value: string;
+}): JSX.Element {
+  const toneClasses = {
+    danger: 'bg-danger-surface text-danger',
+    primary: 'bg-primary-muted text-primary',
+    success: 'bg-success-surface text-success',
+  }[tone];
+
+  return (
+    <div className="rounded-[22px] bg-primary-surface p-4">
+      <span className={cn('grid h-9 w-9 place-items-center rounded-2xl', toneClasses)}>
+        <Icon className="h-4 w-4" />
+      </span>
+      <p className="mt-4 text-3xl font-extrabold tracking-[-0.05em] text-foreground">{value}</p>
+      <p className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground-subtle">
         {label}
       </p>
     </div>
   );
 }
 
-function CurrencyIcon({ currency }: { currency: string }): JSX.Element {
-  switch (currency) {
-    case 'USD':
-      return <DollarSign className="h-5 w-5" />;
-    case 'EUR':
-      return <Euro className="h-5 w-5" />;
-    case 'GBP':
-      return <PoundSterling className="h-5 w-5" />;
-    default:
-      return <Wallet className="h-5 w-5" />;
+function isTransactionInMotion(transaction: TransactionItem): boolean {
+  const normalizedStatus = transaction.status.toLowerCase();
+
+  return ['pending', 'processing', 'submitted'].some((status) => normalizedStatus.includes(status));
+}
+
+function isTransactionNeedsAttention(transaction: TransactionItem): boolean {
+  const normalizedStatus = transaction.status.toLowerCase();
+
+  return ['failed', 'returned', 'rejected', 'cancelled', 'canceled'].some((status) =>
+    normalizedStatus.includes(status),
+  );
+}
+
+function getTransactionListTitle(description: string): string {
+  const [primaryPart] = description.split(':');
+  const normalizedPrimaryPart = primaryPart?.trim();
+
+  if (normalizedPrimaryPart && normalizedPrimaryPart.length > 0) {
+    return normalizedPrimaryPart;
   }
+
+  return description;
 }
